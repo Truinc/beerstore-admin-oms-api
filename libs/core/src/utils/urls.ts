@@ -116,3 +116,19 @@ export const getISODateTime = (dateString: string, timeString: string) => {
     return '';
   }
 };
+
+export enum SIGNINLOGS {
+  LAST_SUCCESSFUL_LOGIN = 'Last Successful Login',
+  LAST_UNSUCCESSFUL_LOGIN = 'Last Unsuccessful Login',
+  ACCOUNT_LOCKED = 'Account Locked',
+}
+
+export const getDayText = {
+  Mo: 'Monday',
+  Tu: 'Tuesday',
+  We: 'Wednesday',
+  Th: 'Thursday',
+  Fr: 'Friday',
+  Sa: 'Saturday',
+  Su: 'Sunday',
+};

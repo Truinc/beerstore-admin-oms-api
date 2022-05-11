@@ -31,8 +31,8 @@ import { HolidayInfo } from './entities/holidayInfo.entity';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
         const obj = {
-          ttl: parseInt(`${configService.get('cacheManager').ttl}`, 10),
-          max: parseInt(`${configService.get('cacheManager').max}`, 10),
+          // ttl: parseInt(`${configService.get('cacheManager').ttl}`, 10),
+          // max: parseInt(`${configService.get('cacheManager').max}`, 10),
         };
         return obj;
       },

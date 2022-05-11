@@ -1,32 +1,32 @@
-import { ApiProperty } from '@nestjs/swagger';
 import {
-  Column,
-  JoinColumn,
-  OneToOne,
-  CreateDateColumn,
   Entity,
-  ManyToOne,
   PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Store } from './store.entity';
+import { ApiProperty } from '@nestjs/swagger';
 
 @Entity()
-export class StoreDeliveryCharges {
+export class Settings {
   @ApiProperty({ type: Number })
   @PrimaryGeneratedColumn()
   id: number;
 
   @ApiProperty({ type: String })
   @Column({
-    type: 'float',
+    type: 'nvarchar',
+    length: 200,
     nullable: false,
   })
-  fee: number;
+  settingName: string;
 
-  @ApiProperty({ type: Number })
-  @ManyToOne(() => Store)
-  store: Store;
+  @ApiProperty({ type: String })
+  @Column({
+    type: 'nvarchar',
+    length: 200,
+  })
+  settingValue: string;
 
   @Column({ type: 'datetime2' })
   @CreateDateColumn()

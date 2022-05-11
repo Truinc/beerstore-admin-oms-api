@@ -13,7 +13,9 @@ import {
   NotFoundException,
   Patch,
   InternalServerErrorException,
+  Req,
 } from '@nestjs/common';
+import { Request as HttpRequest } from 'express';
 import {
   ApiTags,
   ApiBody,
@@ -52,7 +54,7 @@ export class UserController {
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
   @UseGuards(JwtAccessGuard, RolesGuard)
-  @Roles(RolesEnum.staff)
+  @Roles(RolesEnum.superadmin, RolesEnum.ithelpdesk, RolesEnum.storemanager)
   @HttpCode(HttpStatus.OK)
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -67,17 +69,30 @@ export class UserController {
 
   @ApiPaginatedResponse(User)
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(JwtAccessGuard)
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Roles(RolesEnum.superadmin, RolesEnum.ithelpdesk, RolesEnum.storemanager)
   @HttpCode(HttpStatus.OK)
   @Get()
   findAll(
     @Query(PaginationInputPipe)
     paginationDto: PaginationInputDto,
     @Query('search') search: string,
+    @Query('isManager') isManager: number,
+    @Req() request: HttpRequest & { user: User },
   ) {
+    const {
+      user: { role },
+    } = request;
     try {
       const { take, skip, sort } = paginationDto;
-      const users = this.userService.findAll(take, skip, sort, search);
+      const users = this.userService.findAll(
+        take,
+        skip,
+        role,
+        sort,
+        search,
+        isManager,
+      );
       return users;
     } catch (error) {
       throw new InternalServerErrorException(error.message);
@@ -113,7 +128,8 @@ export class UserController {
   @ApiNoContentResponse({ description: '200. Success', type: User })
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
   @ApiNotFoundResponse({ description: 'user not found' })
-  @UseGuards(JwtAccessGuard)
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Roles(RolesEnum.superadmin, RolesEnum.ithelpdesk, RolesEnum.storemanager)
   @HttpCode(HttpStatus.OK)
   @Patch(':id')
   update(
@@ -128,10 +144,28 @@ export class UserController {
     }
   }
 
+  @ApiNoContentResponse()
+  @ApiInternalServerErrorResponse()
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Roles(RolesEnum.superadmin, RolesEnum.ithelpdesk)
+  @Delete('usersStores')
+  async removeUserStores(
+    @Query('userId') userId: number,
+    @Query('storeId') storeId: number,
+  ) {
+    try {
+      return await this.userService.removeUserStore(userId, storeId);
+    } catch (error) {
+      throw error;
+    }
+  }
+
   @ApiNoContentResponse({ description: '200. Success', type: User })
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
   @ApiNotFoundResponse({ description: 'user not found' })
-  @UseGuards(JwtAccessGuard)
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Roles(RolesEnum.superadmin, RolesEnum.ithelpdesk)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number) {
@@ -144,7 +178,8 @@ export class UserController {
   }
 
   @ApiNoContentResponse()
-  @Roles(RolesEnum.manager)
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Roles(RolesEnum.superadmin, RolesEnum.ithelpdesk)
   @ApiInternalServerErrorResponse()
   @HttpCode(HttpStatus.OK)
   @Post('add-password')
@@ -161,11 +196,28 @@ export class UserController {
   @ApiNoContentResponse()
   @ApiInternalServerErrorResponse()
   @HttpCode(HttpStatus.OK)
-  @Get('signinlogs/:id')
-  getSignInLogs(@Param('id', ParseIntPipe) id: number) {
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Roles(RolesEnum.superadmin, RolesEnum.storemanager, RolesEnum.ithelpdesk)
+  @Get('userMeta/:id')
+  async getUserMeta(@Param('id', ParseIntPipe) id: number) {
+    const userMeta = await this.userService.getUserMeta(id);
+    return userMeta;
+  }
+
+  @ApiNoContentResponse()
+  @ApiInternalServerErrorResponse()
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Roles(RolesEnum.superadmin, RolesEnum.ithelpdesk)
+  @Post('status/:id')
+  async setUserStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { isActive: number },
+  ) {
     try {
-      const signInLogs = this.userService.getSignInLogs(id);
-      return signInLogs;
+      const { isActive } = body;
+      const user = await this.userService.setStatus(id, isActive);
+      return user;
     } catch (error) {
       throw error;
     }

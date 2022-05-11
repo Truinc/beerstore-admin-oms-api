@@ -25,11 +25,8 @@ import {
 // "status_id": 10,
 // "status": "Completed",
 
-
 // "status_id": 11,
 // "status": "Awaiting Fulfillment",
-
-
 
 // "status_id": 8,
 // "status": "Awaiting Pickup",

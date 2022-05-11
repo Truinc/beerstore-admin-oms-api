@@ -10,10 +10,11 @@ import { UserModule } from './component/user/user.module';
 import { ServerOrderModule } from './component/serverOrder/server-order.module';
 import { OrderHistoryModule } from './component/order-history/order-history.module';
 import { TokenModule } from './component/token/token.module';
-// import { OrdersModule } from 'apps/app/src/component/orders/orders.module';
 import { StoreModule } from '@beerstore/core/component/store/store.module';
 import { BeerCategoryModule } from '@beerstore/core/component/beer-category/beer-category.module';
 import { BeerModule } from '@beerstore/core/component/beer/beer.module';
+import { SettingsModule } from './component/settings/settings.module';
+import { OrdersModule } from './component/orders/orders.module';
 
 @Module({
   imports: [
@@ -52,10 +53,11 @@ import { BeerModule } from '@beerstore/core/component/beer/beer.module';
     ServerOrderModule,
     OrderHistoryModule,
     TokenModule,
-    // OrdersModule,
+    OrdersModule,
     StoreModule,
     BeerCategoryModule,
     BeerModule,
+    SettingsModule,
   ],
 })
 export class OmsModule {}

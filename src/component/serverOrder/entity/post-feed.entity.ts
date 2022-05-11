@@ -1,32 +1,40 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   Column,
-  JoinColumn,
-  OneToOne,
   CreateDateColumn,
   Entity,
-  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Store } from './store.entity';
 
 @Entity()
-export class StoreDeliveryCharges {
+export class PostFeed {
   @ApiProperty({ type: Number })
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ApiProperty({ type: String })
+  @ApiProperty({ type: Number })
   @Column({
-    type: 'float',
+    type: 'int',
     nullable: false,
   })
-  fee: number;
+  userId: number;
 
-  @ApiProperty({ type: Number })
-  @ManyToOne(() => Store)
-  store: Store;
+  @ApiProperty({ type: String })
+  @Column({
+    type: 'nvarchar',
+    length: 150,
+    nullable: false,
+  })
+  orderId: string;
+
+  @ApiProperty({ type: String })
+  @Column({
+    type: 'nvarchar',
+    length: 300,
+    nullable: false,
+  })
+  feed: string;
 
   @Column({ type: 'datetime2' })
   @CreateDateColumn()

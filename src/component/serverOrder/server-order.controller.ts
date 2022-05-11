@@ -34,6 +34,7 @@ import { ServerOrder as Order } from './entity/server-order.entity';
 import { ServerOrderService } from './server-order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { CreatePostFeedDto } from './dto/create-post-feed.dto';
 
 @ApiTags('server-order')
 @ApiBearerAuth()
@@ -62,15 +63,29 @@ export class ServerOrderController {
 
   @ApiQuery({
     required: false,
-    name: 'searchText',
+    name: 'search',
   })
   @ApiQuery({
-    required: false,
+    required: true,
     name: 'orderStatus',
     description:
       'awaiting_fulfillment = 11,in_transit = 3, returned = 6, pickup = 8, awaiting_shipment = 9, completed = 10,cancelled = 5',
     enum: [11, 3, 6, 8, 9, 10, 5],
     isArray: false,
+  })
+  @ApiQuery({
+    required: true,
+    name: 'searchFromDate',
+    description: 'Format:- YYYY-MM-DD',
+  })
+  @ApiQuery({
+    required: true,
+    name: 'searchToDate',
+    description: 'Format:- YYYY-MM-DD',
+  })
+  @ApiQuery({
+    required: false,
+    name: 'orderType',
   })
   @ApiPaginatedResponse(Order)
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
@@ -80,23 +95,62 @@ export class ServerOrderController {
   async findAll(
     @Query(PaginationInputPipe)
     paginationDto: PaginationInputDto,
-    @Query('searchText') searchText: string,
+    @Query('search') search: string,
     @Query('orderStatus') orderStatus: number,
+    @Query('searchFromDate') searchFromDate: string,
+    @Query('searchToDate') searchToDate: string,
+    @Query('orderType') orderType: string,
   ) {
     try {
-      const filter = {
-        search: searchText,
-        status: orderStatus,
-      };
+      // const filter = {
+      //   search: searchText,
+      //   status: orderStatus,
+      // };
       const { take, skip, sort } = paginationDto;
       return this.serverOrderService.findAllServerOrder(
+        searchFromDate,
+        searchToDate,
+        orderStatus,
         take,
         skip,
         sort,
-        filter,
+        search,
+        orderType,
       );
     } catch (error) {
       throw new BadRequestException(error.message);
+    }
+  }
+
+  // @UseGuards(JwtAccessGuard)
+  // @HttpCode(HttpStatus.CREATED)
+  // @Post('post-feed')
+  // async createPostFeed(@Body() createPostFeed: CreatePostFeedDto) {
+  //   const postFeed = await this.serverOrderService.addPostFeed(createPostFeed);
+  //   return postFeed;
+  // }
+
+  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
+  @UseGuards(JwtAccessGuard)
+  @HttpCode(HttpStatus.OK)
+  @Get('post-feed/:orderId')
+  async fetchPostFeed(@Param('orderId', ParseIntPipe) orderId: number) {
+    const postFeeds = await this.serverOrderService.findAllPostFeed(orderId);
+    return postFeeds;
+  }
+
+  @ApiNoContentResponse()
+  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
+  @ApiNotFoundResponse({ description: 'post feed not found' })
+  @UseGuards(JwtAccessGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('postFeed/:id')
+  async deletePostFeed(@Param('id', ParseIntPipe) PostFeedId: number) {
+    try {
+      const response = await this.serverOrderService.removePostFeed(PostFeedId);
+      return response;
+    } catch (error) {
+      throw error;
     }
   }
 

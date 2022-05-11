@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsDate,
   IsNotEmpty,
+  IsOptional,
   IsString,
   MaxLength,
   MinLength,
@@ -13,10 +14,15 @@ export class CreateHolidayHoursDto {
       this.startDate = body.startDate;
       this.endDate = body.endDate;
       this.title = body.title;
-      this.color = this.color;
-      this.messages = this.messages;
+      this.color = body.color;
+      this.messages = body.messages;
+      this.id = body.id;
     }
   }
+
+  @ApiProperty({ type: Number })
+  @IsOptional()
+  id: number;
 
   @ApiProperty({ type: Date })
   @IsDate()

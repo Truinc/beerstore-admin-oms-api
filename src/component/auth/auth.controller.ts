@@ -33,7 +33,7 @@ import SignUpDto from './dto/sign-up.dto';
 import RefreshTokenDto from './dto/refresh-token.dto';
 import ForgetPasswordDto from './dto/forget-password.dto';
 import { TokenResponseDto } from '../token/dto/token-response.dto';
-import RolesGuard from '../../guards/role.guard';
+// import RolesGuard from '@beerstore/core/guard/role.guard';
 import { Roles } from '../../decorators/roles.decorator';
 import { RolesEnum } from '../user/entity/user.entity';
 

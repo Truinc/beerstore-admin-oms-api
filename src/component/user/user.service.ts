@@ -1,72 +1,153 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository } from 'typeorm';
+import { getRepository, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
-import { User } from './entity/user.entity';
+import { RolesEnum, User, userPermissions } from './entity/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { SignInLogs } from './entity/signInLogs.entity';
+import { UserStores } from './entity/userStores.entity';
+// import { OrdersService } from '../orders/orders.service';
+// import { StoreService } from '../store/store.service';
+import { Store } from '@beerstore/core/component/store/entities/store.entity';
+import { SIGNINLOGS } from '@beerstore/core/utils';
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
     @InjectRepository(SignInLogs)
     private readonly signInLogsRepository: Repository<SignInLogs>,
+    @InjectRepository(UserStores)
+    private readonly userStoresRepository: Repository<UserStores>,
+    @InjectRepository(Store)
+    private readonly storeRepository: Repository<Store>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
+    const { username, email } = createUserDto;
+    const alreadyRegister = this.usersRepository.find({
+      where: [{ username }, { email }],
+    });
+    if (alreadyRegister) {
+      throw new BadRequestException('Username/email already exists.');
+    }
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     const createdUser = await this.usersRepository.create({
       ...createUserDto,
       password: hashedPassword,
     });
     const user = await this.usersRepository.save(createdUser);
+    if (createUserDto?.baseStoreId && user.id) {
+      const userStore = await this.userStoresRepository.save({
+        assignType: 'base',
+        userId: user.id,
+        storeId: createUserDto?.baseStoreId,
+      });
+      await this.usersRepository.save({
+        ...user,
+        usersStores: [userStore],
+      });
+    }
     return this.findOne(user.id);
   }
 
   async findAll(
     take: number,
     skip: number,
+    userRole: string,
     sort?: object,
     search?: string,
+    isManager?: number,
   ): Promise<object> {
-    const filter = {};
-    const where = [];
-    Object.assign(filter, { skip, take });
-    if (sort) {
-      Object.assign(filter, { order: sort });
+    try {
+      const table = this.usersRepository.createQueryBuilder('User');
+      const value = {};
+      const where = [];
+      let queryString = '';
+      table.leftJoinAndSelect('User.usersStores', 'UserStores');
+      if (search) {
+        where.push('username like :username');
+        Object.assign(value, { username: `%${search}%` });
+        where.push('email like :email');
+        Object.assign(value, { email: `%${search}%` });
+        where.push('firstName like :firstName');
+        Object.assign(value, { firstName: `%${search}%` });
+        where.push('lastName like :lastName');
+        Object.assign(value, { lastName: `%${search}%` });
+        where.push('User.id like :employeeid');
+        Object.assign(value, { employeeid: `%${search}%` });
+        where.push('UserStores.storeId like :storeId');
+        Object.assign(value, { storeId: `%${search}%` });
+        queryString = where.join(' OR ');
+      }
+      if (+isManager === 1) {
+        queryString = queryString
+          ? `( ${queryString} ) AND role = :role`
+          : `role = :role`;
+        Object.assign(value, { role: 'storemanager' });
+      } else {
+        queryString = queryString
+          ? `( ${queryString} ) AND role IN (:...roles)`
+          : `role IN (:...roles)`;
+        Object.assign(value, { roles: userPermissions[userRole] });
+      }
+
+      table.where(queryString, value);
+
+      if (sort) {
+        const validSortKey = [
+          'id',
+          'lastName',
+          'firstName',
+          'username',
+          'email',
+          'role',
+          'manager',
+          'role',
+          'isActive',
+        ];
+        const sortKey = Object.keys(sort)[0];
+        if (validSortKey.includes(sortKey)) {
+          const sortObj = {
+            [`User.${sortKey}`]: sort[sortKey],
+          };
+          table.orderBy(sortObj as { [key: string]: 'ASC' | 'DESC' });
+        } else {
+          throw new BadRequestException(`Invalid sort param :- ${sortKey}`);
+        }
+      }
+
+      if (skip) {
+        table.skip(skip);
+      }
+      if (take) {
+        table.take(take);
+      }
+      const response = await table.getManyAndCount();
+      console.log('response', response);
+      const [items, total] = response;
+      return {
+        total,
+        take,
+        skip,
+        items,
+      };
+    } catch (err) {
+      throw new BadRequestException(err.message);
     }
-    if (search) {
-      where.push({
-        username: ILike(`%${search}%`),
-      });
-      where.push({
-        email: ILike(`%${search}%`),
-      });
-      where.push({
-        firstName: ILike(`%${search}%`),
-      });
-      where.push({
-        lastName: ILike(`%${search}%`),
-      });
-      where.push({
-        id: ILike(`%${search}%`),
-      });
-    }
-    if (where.length > 0) {
-      Object.assign(filter, { where });
-    }
-    const [items, total] = await this.usersRepository.findAndCount(filter);
-    return {
-      total,
-      take,
-      skip,
-      items,
-    };
   }
 
-  async findOne(id: number): Promise<User> {
-    const user = await this.usersRepository.findOne(id);
+  async findOne(id: number): Promise<any> {
+    const user = await this.usersRepository.findOne(
+      {
+        id,
+      },
+      { relations: ['usersStores'] },
+    );
     return user;
   }
 
@@ -81,8 +162,11 @@ export class UserService {
           'username',
           'email',
           'isActive',
+          'loginAttempts',
           'id',
+          'role',
         ],
+        relations: ['usersStores'],
       },
     );
     return user;
@@ -94,12 +178,73 @@ export class UserService {
   }
 
   async update(id: number, body: UpdateUserDto) {
-    const user = await this.findOne(id);
-    if (!user) {
-      return new NotFoundException('user not found');
+    try {
+      const user = await this.findOne(id);
+      if (!user) {
+        return new NotFoundException('user not found');
+      }
+
+      // let hashedPassword = '';
+      let managerData;
+      const { baseStoreId, optionalStoreIds, manager, ...userObj } = body || {
+        baseStoreId: -1,
+        optionalStoreIds: [],
+      };
+      if (manager) {
+        managerData = await this.usersRepository.findOne({
+          username: manager,
+        });
+        if (!managerData || managerData.role !== RolesEnum.storemanager) {
+          throw new Error('No manager found');
+        }
+      }
+
+      // if (userObj.password) {
+      //   hashedPassword = await bcrypt.hash(userObj.password, 10);
+      // }
+      let userStoresList = [];
+      const userStoreReqs = [];
+
+      // remove all previous stores assigned to the user
+      await this.removeAllUserStores(id);
+      if (baseStoreId && baseStoreId !== -1) {
+        userStoreReqs.push(
+          this.userStoresRepository.save({
+            assignType: 'base',
+            userId: id,
+            storeId: baseStoreId,
+          }),
+        );
+      }
+      if (Array.isArray(optionalStoreIds) && optionalStoreIds.length) {
+        for (const storeId of optionalStoreIds) {
+          if (storeId !== -1) {
+            userStoreReqs.push(
+              this.userStoresRepository.save({
+                userId: id,
+                storeId,
+                assignType: 'otherAssigned',
+              }),
+            );
+          }
+        }
+      }
+      userStoresList = await Promise.all(userStoreReqs);
+      // delete user.id;
+      await this.usersRepository.save({
+        ...user,
+        ...userObj,
+        ...(managerData && { manager: managerData.username }),
+        usersStores: userStoresList,
+      });
+
+      if (!body.isActive) {
+        await this.upsertSignInlog(id, SIGNINLOGS.ACCOUNT_LOCKED);
+      }
+      return this.findOne(user.id);
+    } catch (err) {
+      throw err;
     }
-    await this.usersRepository.update({ id: user.id }, body);
-    return this.findOne(user.id);
   }
 
   async updatePassword(id: number, password: string) {
@@ -110,13 +255,17 @@ export class UserService {
     const hashedPassword = await bcrypt.hash(password, 10);
     await this.usersRepository.update(
       { id: user.id },
-      { password: hashedPassword },
+      { password: hashedPassword, isActive: 1, loginAttempts: 0 },
     );
     return this.findOne(user.id);
   }
 
+  async patch(userId: number, body: any): Promise<User> {
+    await this.usersRepository.update({ id: userId }, { ...body });
+    return this.findOne(userId);
+  }
+
   async verify(username: string, password: string): Promise<User> {
-    console.log(username, password);
     const user = await this.usersRepository.findOne({
       where: {
         username,
@@ -146,7 +295,7 @@ export class UserService {
   }
 
   async getSignInLogs(userId: number): Promise<object> {
-    const signInlogs = await this.signInLogsRepository.findAndCount({
+    const signInlogs = await this.signInLogsRepository.find({
       where: [{ userId }],
       order: {
         id: 'DESC',
@@ -159,4 +308,96 @@ export class UserService {
     const signInlog = await this.signInLogsRepository.findOne(id);
     return signInlog;
   }
+
+  async upsertSignInlog(userId: number, log: string): Promise<object> {
+    const signInLog = await this.signInLogsRepository.findOne({
+      userId,
+      log,
+    });
+
+    if (signInLog) {
+      await this.signInLogsRepository.update(
+        {
+          userId,
+          log,
+        },
+        {
+          userId,
+          log,
+        },
+      );
+    } else {
+      await this.signInLogsRepository.save({
+        userId,
+        log,
+      });
+    }
+    return await this.signInLogsRepository.findOne({
+      userId,
+      log,
+    });
+  }
+
+  async getUserMeta(id: number): Promise<any> {
+    let baseStoreId = -1;
+    const storeIds = [];
+    const userMetaReq = [];
+    const baseStore = [];
+    const otherAssignedStores = [];
+    const userStores = await this.userStoresRepository.find({ userId: id });
+    userMetaReq.push(this.getSignInLogs(id));
+    if (Array.isArray(userStores) && userStores.length) {
+      userStores.forEach((userStore) => {
+        storeIds.push(userStore.storeId);
+        if (userStore.assignType === 'base') {
+          baseStoreId = userStore.storeId;
+        }
+      });
+      userMetaReq.push(
+        this.storeRepository
+          .createQueryBuilder()
+          .where('id IN (:...ids )', { ids: storeIds })
+          .getMany(),
+      );
+    }
+    const response = await Promise.all(userMetaReq);
+    if (Array.isArray(response[1]) && response[1].length) {
+      response[1].forEach((store) => {
+        if (store.id === baseStoreId) {
+          baseStore.push(store);
+        } else {
+          otherAssignedStores.push(store);
+        }
+      });
+    }
+    return {
+      signInLogs: response[0] || [],
+      baseStore: baseStore,
+      otherAssignedStores,
+    };
+  }
+
+  removeAllUserStores = (userId: number) => {
+    return this.userStoresRepository.delete({ userId });
+  };
+
+  removeUserStore = (userId: number, storeId: number) => {
+    return this.userStoresRepository.delete({ userId, storeId });
+  };
+
+  setStatus = async (userId: number, isActive: number) => {
+    const body = {
+      isActive,
+      ...(isActive === 1 && { loginAttempts: 0 }),
+    };
+    await this.patch(userId, body);
+    return this.usersRepository.findOne({ id: userId });
+  };
+  // getAllUserStores = (userId: number, storeId: number, assignType: string) => {
+  //   this.userStoresRepository.create({
+  //     userId,
+  //     storeId,
+  //     assignType,
+  //   });
+  // };
 }

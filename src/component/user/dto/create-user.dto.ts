@@ -1,7 +1,9 @@
 import {
+  IsArray,
   IsEmail,
   IsEnum,
   IsNotEmpty,
+  IsOptional,
   IsString,
   MaxLength,
   MinLength,
@@ -19,6 +21,7 @@ export class CreateUserDto {
       this.lastName = body.lastName;
       this.isActive = body.isActive;
       this.role = body.role;
+      this.baseStoreId = body.baseStoreId;
     }
   }
 
@@ -60,4 +63,8 @@ export class CreateUserDto {
 
   @ApiProperty({ type: Number, default: 1 })
   isActive: number;
+
+  @ApiProperty({ type: Number })
+  @IsOptional()
+  baseStoreId: number;
 }

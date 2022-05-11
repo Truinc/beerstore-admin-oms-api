@@ -20,14 +20,8 @@ export class OrdersController {
 
   @Get(':orderId/products')
   async getOrderProducts(@Param('orderId') orderId) {
-    try {
-      const order = await this.ordersService.getOrderProducts(orderId);
-      console.log('order', order);
-      return order;
-    } catch (error) {
-      console.log('error12345', error);
-      return 'order not found';
-    }
+    const order = await this.ordersService.getOrderProducts(orderId);
+    return order;
   }
 
   @Get('/:orderId/shipping_addresses')
@@ -38,31 +32,17 @@ export class OrdersController {
 
   @Get(':orderId')
   async getOrder(@Param('orderId') orderId) {
-    try {
-      const order = await this.ordersService.getOrder(orderId);
-      console.log('order', order);
-      return order;
-    } catch (error) {
-      console.log('error12345', error);
-      return 'order not found';
-    }
+    const order = await this.ordersService.getOrder(orderId);
+    return order;
   }
 
   @Get('/')
   async getAllOrder(@Query() query) {
-    try {
-      console.log('vallll', Object.keys(query));
-      if (!validateQueryParams(orderQuery, Object.keys(query))) {
-        console.log('invalid query params');
-        return 'invalid request';
-      }
-      const orders = await this.ordersService.getAllOrders(query);
-      console.log('orders', orders);
-      return orders;
-    } catch (error) {
-      console.log('error12345', error);
-      return 'orders not found';
+    if (!validateQueryParams(orderQuery, Object.keys(query))) {
+      return 'invalid request';
     }
+    const orders = await this.ordersService.getAllOrders(query);
+    return orders;
   }
 
   @Post('/')
