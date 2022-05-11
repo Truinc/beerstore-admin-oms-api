@@ -611,17 +611,23 @@ export class StoreService {
     if (!store) {
       throw new NotFoundException('store not found');
     }
-    const ids = [];
-    store.storeFeatures.forEach((feature) => {
-      if (feature.id) {
-        ids.push(feature.id);
-      }
-    });
-    if (ids.length) {
-      await this.deleteStoreFeatures(ids);
+
+    if (updateStoreDto.featuresIds.length) {
+      await this.deleteStoreFeatures(updateStoreDto.featuresIds);
     }
 
-    const payload = { ...updateStoreDto, id: store.id };
+    delete updateStoreDto['featuresIds'];
+
+    const strFeatures = updateStoreDto.storeFeatures.map((item) => {
+      const { feature } = item;
+      return { feature };
+    });
+
+    const payload = {
+      ...updateStoreDto,
+      storeFeatures: strFeatures,
+      id: store.id,
+    };
     const storeToSave = await this.storeRepository.preload(payload);
     await this.storeRepository.save(storeToSave);
 
