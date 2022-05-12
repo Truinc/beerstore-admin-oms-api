@@ -29,7 +29,7 @@ export class UserService {
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const { username, email } = createUserDto;
-    const alreadyRegister = this.usersRepository.find({
+    const alreadyRegister = await this.usersRepository.findOne({
       where: [{ username }, { email }],
     });
     if (alreadyRegister) {
