@@ -32,8 +32,10 @@ export class OrdersController {
 
   @Get(':orderId')
   async getOrder(@Param('orderId') orderId) {
-    const order = await this.ordersService.getOrder(orderId);
-    return order;
+    // const order = await this.ordersService.getOrder(orderId);
+    // return order;
+    const orderDetails = await this.ordersService.getOrderDetails(orderId);
+    return orderDetails;
   }
 
   @Get('/')

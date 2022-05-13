@@ -1,6 +1,10 @@
-import { BadGatewayException, Injectable } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  Injectable,
+} from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { catchError, map, Observable } from 'rxjs';
+import { catchError, lastValueFrom, map, Observable } from 'rxjs';
 import { ApiType, ApiVersion } from '@beerstore/core/interfaces/urls';
 import {
   createQuery,
@@ -14,33 +18,60 @@ import { Order, OrderQuery } from '@beerstore/core/interfaces';
 export class OrdersService {
   constructor(private httpService: HttpService) {}
 
-  getOrder(orderId: string): Observable<Order> {
+  async getOrder(orderId: string): Promise<any> {
     const queryStr = `/${orderId}`;
     const url = `${getBigCommUrl(ApiVersion.V2, ApiType.Orders, queryStr)}`;
-    return this.httpService.get(url, serviceHeader()).pipe(
-      map((response) => response.data),
-      catchError(handleError<any>(null)),
+    const order = await lastValueFrom(
+      this.httpService.get(url, serviceHeader()).pipe(
+        map((response) => response.data),
+        catchError(handleError<any>(null)),
+      ),
     );
+    return order;
   }
 
-  getOrderProducts(orderId: string): Observable<Order> {
+  async getOrderDetails(orderId: string): Promise<any> {
+    try {
+      const allReq = [
+        this.getOrder(orderId),
+        this.getOrderProducts(orderId),
+        this.getShippingAddresses(orderId),
+      ];
+      const resp = await Promise.all(allReq);
+      return {
+        order: resp[0] || [],
+        orderProducts: resp[1] || [],
+        orderAddresses: resp[2] || [],
+      };
+    } catch (err) {
+      throw new BadRequestException(err.message);
+    }
+  }
+
+  async getOrderProducts(orderId: string): Promise<any> {
     const queryStr = `/${orderId}/products`;
     const url = `${getBigCommUrl(ApiVersion.V2, ApiType.Orders, queryStr)}`;
-    return this.httpService.get(url, serviceHeader()).pipe(
-      map((response) => response.data),
-      catchError((err) => {
-        throw new BadGatewayException(err);
-      }),
+    const orderProducts = await lastValueFrom(
+      this.httpService.get(url, serviceHeader()).pipe(
+        map((response) => response.data),
+        catchError((err) => {
+          throw new BadGatewayException(err);
+        }),
+      ),
     );
+    return orderProducts;
   }
 
-  getShippingAddresses(orderId: string): Observable<Order> {
+  async getShippingAddresses(orderId: string): Promise<any> {
     const queryStr = `/${orderId}/shipping_addresses`;
     const url = `${getBigCommUrl(ApiVersion.V2, ApiType.Orders, queryStr)}`;
-    return this.httpService.get(url, serviceHeader()).pipe(
-      map((response) => response.data),
-      catchError(handleError<any>(null)),
+    const addresses = await lastValueFrom(
+      this.httpService.get(url, serviceHeader()).pipe(
+        map((response) => response.data),
+        catchError(handleError<any>(null)),
+      ),
     );
+    return addresses;
   }
 
   createOrder(createOrderDto: CreateOrderDto): Observable<Order> {

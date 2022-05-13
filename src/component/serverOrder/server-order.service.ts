@@ -14,9 +14,14 @@ import {
   getRepository,
   Brackets,
 } from 'typeorm';
+import { CreateCustomerProofDto } from './dto/create-customer-proof.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { CreatePaymentDetailsDto } from './dto/create-payment-details.dto';
 import { CreatePostFeedDto } from './dto/create-post-feed.dto';
+import { UpdateCustomerProofDto } from './dto/update-customer-proof.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { CustomerProof } from './entity/customer-proof.entity';
+import { PaymentDetails } from './entity/payment-details.entity';
 import { PostFeed } from './entity/post-feed.entity';
 import { OrderEnum, ServerOrder } from './entity/server-order.entity';
 
@@ -27,6 +32,10 @@ export class ServerOrderService {
     private serverOrderRepository: Repository<ServerOrder>,
     @InjectRepository(PostFeed)
     private postFeedRepository: Repository<PostFeed>,
+    @InjectRepository(CustomerProof)
+    private customerProofRepository: Repository<CustomerProof>,
+    @InjectRepository(PaymentDetails)
+    private paymentDetailsRepository: Repository<PaymentDetails>,
   ) {}
 
   async findAllServerOrder(
@@ -92,6 +101,23 @@ export class ServerOrderService {
     };
   }
 
+  async completeDetail(orderId: number) {
+    try {
+      const resp = await Promise.all([
+        this.serverOrderRepository.findOne({
+          where: { orderId },
+        }),
+        this.findAllPostFeed(orderId),
+      ]);
+      return {
+        order: resp[0] || [],
+        orderFeed: resp[1] || [],
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
   async addPostFeed(postFeed: CreatePostFeedDto) {
     try {
       const createPostFeed = await this.postFeedRepository.create(postFeed);
@@ -101,6 +127,63 @@ export class ServerOrderService {
     } catch (err) {
       throw new BadRequestException(err.message);
     }
+  }
+
+  async addCustomerProof(customerProof: CreateCustomerProofDto) {
+    try {
+      const createCustomerProof = await this.customerProofRepository.create(
+        customerProof,
+      );
+      const response = await this.customerProofRepository.save(
+        createCustomerProof,
+      );
+      // console.log('response', response);
+      return this.customerProofRepository.findOne(response.id);
+    } catch (err) {
+      throw new BadRequestException(err.message);
+    }
+  }
+
+  async getCustomerProof(orderId: number) {
+    const customerProof = await this.customerProofRepository.findOne({
+      where: { orderId },
+    });
+    return customerProof;
+  }
+
+  async updateCustomerProof(
+    orderId: number,
+    updatedProof: UpdateCustomerProofDto,
+  ) {
+    const customerProof = await this.getCustomerProof(orderId);
+    if (customerProof) {
+      await this.customerProofRepository.update(customerProof.id, updatedProof);
+      return this.customerProofRepository.findOne(customerProof.id);
+    } else {
+      throw new NotFoundException('Customer proof not found');
+    }
+  }
+
+  async addPaymentDetail(paymentDetail: CreatePaymentDetailsDto) {
+    try {
+      const createPaymentDetail = await this.paymentDetailsRepository.create(
+        paymentDetail,
+      );
+      const response = await this.paymentDetailsRepository.save(
+        createPaymentDetail,
+      );
+      // console.log('response', response);
+      return this.paymentDetailsRepository.findOne(response.id);
+    } catch (err) {
+      throw new BadRequestException(err.message);
+    }
+  }
+
+  async getPaymentDetail(orderId: number) {
+    const paymentDetail = await this.paymentDetailsRepository.findOne({
+      where: { orderId },
+    });
+    return paymentDetail;
   }
 
   async findAllPostFeed(orderId: number) {

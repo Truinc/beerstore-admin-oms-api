@@ -26,7 +26,7 @@ export class CreatePostFeedDto {
   @IsNotEmpty()
   @IsString()
   @MinLength(1)
-  // @MaxLength(299)
+  @MaxLength(299)
   readonly feed: string;
 
   @ApiProperty({ type: Number })

@@ -77,7 +77,7 @@ export default class AuthService {
       });
     }
 
-    throw new UnauthorizedException('username or password is wrong');
+    throw new UnauthorizedException('Incorrect ID or Password.');
   }
 
   public async login(username: string): Promise<JwtTokensDto> {
@@ -85,7 +85,7 @@ export default class AuthService {
       const user = await this.usersService.findWithUsername(username);
       console.log('user', user);
       if (!user) {
-        throw new UnauthorizedException('username or password is wrong');
+        throw new UnauthorizedException('Incorrect ID or Password.');
       }
 
       if (user.isActive !== 1) {
@@ -95,7 +95,7 @@ export default class AuthService {
       }
       // const passwordCompared = await bcrypt.compare(password, user.password);
       // if (!passwordCompared) {
-      //   throw new UnauthorizedException('username or password is wrong');
+      //   throw new UnauthorizedException('Incorrect ID or Password.');
       // }
       const token = await this.tokenService.create(user);
       return new JwtTokensDto({
