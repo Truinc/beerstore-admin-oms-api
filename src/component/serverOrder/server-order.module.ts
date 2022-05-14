@@ -6,9 +6,15 @@ import { ServerOrderController } from './server-order.controller';
 import { PostFeed } from './entity/post-feed.entity';
 import { PaymentDetails } from './entity/payment-details.entity';
 import { CustomerProof } from './entity/customer-proof.entity';
+import { OrdersModule } from '../orders/orders.module';
+import { OrderHistoryModule } from '../order-history/order-history.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
+    AuthModule,
+    OrdersModule,
+    OrderHistoryModule,
     TypeOrmModule.forFeature([
       ServerOrder,
       PostFeed,

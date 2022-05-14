@@ -32,7 +32,7 @@ import { PaginationInputDto } from '@beerstore/core/swagger/dto/pagination.dto';
 import { ApiPaginatedResponse } from '@beerstore/core/swagger/paginated-response';
 import { ServerOrder as Order } from './entity/server-order.entity';
 import { ServerOrderService } from './server-order.service';
-import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateServerOrderDto } from './dto/create-server-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { CreatePostFeedDto } from './dto/create-post-feed.dto';
 import { CreateCustomerProofDto } from './dto/create-customer-proof.dto';
@@ -40,6 +40,7 @@ import { CreatePaymentDetailsDto } from './dto/create-payment-details.dto';
 import { UpdateCustomerProofDto } from './dto/update-customer-proof.dto';
 import { CustomerProof } from './entity/customer-proof.entity';
 import { PaymentDetails } from './entity/payment-details.entity';
+import { CancelOrderDto } from './dto/cancel-order.dto';
 
 @ApiTags('server-order')
 @ApiBearerAuth()
@@ -48,7 +49,7 @@ import { PaymentDetails } from './entity/payment-details.entity';
 export class ServerOrderController {
   constructor(private serverOrderService: ServerOrderService) {}
 
-  @ApiBody({ type: CreateOrderDto })
+  @ApiBody({ type: CreateServerOrderDto })
   // @ApiOkResponse({ description: '200. Success', type: Order })
   @ApiBadRequestResponse({
     description: '400. ValidationException',
@@ -57,7 +58,7 @@ export class ServerOrderController {
   @UseGuards(JwtAccessGuard)
   @HttpCode(HttpStatus.CREATED)
   @Post('/')
-  async create(@Body() serverOrder: CreateOrderDto) {
+  async create(@Body() serverOrder: CreateServerOrderDto) {
     try {
       const order = await this.serverOrderService.addServerOrder(serverOrder);
       return order;
@@ -92,6 +93,10 @@ export class ServerOrderController {
     required: false,
     name: 'orderType',
   })
+  @ApiQuery({
+    required: false,
+    name: 'storeId',
+  })
   @ApiPaginatedResponse(Order)
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
   @UseGuards(JwtAccessGuard)
@@ -105,6 +110,7 @@ export class ServerOrderController {
     @Query('searchFromDate') searchFromDate: string,
     @Query('searchToDate') searchToDate: string,
     @Query('orderType') orderType: string,
+    @Query('storeId') storeId: string,
   ) {
     try {
       // const filter = {
@@ -118,6 +124,7 @@ export class ServerOrderController {
         orderStatus,
         take,
         skip,
+        storeId,
         sort,
         search,
         orderType,
@@ -259,6 +266,40 @@ export class ServerOrderController {
       throw new NotFoundException('order not found');
     }
     return order;
+  }
+
+  @ApiOkResponse({ description: '204. Success', type: Order })
+  @ApiNotFoundResponse({ description: 'order not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
+  @UseGuards(JwtAccessGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('/cancel-order/:id')
+  async cancelOrder(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() cancelOrderDto: CancelOrderDto,
+  ): Promise<Order> {
+    try {
+      const {
+        orderId,
+        createOrderDto,
+        serverOrder,
+        createOrderHistoryDto,
+        username,
+        password,
+      } = cancelOrderDto;
+      const response = await this.serverOrderService.cancelOrder(
+        id,
+        orderId,
+        createOrderDto,
+        serverOrder,
+        createOrderHistoryDto,
+        username,
+        password,
+      );
+      return response;
+    } catch (err) {
+      throw err;
+    }
   }
 
   @ApiOkResponse({ description: '204. Success', type: Order })

@@ -14,6 +14,7 @@ import JwtAccessStrategy from './strategies/jwt-access.strategy';
   imports: [PassportModule, ConfigModule, UserModule, TokenModule],
   providers: [AuthService, LocalStrategy, JwtAccessStrategy],
   controllers: [AuthController],
+  exports: [AuthService],
 })
 export class AuthModule {}
 // forwardRef(() => UserModule),

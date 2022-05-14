@@ -82,16 +82,17 @@ export class OrdersService {
     );
   }
 
-  updateOrder(
-    orderId: string,
-    createOrderDto: CreateOrderDto,
-  ): Observable<Order> {
+  updateOrder(orderId: string, createOrderDto: CreateOrderDto): Promise<any> {
     const queryStr = `/${orderId}`;
+    console.log('incoming request', createOrderDto);
     const url = `${getBigCommUrl(ApiVersion.V2, ApiType.Orders, queryStr)}`;
-    return this.httpService.put(url, createOrderDto, serviceHeader()).pipe(
-      map((response) => response.data),
-      catchError(handleError<any>(null)),
+    const response = lastValueFrom(
+      this.httpService.put(url, createOrderDto, serviceHeader()).pipe(
+        map((response) => response.data),
+        catchError(handleError<any>(null)),
+      ),
     );
+    return response;
   }
 
   deleteOrder(orderId: string): Observable<Order> {

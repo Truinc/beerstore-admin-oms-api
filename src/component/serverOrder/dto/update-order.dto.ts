@@ -83,4 +83,10 @@ export class UpdateOrderDto {
   @MaxLength(500)
   @IsString()
   readonly cancellationReason: string;
+
+  @ApiProperty({ type: String })
+  @IsOptional()
+  @MaxLength(500)
+  @IsString()
+  readonly employeeNote: string;
 }

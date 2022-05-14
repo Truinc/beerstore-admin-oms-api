@@ -13,8 +13,8 @@ import {
 } from 'class-validator';
 import { OrderEnum } from '../entity/server-order.entity';
 
-export class CreateOrderDto {
-  constructor(body: CreateOrderDto | null = null) {
+export class CreateServerOrderDto {
+  constructor(body: CreateServerOrderDto | null = null) {
     if (body) {
       this.orderId = body.orderId;
       this.storeId = body.storeId;

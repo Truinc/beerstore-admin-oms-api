@@ -33,8 +33,6 @@ export default class AuthService {
       );
     }
     const passwordCompared = await bcrypt.compare(password, user.password);
-    console.log('passwordCompat', passwordCompared);
-    // return user;
     if (passwordCompared) {
       this.usersService.upsertSignInlog(
         user.id,
@@ -51,7 +49,6 @@ export default class AuthService {
       SIGNINLOGS.LAST_UNSUCCESSFUL_LOGIN,
     );
     const prevAttemptsCount = user?.loginAttempts || 0;
-    console.log('prevAttemotsCount', prevAttemptsCount);
     if (prevAttemptsCount + 1 >= 3) {
       // make user inactive
       this.usersService.patch(user.id, {
@@ -66,11 +63,6 @@ export default class AuthService {
         'Your account is disabled, Please get in contact with your store manager',
       );
     } else {
-      console.log('tesing2323', {
-        ...user,
-        isActive: 1,
-        loginAttempts: prevAttemptsCount + 1,
-      });
       this.usersService.patch(user.id, {
         isActive: 1,
         loginAttempts: prevAttemptsCount + 1,
@@ -78,6 +70,26 @@ export default class AuthService {
     }
 
     throw new UnauthorizedException('Incorrect ID or Password.');
+  }
+
+  /**
+   * method to verify user credentials before cancelling order
+   * @param username
+   * @param password
+   */
+  public async validateCredentials(
+    username: string,
+    password: string,
+  ): Promise<boolean> {
+    const user = await this.usersService.findWithUsername(username);
+    if (!user) {
+      throw new UnauthorizedException('Incorrect EmployeeId');
+    }
+    const passwordCompared = await bcrypt.compare(password, user.password);
+    if (passwordCompared) {
+      return true;
+    }
+    throw new UnauthorizedException('Incorrect Password.');
   }
 
   public async login(username: string): Promise<JwtTokensDto> {

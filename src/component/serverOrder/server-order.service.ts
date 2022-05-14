@@ -5,17 +5,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  Repository,
-  getConnection,
-  // ILike,
-  // Between,
-  // Raw,
-  getRepository,
-  Brackets,
-} from 'typeorm';
+import { Repository, getRepository, Brackets } from 'typeorm';
+import { CreateOrderHistoryDto } from '../order-history/dto/create-order-history.dto';
+import { OrderHistoryService } from '../order-history/order-history.service';
+import { OrdersService } from '../orders/orders.service';
 import { CreateCustomerProofDto } from './dto/create-customer-proof.dto';
-import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateServerOrderDto } from './dto/create-server-order.dto';
 import { CreatePaymentDetailsDto } from './dto/create-payment-details.dto';
 import { CreatePostFeedDto } from './dto/create-post-feed.dto';
 import { UpdateCustomerProofDto } from './dto/update-customer-proof.dto';
@@ -24,10 +19,15 @@ import { CustomerProof } from './entity/customer-proof.entity';
 import { PaymentDetails } from './entity/payment-details.entity';
 import { PostFeed } from './entity/post-feed.entity';
 import { OrderEnum, ServerOrder } from './entity/server-order.entity';
+import { CreateOrderDto } from '../orders/dto/createOrder.dto';
+import AuthService from '../auth/auth.service';
 
 @Injectable()
 export class ServerOrderService {
   constructor(
+    private authService: AuthService,
+    private ordersService: OrdersService,
+    private orderHistoryService: OrderHistoryService,
     @InjectRepository(ServerOrder)
     private serverOrderRepository: Repository<ServerOrder>,
     @InjectRepository(PostFeed)
@@ -44,6 +44,7 @@ export class ServerOrderService {
     status: OrderEnum,
     take: number,
     skip: number,
+    storeId: string,
     sort?: object,
     search?: string,
     orderType?: string,
@@ -73,6 +74,11 @@ export class ServerOrderService {
         },
       );
     }
+
+    // for testing purpose it is commented out
+    // table.andWhere('ServerOrder.storeId = :storeId', {
+    //   storeId,
+    // });
 
     if (search) {
       table.andWhere(
@@ -131,14 +137,24 @@ export class ServerOrderService {
 
   async addCustomerProof(customerProof: CreateCustomerProofDto) {
     try {
-      const createCustomerProof = await this.customerProofRepository.create(
-        customerProof,
-      );
-      const response = await this.customerProofRepository.save(
-        createCustomerProof,
-      );
-      // console.log('response', response);
-      return this.customerProofRepository.findOne(response.id);
+      let id;
+      const { orderId } = customerProof;
+      const prevProof = await this.customerProofRepository.findOne({
+        where: { orderId },
+      });
+      if (prevProof) {
+        id = prevProof.id;
+        await this.updateCustomerProof(+orderId, customerProof);
+      } else {
+        const createCustomerProof = await this.customerProofRepository.create(
+          customerProof,
+        );
+        const response = await this.customerProofRepository.save(
+          createCustomerProof,
+        );
+        id = response.id;
+      }
+      return this.customerProofRepository.findOne(id);
     } catch (err) {
       throw new BadRequestException(err.message);
     }
@@ -201,7 +217,9 @@ export class ServerOrderService {
     return this.postFeedRepository.delete(id);
   }
 
-  async addServerOrder(serverOrder: CreateOrderDto): Promise<ServerOrder> {
+  async addServerOrder(
+    serverOrder: CreateServerOrderDto,
+  ): Promise<ServerOrder> {
     try {
       const createOrder = await this.serverOrderRepository.create(serverOrder);
       const order = await this.serverOrderRepository.save(createOrder);
@@ -238,13 +256,57 @@ export class ServerOrderService {
     return this.findOne(id);
   }
 
-  // verification reqd.
-  bulkImportServerOrder(serverOrders: ServerOrder[]): Promise<any> {
-    return getConnection()
-      .createQueryBuilder()
-      .insert()
-      .into(ServerOrder)
-      .values(serverOrders)
-      .execute();
+  async cancelOrder(
+    id: number,
+    orderId: string,
+    createOrderDto: CreateOrderDto,
+    serverOrder: UpdateOrderDto,
+    createOrderHistoryDto: CreateOrderHistoryDto,
+    username: string,
+    password: string,
+  ): Promise<ServerOrder> {
+    const requests = [];
+    try {
+      // check if username and password exists
+      await this.authService.validateCredentials(username, password);
+      const resp = await this.ordersService.updateOrder(
+        orderId,
+        createOrderDto,
+      );
+      console.log('res', resp);
+      requests.push(this.updateServerOrder(id, serverOrder));
+      requests.push(this.orderHistoryService.create(createOrderHistoryDto));
+      const response = await Promise.all(requests);
+      console.log('response', response);
+      return response[0];
+    } catch (err) {
+      throw new BadRequestException(err.message);
+    }
+  }
+
+  async updateOrder(
+    id: number,
+    orderId: string,
+    createOrderDto: CreateOrderDto,
+    serverOrder: UpdateOrderDto,
+    createOrderHistoryDto: CreateOrderHistoryDto,
+    customerProof: CreateCustomerProofDto,
+  ): Promise<ServerOrder> {
+    const requests = [];
+    try {
+      const resp = await this.ordersService.updateOrder(
+        orderId,
+        createOrderDto,
+      );
+      console.log('res', resp);
+      requests.push(this.updateServerOrder(id, serverOrder));
+      requests.push(this.orderHistoryService.create(createOrderHistoryDto));
+      requests.push(this.updateCustomerProof(+orderId, customerProof));
+      const response = await Promise.all(requests);
+      console.log('response', response);
+      return response[0];
+    } catch (err) {
+      throw new BadRequestException(err.message);
+    }
   }
 }
