@@ -455,4 +455,38 @@ export class StoreController {
       throw error;
     }
   }
+
+  @ApiQuery({
+    name: 'status_id',
+    description: '1,2,3',
+    required: false,
+  })
+  @ApiQuery({
+    name: 'min_id',
+    required: false,
+    description: 'The minimum order ID',
+  })
+  @ApiQuery({
+    name: 'max_id',
+    required: false,
+    description: 'The maximum order ID',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description:
+      'Controls the number of items per page in a limited (paginated) list of products.',
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
+  @UseGuards(JwtAccessGuard)
+  @HttpCode(HttpStatus.OK)
+  @Get('/orders/getAllOrders')
+  async getAllOrders(
+    @Query('status_id') status_id: number,
+    @Query('min_id') min_id: number,
+    @Query('max_id') max_id: number,
+    @Query('limit') limit: number,
+  ) {
+    return this.storeService.getAllOrders(status_id, min_id, max_id, limit);
+  }
 }
