@@ -458,7 +458,8 @@ export class StoreController {
 
   @ApiQuery({
     name: 'status_id',
-    description: '1,2,3',
+    description:
+      ' 1 => "Pending", 2 => "In Transit (shipped)", 3 => "In Transit (Partially Shipped)", 4 => "Refunded", 5 => "Cancelled", 6 => "Returned (Declined)", 7 => "Awaiting Payment", 8 => "Awaiting Pickup", 9 => "Awaiting Delivery (Awaiting Shipment)", 10 => "Completed", 11 => "Awaiting Fulfillment", 12 => "Manual Verification Required", 13 => "Disputed", 14 => "Partially Refunded"',
     required: false,
   })
   @ApiQuery({
