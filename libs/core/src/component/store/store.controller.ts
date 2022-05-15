@@ -477,12 +477,6 @@ export class StoreController {
     required: false,
     description: 'Maximum date the order was created i.e. 2022-04-20',
   })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    description:
-      'Controls the number of items per page in a limited (paginated) list of products.',
-  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
   @UseGuards(JwtAccessGuard)
   @HttpCode(HttpStatus.OK)
@@ -492,14 +486,12 @@ export class StoreController {
     @Query('store_id') store_id: number,
     @Query('min_date_created') min_date_created: Date,
     @Query('max_date_created') max_date_created: Date,
-    @Query('limit') limit: number,
   ) {
     return this.storeService.getAllOrders(
       status_id,
       store_id,
       min_date_created,
       max_date_created,
-      limit,
     );
   }
 }

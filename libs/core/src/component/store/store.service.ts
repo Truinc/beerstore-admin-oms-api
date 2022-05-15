@@ -1058,7 +1058,6 @@ export class StoreService {
     store_id: number,
     min_date_created: Date,
     max_date_created: Date,
-    limit: number,
   ): Promise<any> {
     let filter = ``;
     const uri = `v2/orders`;
@@ -1079,16 +1078,14 @@ export class StoreService {
         'YYYY-MM-DD',
       )}`;
     }
-    if (limit) {
-      filter = `${filter}&limit=${limit}`;
-    }
+
     while (flag == true) {
       let limitedOrders = await lastValueFrom(
         this.httpService
           .get(
             `${this.configService.get('bigcom').url}/stores/${
               this.configService.get('bigcom').store
-            }/${uri}?page=${page}&${filter}`,
+            }/${uri}?limit=250&page=${page}&${filter}`,
             {
               headers: {
                 'x-auth-token': this.configService.get('bigcom').access_token,
