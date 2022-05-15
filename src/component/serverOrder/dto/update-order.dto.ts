@@ -8,6 +8,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+
 import { OrderEnum } from '../entity/server-order.entity';
 
 export class UpdateOrderDto {

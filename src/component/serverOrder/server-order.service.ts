@@ -262,27 +262,51 @@ export class ServerOrderService {
     return this.findOne(id);
   }
 
+  async updateServerOrderStatus(
+    id: number,
+    orderStatus: number,
+  ): Promise<ServerOrder> {
+    const order = await this.findOne(id);
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+    await this.serverOrderRepository.update(order.id, {
+      orderStatus,
+    });
+    return this.findOne(id);
+  }
+
+  async updateOrderDetails(
+    id: number,
+    createOrderHistoryDto: CreateOrderHistoryDto,
+    orderStatus: number,
+    createOrderDto: CreateOrderDto,
+  ): Promise<ServerOrder> {
+    try {
+      await this.ordersService.updateOrder(`${id}`, createOrderDto);
+      const response = await Promise.all([
+        this.updateServerOrderStatus(id, orderStatus),
+        this.orderHistoryService.create(createOrderHistoryDto),
+      ]);
+      return response[0];
+    } catch (err) {
+      throw new BadRequestException(err.message);
+    }
+  }
+
   async cancelOrder(
     id: number,
-    orderId: string,
-    createOrderDto: CreateOrderDto,
+    orderHistory: CreateOrderHistoryDto,
+    orderDetails: CreateOrderDto,
     serverOrder: UpdateOrderDto,
-    createOrderHistoryDto: CreateOrderHistoryDto,
-    username: string,
-    password: string,
   ): Promise<ServerOrder> {
-    const requests = [];
     try {
-      // check if username and password exists
-      await this.authService.validateCredentials(username, password);
-      const resp = await this.ordersService.updateOrder(
-        orderId,
-        createOrderDto,
-      );
+      const resp = await this.ordersService.updateOrder(`${id}`, orderDetails);
       console.log('res', resp);
-      requests.push(this.updateServerOrder(id, serverOrder));
-      requests.push(this.orderHistoryService.create(createOrderHistoryDto));
-      const response = await Promise.all(requests);
+      const response = await Promise.all([
+        this.updateServerOrder(id, serverOrder),
+        this.orderHistoryService.create(orderHistory),
+      ]);
       console.log('response', response);
       return response[0];
     } catch (err) {

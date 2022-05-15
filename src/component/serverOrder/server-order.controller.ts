@@ -41,6 +41,10 @@ import { UpdateCustomerProofDto } from './dto/update-customer-proof.dto';
 import { CustomerProof } from './entity/customer-proof.entity';
 import { PaymentDetails } from './entity/payment-details.entity';
 import { CancelOrderDto } from './dto/cancel-order.dto';
+import { UpdateOrderHistoryDto } from '../order-history/dto/update-order-history.dto';
+import { CreateOrderHistoryDto } from '../order-history/dto/create-order-history.dto';
+import { CreateOrderDto } from '../orders/dto';
+import LocalAuthGuard from 'src/guards/local-auth.guard';
 
 @ApiTags('server-order')
 @ApiBearerAuth()
@@ -59,12 +63,8 @@ export class ServerOrderController {
   @HttpCode(HttpStatus.CREATED)
   @Post('/')
   async create(@Body() serverOrder: CreateServerOrderDto) {
-    try {
-      const order = await this.serverOrderService.addServerOrder(serverOrder);
-      return order;
-    } catch (error) {
-      throw error;
-    }
+    const order = await this.serverOrderService.addServerOrder(serverOrder);
+    return order;
   }
 
   @ApiQuery({
@@ -112,26 +112,22 @@ export class ServerOrderController {
     @Query('orderType') orderType: string,
     @Query('storeId') storeId: string,
   ) {
-    try {
-      // const filter = {
-      //   search: searchText,
-      //   status: orderStatus,
-      // };
-      const { take, skip, sort } = paginationDto;
-      return this.serverOrderService.findAllServerOrder(
-        searchFromDate,
-        searchToDate,
-        orderStatus,
-        take,
-        skip,
-        storeId,
-        sort,
-        search,
-        orderType,
-      );
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    }
+    // const filter = {
+    //   search: searchText,
+    //   status: orderStatus,
+    // };
+    const { take, skip, sort } = paginationDto;
+    return this.serverOrderService.findAllServerOrder(
+      searchFromDate,
+      searchToDate,
+      orderStatus,
+      take,
+      skip,
+      storeId,
+      sort,
+      search,
+      orderType,
+    );
   }
 
   @UseGuards(JwtAccessGuard)
@@ -178,16 +174,12 @@ export class ServerOrderController {
     @Param('id', ParseIntPipe) serverOrderId: number,
     @Body() customerProof: UpdateCustomerProofDto,
   ): Promise<CustomerProof> {
-    try {
-      const response = await this.serverOrderService.updateCustomerProof(
-        serverOrderId,
-        customerProof,
-      );
-      // update order on Big commerce data
-      return response;
-    } catch (err) {
-      throw err;
-    }
+    const response = await this.serverOrderService.updateCustomerProof(
+      serverOrderId,
+      customerProof,
+    );
+    // update order on Big commerce data
+    return response;
   }
 
   @UseGuards(JwtAccessGuard)
@@ -246,12 +238,34 @@ export class ServerOrderController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete('postFeed/:id')
   async deletePostFeed(@Param('id', ParseIntPipe) PostFeedId: number) {
-    try {
-      const response = await this.serverOrderService.removePostFeed(PostFeedId);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await this.serverOrderService.removePostFeed(PostFeedId);
+    return response;
+  }
+
+  @ApiOkResponse({ description: '204. Success', type: Order })
+  @ApiNotFoundResponse({ description: 'order not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
+  @UseGuards(LocalAuthGuard)
+  @UseGuards(JwtAccessGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('/cancel-order/:id')
+  async cancelOrder(
+    @Param('id', ParseIntPipe) id: number,
+    @Body()
+    data: {
+      orderHistory: CreateOrderHistoryDto;
+      orderDetails: CreateOrderDto;
+      serverOrder: UpdateOrderDto;
+    },
+  ): Promise<any> {
+    const { orderHistory, orderDetails, serverOrder } = data;
+    const response = await this.serverOrderService.cancelOrder(
+      id,
+      orderHistory,
+      orderDetails,
+      serverOrder,
+    );
+    return response;
   }
 
   @ApiOkResponse({ description: '200. Success', type: Order })
@@ -273,55 +287,24 @@ export class ServerOrderController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
   @UseGuards(JwtAccessGuard)
   @HttpCode(HttpStatus.OK)
-  @Post('/cancel-order/:id')
-  async cancelOrder(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() cancelOrderDto: CancelOrderDto,
-  ): Promise<Order> {
-    try {
-      const {
-        orderId,
-        createOrderDto,
-        serverOrder,
-        createOrderHistoryDto,
-        username,
-        password,
-      } = cancelOrderDto;
-      const response = await this.serverOrderService.cancelOrder(
-        id,
-        orderId,
-        createOrderDto,
-        serverOrder,
-        createOrderHistoryDto,
-        username,
-        password,
-      );
-      return response;
-    } catch (err) {
-      throw err;
-    }
-  }
-
-  @ApiOkResponse({ description: '204. Success', type: Order })
-  @ApiNotFoundResponse({ description: 'order not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(JwtAccessGuard)
-  @HttpCode(HttpStatus.OK)
   @Patch('/:id')
   async updateServerOrder(
     @Param('id', ParseIntPipe) serverOrderId: number,
-    @Body() serverOrder: UpdateOrderDto,
-  ): Promise<Order> {
-    try {
-      const response = await this.serverOrderService.updateServerOrder(
-        serverOrderId,
-        serverOrder,
-      );
-      // update order on Big commerce data
-      return response;
-    } catch (err) {
-      throw err;
-    }
+    @Body()
+    data: {
+      orderStatus: number;
+      orderHistory: CreateOrderHistoryDto;
+      orderDetails: CreateOrderDto;
+    },
+  ): Promise<any> {
+    const { orderHistory, orderStatus, orderDetails } = data;
+    const response = await this.serverOrderService.updateOrderDetails(
+      serverOrderId,
+      orderHistory,
+      orderStatus,
+      orderDetails,
+    );
+    return response;
   }
 
   @ApiNoContentResponse()
@@ -331,24 +314,9 @@ export class ServerOrderController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete('/:id')
   async deleteOrder(@Param('id', ParseIntPipe) serverOrderId: number) {
-    try {
-      const response = await this.serverOrderService.removeServerOrder(
-        serverOrderId,
-      );
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await this.serverOrderService.removeServerOrder(
+      serverOrderId,
+    );
+    return response;
   }
-
-  // async importMultipleOrders(
-  //   @Body() serverOrders: ServerOrder[],
-  // ): Promise<any> {
-  //   const response = await this.serverOrderService.bulkImportServerOrder(
-  //     serverOrders,
-  //   );
-
-  //   // update order on Big commerce data
-  //   return response;
-  // }
 }

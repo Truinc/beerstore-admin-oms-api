@@ -1,17 +1,16 @@
-import { BIG_COMMERCE_BASE_URL } from '../constants';
 import { ApiVersion, ApiType } from '../interfaces/urls';
 import { AxiosError } from 'axios';
 import { Observable, of } from 'rxjs';
 
-export function getBigCommUrl(
-  apiVersion: ApiVersion,
-  apiType: ApiType,
-  queryStr?: string,
-) {
-  return `${BIG_COMMERCE_BASE_URL}/stores/${
-    process.env.STORE_HASH
-  }/${apiVersion}/${apiType}${queryStr ? queryStr : ''}`;
-}
+// export function getBigCommUrl(
+//   apiVersion: ApiVersion,
+//   apiType: ApiType,
+//   queryStr?: string,
+// ) {
+//   return `${BIG_COMMERCE_BASE_URL}/stores/${
+//     process.env.STORE_HASH
+//   }/${apiVersion}/${apiType}${queryStr ? queryStr : ''}`;
+// }
 
 /**
  * checks if only permitted params in the query

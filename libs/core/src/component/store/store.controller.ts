@@ -336,12 +336,20 @@ export class StoreController {
   async getAllExtraFeatures() {
     return [
       {
-        code: 'pickup_available',
-        feature: 'In-Store Pickup',
+        code: 'accept_empties',
+        feature: 'Empties Accepted',
+      },
+      {
+        code: 'kiosk_available',
+        feature: 'Self-Serve Kiosk',
       },
       {
         code: 'delivery_available',
         feature: 'Home Delivery',
+      },
+      {
+        code: 'pickup_available',
+        feature: 'In-Store Pickup',
       },
       {
         code: 'curbside_available',
@@ -352,19 +360,10 @@ export class StoreController {
         code: 'drive_thru_available',
         feature: 'Drive-thru',
       },
-
       // {
       //   code: 'not_accept_empties',
       //   feature: 'Currently Not Accepting Empties',
       // },
-      {
-        code: 'kiosk_available',
-        feature: 'Self-Serve Kiosk',
-      },
-      {
-        code: 'accept_empties',
-        feature: 'Empties Accepted',
-      },
     ];
   }
 
@@ -454,39 +453,5 @@ export class StoreController {
     } catch (error) {
       throw error;
     }
-  }
-
-  @ApiQuery({
-    name: 'status_id',
-    description: '1,2,3',
-    required: false,
-  })
-  @ApiQuery({
-    name: 'min_id',
-    required: false,
-    description: 'The minimum order ID',
-  })
-  @ApiQuery({
-    name: 'max_id',
-    required: false,
-    description: 'The maximum order ID',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    description:
-      'Controls the number of items per page in a limited (paginated) list of products.',
-  })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(JwtAccessGuard)
-  @HttpCode(HttpStatus.OK)
-  @Get('/orders/getAllOrders')
-  async getAllOrders(
-    @Query('status_id') status_id: number,
-    @Query('min_id') min_id: number,
-    @Query('max_id') max_id: number,
-    @Query('limit') limit: number,
-  ) {
-    return this.storeService.getAllOrders(status_id, min_id, max_id, limit);
   }
 }

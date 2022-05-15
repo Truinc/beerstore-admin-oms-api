@@ -2,11 +2,7 @@ import { BeerService } from '@beerstore/core/component/beer/beer.service';
 import { Beer } from '@beerstore/core/component/beer/entities/beer.entity';
 import { StoreService } from '@beerstore/core/component/store/store.service';
 import { ApiType, ApiVersion } from '@beerstore/core/interfaces/urls';
-import {
-  getBigCommUrl,
-  handleError,
-  serviceHeader,
-} from '@beerstore/core/utils';
+import { handleError } from '@beerstore/core/utils';
 import { HttpService } from '@nestjs/axios';
 import {
   Injectable,
@@ -440,9 +436,6 @@ export class CheckoutsService {
     ]);
 
     const body = { line_items, address: shippingAddress };
-
-    // return body;
-
     const response = await lastValueFrom(
       this.httpService
         .post(
@@ -477,37 +470,78 @@ export class CheckoutsService {
     consignmentId: string,
     createCheckoutDto: CreateCheckoutDto,
   ): Observable<any> {
+    const uri = `v3/orders`;
     const queryStr = `/${checkoutId}/consignments/${consignmentId}`;
-    const url = `${getBigCommUrl(ApiVersion.V3, ApiType.Checkouts, queryStr)}`;
-    return this.httpService.put(url, createCheckoutDto, serviceHeader()).pipe(
-      map((response) => response.data),
-      catchError(handleError<any>(null)),
-    );
+    return this.httpService
+      .put(
+        `${this.configService.get('bigcom').url}/stores/${
+          this.configService.get('bigcom').store
+        }/${uri}${queryStr}`,
+        createCheckoutDto,
+        {
+          headers: {
+            'x-auth-token': this.configService.get('bigcom').access_token,
+          },
+        },
+      )
+      .pipe(
+        map((response) => response.data),
+        catchError(handleError<any>(null)),
+      );
   }
 
-  updateBillingAddress(
+  async updateBillingAddress(
     checkoutId: string,
     addressId: string,
     createCheckoutDto: CreateCheckoutDto,
-  ): Observable<any> {
+  ): Promise<any> {
+    const uri = `v2/orders`;
     const queryStr = `/${checkoutId}/billing-address/${addressId}`;
-    const url = `${getBigCommUrl(ApiVersion.V3, ApiType.Checkouts, queryStr)}`;
-    return this.httpService.put(url, createCheckoutDto, serviceHeader()).pipe(
-      map((response) => response.data),
-      catchError(handleError<any>(null)),
+    const response = await lastValueFrom(
+      this.httpService
+        .put(
+          `${this.configService.get('bigcom').url}/stores/${
+            this.configService.get('bigcom').store
+          }/${uri}${queryStr}`,
+          createCheckoutDto,
+          {
+            headers: {
+              'x-auth-token': this.configService.get('bigcom').access_token,
+            },
+          },
+        )
+        .pipe(
+          map((response) => response.data),
+          catchError(handleError<any>(null)),
+        ),
     );
+    return response;
   }
 
-  deleteShippingAddress(
+  async deleteShippingAddress(
     checkoutId: string,
     consignmentId: string,
-  ): Observable<any> {
+  ): Promise<any> {
+    const uri = `v3/orders`;
     const queryStr = `/${checkoutId}/consignments/${consignmentId}`;
-    const url = `${getBigCommUrl(ApiVersion.V3, ApiType.Checkouts, queryStr)}`;
-    return this.httpService.delete(url, serviceHeader()).pipe(
-      map((response) => response.data),
-      catchError(handleError<any>(null)),
+    const response = await lastValueFrom(
+      this.httpService
+        .delete(
+          `${this.configService.get('bigcom').url}/stores/${
+            this.configService.get('bigcom').store
+          }/${uri}${queryStr}`,
+          {
+            headers: {
+              'x-auth-token': this.configService.get('bigcom').access_token,
+            },
+          },
+        )
+        .pipe(
+          map((response) => response.data),
+          catchError(handleError<any>(null)),
+        ),
     );
+    return response;
   }
 
   async checkKegInCart(checkoutId: string) {
