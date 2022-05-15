@@ -15,7 +15,7 @@ import {
   getConnection,
   Repository,
   getRepository,
-  TableForeignKey,
+  // TableForeignKey,
   Between,
 } from 'typeorm';
 
@@ -1055,8 +1055,9 @@ export class StoreService {
 
   async getAllOrders(
     status_id: number,
-    min_id: number,
-    max_id: number,
+    store_id: number,
+    min_date_created: Date,
+    max_date_created: Date,
     limit: number,
   ): Promise<any> {
     let filter = ``;
@@ -1068,17 +1069,21 @@ export class StoreService {
     if (status_id) {
       filter = `${filter}&status_id=${status_id}`;
     }
-    if (min_id) {
-      filter = `${filter}&min_id=${min_id}`;
+    if (min_date_created) {
+      filter = `${filter}&min_date_created=${moment(min_date_created).format(
+        'YYYY-MM-DD',
+      )}`;
     }
-    if (max_id) {
-      filter = `${filter}&max_id=${max_id}`;
+    if (max_date_created) {
+      filter = `${filter}&max_date_created=${moment(max_date_created).format(
+        'YYYY-MM-DD',
+      )}`;
     }
     if (limit) {
       filter = `${filter}&limit=${limit}`;
     }
     while (flag == true) {
-      const limitedOrders = await lastValueFrom(
+      let limitedOrders = await lastValueFrom(
         this.httpService
           .get(
             `${this.configService.get('bigcom').url}/stores/${
@@ -1105,8 +1110,16 @@ export class StoreService {
             }),
           ),
       );
-      limitedOrders.map((o) => {
-        orders.push(o);
+      if (store_id) {
+        limitedOrders = limitedOrders.filter((e) => {
+          const value = JSON.parse(e.billing_address.form_fields[0].value);
+          if (value.store_id == store_id) {
+            return e;
+          }
+        });
+      }
+      limitedOrders.map((order) => {
+        orders.push(order);
       });
     }
     // console.log(orders.length);

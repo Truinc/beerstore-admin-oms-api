@@ -15,9 +15,9 @@ import {
   ParseFloatPipe,
   ParseBoolPipe,
   DefaultValuePipe,
-  CacheInterceptor,
-  UseInterceptors,
-  CacheTTL,
+  // CacheInterceptor,
+  // UseInterceptors,
+  // CacheTTL,
   Post,
   Delete,
 } from '@nestjs/common';
@@ -462,14 +462,19 @@ export class StoreController {
     required: false,
   })
   @ApiQuery({
-    name: 'min_id',
+    name: 'store_id',
+    description: 'store id of store i.e. 12321',
     required: false,
-    description: 'The minimum order ID',
   })
   @ApiQuery({
-    name: 'max_id',
+    name: 'min_date_created',
     required: false,
-    description: 'The maximum order ID',
+    description: 'Minimum date the order was created i.e. 2021-04-20',
+  })
+  @ApiQuery({
+    name: 'max_date_created',
+    required: false,
+    description: 'Maximum date the order was created i.e. 2022-04-20',
   })
   @ApiQuery({
     name: 'limit',
@@ -483,10 +488,17 @@ export class StoreController {
   @Get('/orders/getAllOrders')
   async getAllOrders(
     @Query('status_id') status_id: number,
-    @Query('min_id') min_id: number,
-    @Query('max_id') max_id: number,
+    @Query('store_id') store_id: number,
+    @Query('min_date_created') min_date_created: Date,
+    @Query('max_date_created') max_date_created: Date,
     @Query('limit') limit: number,
   ) {
-    return this.storeService.getAllOrders(status_id, min_id, max_id, limit);
+    return this.storeService.getAllOrders(
+      status_id,
+      store_id,
+      min_date_created,
+      max_date_created,
+      limit,
+    );
   }
 }
