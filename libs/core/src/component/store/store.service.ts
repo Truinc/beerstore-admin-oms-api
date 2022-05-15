@@ -2,6 +2,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import {
+  BadGatewayException,
   BadRequestException,
   HttpException,
   Injectable,
@@ -14,7 +15,7 @@ import {
   getConnection,
   Repository,
   getRepository,
-  TableForeignKey,
+  // TableForeignKey,
   Between,
 } from 'typeorm';
 
@@ -1050,6 +1051,76 @@ export class StoreService {
 
   async getHoliday(id: number): Promise<any> {
     return this.storeHolidayHrsRepository.findOne(id);
+  }
+
+  async getAllOrders(
+    status_id: number,
+    store_id: number,
+    min_date_created: Date,
+    max_date_created: Date,
+  ): Promise<any> {
+    let filter = ``;
+    const uri = `v2/orders`;
+    const orders = [];
+    let flag = true;
+    let page = 1;
+
+    if (status_id) {
+      filter = `${filter}&status_id=${status_id}`;
+    }
+    if (min_date_created) {
+      filter = `${filter}&min_date_created=${moment(min_date_created).format(
+        'YYYY-MM-DD',
+      )}`;
+    }
+    if (max_date_created) {
+      filter = `${filter}&max_date_created=${moment(max_date_created).format(
+        'YYYY-MM-DD',
+      )}`;
+    }
+
+    while (flag == true) {
+      let limitedOrders = await lastValueFrom(
+        this.httpService
+          .get(
+            `${this.configService.get('bigcom').url}/stores/${
+              this.configService.get('bigcom').store
+            }/${uri}?limit=250&page=${page}&${filter}`,
+            {
+              headers: {
+                'x-auth-token': this.configService.get('bigcom').access_token,
+              },
+            },
+          )
+          .pipe(
+            map((response) => {
+              if (response.data && response.data.length) {
+                page += 1;
+                return response.data;
+              } else {
+                flag = false;
+                return orders;
+              }
+            }),
+            catchError((err) => {
+              throw new BadGatewayException(err.message);
+            }),
+          ),
+      );
+      if (store_id) {
+        limitedOrders = limitedOrders.filter((e) => {
+          const value = JSON.parse(e.billing_address.form_fields[0].value);
+          if (value.store_id == store_id) {
+            return e;
+          }
+        });
+      }
+      limitedOrders.map((order) => {
+        orders.push(order);
+      });
+    }
+    // console.log(orders.length);
+    return orders;
   }
 }
 
