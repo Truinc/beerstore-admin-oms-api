@@ -30,24 +30,6 @@ export class OrdersService {
     return order;
   }
 
-  async getOrderDetails(orderId: string): Promise<any> {
-    try {
-      const allReq = [
-        this.getOrder(orderId),
-        this.getOrderProducts(orderId),
-        this.getShippingAddresses(orderId),
-      ];
-      const resp = await Promise.all(allReq);
-      return {
-        order: resp[0] || [],
-        orderProducts: resp[1] || [],
-        orderAddresses: resp[2] || [],
-      };
-    } catch (err) {
-      throw new BadRequestException(err.message);
-    }
-  }
-
   async getOrderProducts(orderId: string): Promise<any> {
     const queryStr = `/${orderId}/products`;
     const url = `${getBigCommUrl(ApiVersion.V2, ApiType.Orders, queryStr)}`;
@@ -72,6 +54,25 @@ export class OrdersService {
       ),
     );
     return addresses;
+  }
+
+  async getOrderDetails(orderId: string): Promise<any> {
+    try {
+      const allReq = [
+        this.getOrder(orderId),
+        this.getOrderProducts(orderId),
+        this.getShippingAddresses(orderId),
+      ];
+      const resp = await Promise.all(allReq);
+      console.log('resp', resp);
+      return {
+        order: resp[0] || [],
+        orderProducts: resp[1] || [],
+        orderAddresses: resp[2] || [],
+      };
+    } catch (err) {
+      throw new BadRequestException(err.message);
+    }
   }
 
   createOrder(createOrderDto: CreateOrderDto): Observable<Order> {

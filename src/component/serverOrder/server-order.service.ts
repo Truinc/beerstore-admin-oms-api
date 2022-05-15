@@ -110,14 +110,20 @@ export class ServerOrderService {
   async completeDetail(orderId: number) {
     try {
       const resp = await Promise.all([
+        this.ordersService.getOrderDetails(`${orderId}`),
         this.serverOrderRepository.findOne({
           where: { orderId },
         }),
         this.findAllPostFeed(orderId),
+        this.orderHistoryService.findAll(1000, 0, null, {
+          order: `${orderId}`,
+        }),
       ]);
       return {
-        order: resp[0] || [],
-        orderFeed: resp[1] || [],
+        orderDetails: resp[0],
+        serverOrder: resp[1] || [],
+        orderFeed: resp[2] || [],
+        orderHistory: resp[3]?.items || [],
       };
     } catch (error) {
       throw new BadRequestException(error.message);
