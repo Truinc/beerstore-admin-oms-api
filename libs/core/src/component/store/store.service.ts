@@ -2,6 +2,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import {
+  BadGatewayException,
   BadRequestException,
   HttpException,
   Injectable,
@@ -1050,6 +1051,66 @@ export class StoreService {
 
   async getHoliday(id: number): Promise<any> {
     return this.storeHolidayHrsRepository.findOne(id);
+  }
+
+  async getAllOrders(
+    status_id: number,
+    min_id: number,
+    max_id: number,
+    limit: number,
+  ): Promise<any> {
+    let filter = ``;
+    const uri = `v2/orders`;
+    const orders = [];
+    let flag = true;
+    let page = 1;
+
+    if (status_id) {
+      filter = `${filter}&status_id=${status_id}`;
+    }
+    if (min_id) {
+      filter = `${filter}&min_id=${min_id}`;
+    }
+    if (max_id) {
+      filter = `${filter}&max_id=${max_id}`;
+    }
+    if (limit) {
+      filter = `${filter}&limit=${limit}`;
+    }
+    while (flag == true) {
+      const limitedOrders = await lastValueFrom(
+        this.httpService
+          .get(
+            `${this.configService.get('bigcom').url}/stores/${
+              this.configService.get('bigcom').store
+            }/${uri}?page=${page}&${filter}`,
+            {
+              headers: {
+                'x-auth-token': this.configService.get('bigcom').access_token,
+              },
+            },
+          )
+          .pipe(
+            map((response) => {
+              if (response.data && response.data.length) {
+                page += 1;
+                return response.data;
+              } else {
+                flag = false;
+                return orders;
+              }
+            }),
+            catchError((err) => {
+              throw new BadGatewayException(err.message);
+            }),
+          ),
+      );
+      limitedOrders.map((o) => {
+        orders.push(o);
+      });
+    }
+    // console.log(orders.length);
+    return orders;
   }
 }
 
