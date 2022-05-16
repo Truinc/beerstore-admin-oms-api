@@ -287,6 +287,34 @@ export class ServerOrderController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
   @UseGuards(JwtAccessGuard)
   @HttpCode(HttpStatus.OK)
+  @Patch('finish-order/:id')
+  async finishOrder(
+    @Param('id', ParseIntPipe) serverOrderId: number,
+    @Body()
+    data: {
+      orderDetails: CreateOrderDto;
+      serverOrder: UpdateOrderDto;
+      orderHistory: CreateOrderHistoryDto;
+      customerProof: CreateCustomerProofDto;
+    },
+  ): Promise<any> {
+    const { orderHistory, orderDetails, serverOrder, customerProof } = data;
+    console.log('data', data);
+    const response = await this.serverOrderService.updateOrder(
+      `${serverOrderId}`,
+      orderDetails,
+      serverOrder,
+      orderHistory,
+      customerProof,
+    );
+    return response;
+  }
+
+  @ApiOkResponse({ description: '204. Success', type: Order })
+  @ApiNotFoundResponse({ description: 'order not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
+  @UseGuards(JwtAccessGuard)
+  @HttpCode(HttpStatus.OK)
   @Patch('/:id')
   async updateServerOrder(
     @Param('id', ParseIntPipe) serverOrderId: number,

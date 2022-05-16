@@ -315,7 +315,6 @@ export class ServerOrderService {
   }
 
   async updateOrder(
-    id: number,
     orderId: string,
     createOrderDto: CreateOrderDto,
     serverOrder: UpdateOrderDto,
@@ -328,10 +327,9 @@ export class ServerOrderService {
         orderId,
         createOrderDto,
       );
-      console.log('res', resp);
-      requests.push(this.updateServerOrder(id, serverOrder));
+      requests.push(this.updateServerOrder(+orderId, serverOrder));
       requests.push(this.orderHistoryService.create(createOrderHistoryDto));
-      requests.push(this.updateCustomerProof(+orderId, customerProof));
+      requests.push(this.addCustomerProof(customerProof));
       const response = await Promise.all(requests);
       console.log('response', response);
       return response[0];
