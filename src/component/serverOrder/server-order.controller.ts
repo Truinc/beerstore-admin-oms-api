@@ -69,7 +69,7 @@ export class ServerOrderController {
 
   @ApiQuery({
     required: false,
-    name: 'search',
+    name: 'searchText',
   })
   @ApiQuery({
     required: true,
@@ -105,17 +105,13 @@ export class ServerOrderController {
   async findAll(
     @Query(PaginationInputPipe)
     paginationDto: PaginationInputDto,
-    @Query('search') search: string,
+    @Query('searchText') searchText: string,
     @Query('orderStatus') orderStatus: number,
     @Query('searchFromDate') searchFromDate: string,
     @Query('searchToDate') searchToDate: string,
     @Query('orderType') orderType: string,
     @Query('storeId') storeId: string,
   ) {
-    // const filter = {
-    //   search: searchText,
-    //   status: orderStatus,
-    // };
     const { take, skip, sort } = paginationDto;
     return this.serverOrderService.findAllServerOrder(
       searchFromDate,
@@ -125,7 +121,7 @@ export class ServerOrderController {
       skip,
       storeId,
       sort,
-      search,
+      searchText,
       orderType,
     );
   }

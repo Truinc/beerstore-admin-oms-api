@@ -49,8 +49,7 @@ export class ServerOrderService {
     search?: string,
     orderType?: string,
   ): Promise<object> {
-    const table = getRepository(ServerOrder).createQueryBuilder('ServerOrder');
-
+    const table = this.serverOrderRepository.createQueryBuilder('ServerOrder');
     if (status) {
       table.where('ServerOrder.orderStatus = :orderStatus', {
         orderStatus: status,
@@ -84,8 +83,10 @@ export class ServerOrderService {
       table.andWhere(
         new Brackets((qb) => {
           qb.where('ServerOrder.customerName like :customerName', {
-            customerName: search,
-          }).orWhere('ServerOrder.orderId = :orderId', { orderId: search });
+            customerName: `%${search}%`,
+          }).orWhere('ServerOrder.orderId like :orderId', {
+            orderId: `%${search}%`,
+          });
         }),
       );
     }
