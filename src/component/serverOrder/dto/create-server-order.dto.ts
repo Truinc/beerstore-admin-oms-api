@@ -1,13 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsDate,
   IsEmail,
   IsEnum,
-  IsMilitaryTime,
   IsNotEmpty,
   IsOptional,
   IsString,
-  maxLength,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -80,7 +77,7 @@ export class CreateServerOrderDto {
   @ApiProperty({ type: String })
   @IsNotEmpty()
   @IsString()
-  @IsMilitaryTime()
+  @MaxLength(50)
   readonly fulfillmentTime: string;
 
   @ApiProperty({ type: String })

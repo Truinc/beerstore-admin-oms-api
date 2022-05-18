@@ -63,7 +63,7 @@ export class ServerOrderController {
   @UseGuards(ExternalGuard)
   @HttpCode(HttpStatus.CREATED)
   @Post('/')
-  async create(@Body() serverOrder: any) {
+  async create(@Body() serverOrder: CreateServerOrderDto) {
     const order = await this.serverOrderService.addServerOrder(serverOrder);
     return order;
   }

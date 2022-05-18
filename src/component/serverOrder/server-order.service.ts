@@ -21,6 +21,7 @@ import { PostFeed } from './entity/post-feed.entity';
 import { OrderEnum, ServerOrder } from './entity/server-order.entity';
 import { CreateOrderDto } from '../orders/dto/createOrder.dto';
 import AuthService from '../auth/auth.service';
+import * as moment from 'moment';
 
 @Injectable()
 export class ServerOrderService {
@@ -224,15 +225,23 @@ export class ServerOrderService {
     return this.postFeedRepository.delete(id);
   }
 
-  async addServerOrder(
-    // serverOrder: CreateServerOrderDto,
-    serverOrder: any,
-  ): Promise<any> {
+  async addServerOrder(serverOrder: CreateServerOrderDto): Promise<string> {
     try {
-      // const createOrder = await this.serverOrderRepository.create(serverOrder);
-      // const order = await this.serverOrderRepository.save(createOrder);
+      const timeSplit = serverOrder.fulfillmentTime.split('-') || '';
+      const serverOrdeParsed = {
+        ...serverOrder,
+        fulfillmentTime: moment(timeSplit[0]?.trim(), ['h:mm A']).format(
+          'HH:mm:ss',
+        ),
+        orderTime: moment(serverOrder.orderTime, ['h:mm A']).format('HH:mm:ss'),
+      };
+
+      const createOrder = await this.serverOrderRepository.create(
+        serverOrdeParsed,
+      );
+      const order = await this.serverOrderRepository.save(createOrder);
       // return this.findOne(+order.orderId);
-      return 'order placed';
+      return 'Order placed';
     } catch (err) {
       throw new BadRequestException(err.message);
     }
