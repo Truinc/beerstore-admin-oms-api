@@ -225,12 +225,14 @@ export class ServerOrderService {
   }
 
   async addServerOrder(
-    serverOrder: CreateServerOrderDto,
-  ): Promise<ServerOrder> {
+    // serverOrder: CreateServerOrderDto,
+    serverOrder: any,
+  ): Promise<any> {
     try {
-      const createOrder = await this.serverOrderRepository.create(serverOrder);
-      const order = await this.serverOrderRepository.save(createOrder);
-      return this.findOne(+order.orderId);
+      // const createOrder = await this.serverOrderRepository.create(serverOrder);
+      // const order = await this.serverOrderRepository.save(createOrder);
+      // return this.findOne(+order.orderId);
+      return 'order placed';
     } catch (err) {
       throw new BadRequestException(err.message);
     }

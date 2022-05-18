@@ -18,14 +18,18 @@ export class CreateServerOrderDto {
     if (body) {
       this.orderId = body.orderId;
       this.storeId = body.storeId;
+      this.orderTime = body.orderTime;
       this.orderType = body.orderType;
+      this.orderDate = body.orderDate;
       this.orderStatus = body.orderStatus;
       this.customerName = body.customerName;
+      this.employeeNote = body.employeeNote;
       this.customerEmail = body.customerEmail;
-
+      this.cancellationBy = body.cancellationBy;
       this.fulfillmentDate = body.fulfillmentDate;
       this.fulfillmentTime = body.fulfillmentTime;
-      this.orderDate = body.orderDate;
+      this.cancellationDate = body.cancellationDate;
+      this.cancellationReason = body.cancellationReason;
     }
   }
 
@@ -83,6 +87,11 @@ export class CreateServerOrderDto {
   @IsNotEmpty()
   @IsString()
   readonly orderDate: string;
+
+  @ApiProperty({ type: String })
+  @IsNotEmpty()
+  @IsString()
+  readonly orderTime: string;
 
   @ApiProperty({ type: String })
   @IsOptional()

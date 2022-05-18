@@ -9,10 +9,11 @@ import { UserModule } from '../user/user.module';
 import { TokenModule } from '../token/token.module';
 import LocalStrategy from './strategies/local.strategy';
 import JwtAccessStrategy from './strategies/jwt-access.strategy';
+import ExternalStrategy from './strategies/external.strategy';
 
 @Module({
   imports: [PassportModule, ConfigModule, UserModule, TokenModule],
-  providers: [AuthService, LocalStrategy, JwtAccessStrategy],
+  providers: [AuthService, LocalStrategy, JwtAccessStrategy, ExternalStrategy],
   controllers: [AuthController],
   exports: [AuthService],
 })

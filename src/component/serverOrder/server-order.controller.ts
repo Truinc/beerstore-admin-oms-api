@@ -45,6 +45,7 @@ import { UpdateOrderHistoryDto } from '../order-history/dto/update-order-history
 import { CreateOrderHistoryDto } from '../order-history/dto/create-order-history.dto';
 import { CreateOrderDto } from '../orders/dto';
 import LocalAuthGuard from 'src/guards/local-auth.guard';
+import ExternalGuard from '@beerstore/core/guards/external.guard';
 
 @ApiTags('server-order')
 @ApiBearerAuth()
@@ -59,10 +60,10 @@ export class ServerOrderController {
     description: '400. ValidationException',
   })
   @ApiUnauthorizedResponse({ description: 'UnauthorizedResponse' })
-  @UseGuards(JwtAccessGuard)
+  @UseGuards(ExternalGuard)
   @HttpCode(HttpStatus.CREATED)
   @Post('/')
-  async create(@Body() serverOrder: CreateServerOrderDto) {
+  async create(@Body() serverOrder: any) {
     const order = await this.serverOrderService.addServerOrder(serverOrder);
     return order;
   }
