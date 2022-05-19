@@ -43,15 +43,15 @@ export const userPermissions = {
     // RolesEnum.customerservicerep,
   ],
   storerepresentative: [
-    RolesEnum.storerepresentative,
-    RolesEnum.reportingadmin,
-    RolesEnum.ithelpdesk,
-    RolesEnum.customerservicerep,
+    // RolesEnum.storerepresentative,
+    // RolesEnum.reportingadmin,
+    // RolesEnum.ithelpdesk,
+    // RolesEnum.customerservicerep,
   ],
   reportingadmin: [
-    RolesEnum.reportingadmin,
-    RolesEnum.ithelpdesk,
-    RolesEnum.customerservicerep,
+    // RolesEnum.reportingadmin,
+    // RolesEnum.ithelpdesk,
+    // RolesEnum.customerservicerep,
   ],
   ithelpdesk: [
     RolesEnum.storemanager,

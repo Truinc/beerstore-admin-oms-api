@@ -81,14 +81,15 @@ export class UserController {
     @Req() request: HttpRequest & { user: User },
   ) {
     const {
-      user: { role },
-    } = request;
+      user: { role, usersStores },
+    } = request || { usersStores: [] };
     try {
       const { take, skip, sort } = paginationDto;
       const users = this.userService.findAll(
         take,
         skip,
         role,
+        usersStores,
         sort,
         search,
         isManager,

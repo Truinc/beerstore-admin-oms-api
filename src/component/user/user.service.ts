@@ -59,11 +59,16 @@ export class UserService {
     take: number,
     skip: number,
     userRole: string,
+    usersStores: UserStores[],
     sort?: object,
     search?: string,
     isManager?: number,
   ): Promise<object> {
     try {
+      const storesList =
+        usersStores.map((store) => {
+          return store.storeId;
+        }) || [];
       const table = this.usersRepository.createQueryBuilder('User');
       const value = {};
       const where = [];
@@ -94,6 +99,13 @@ export class UserService {
           ? `( ${queryString} ) AND role IN (:...roles)`
           : `role IN (:...roles)`;
         Object.assign(value, { roles: userPermissions[userRole] });
+      }
+
+      if (userRole === 'storemanager' && storesList.length) {
+        queryString = queryString
+          ? `( ${queryString} ) AND storeId IN (:...stores)`
+          : `storeId IN (:...stores)`;
+        Object.assign(value, { stores: storesList });
       }
 
       table.where(queryString, value);
