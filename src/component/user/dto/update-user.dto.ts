@@ -17,12 +17,17 @@ export class UpdateUserDto {
       this.username = body.username;
       this.firstName = body.firstName;
       this.lastName = body.lastName;
+      this.employeeId = body.employeeId;
       this.isActive = body.isActive;
       this.role = body.role;
       // this.password = body.password;
       this.manager = body.manager;
     }
   }
+
+  @ApiProperty({ type: String })
+  @IsString()
+  readonly employeeId: string;
 
   @ApiProperty({ type: String })
   @IsOptional()

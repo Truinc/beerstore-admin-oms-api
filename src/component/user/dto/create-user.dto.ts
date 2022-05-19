@@ -14,6 +14,7 @@ import { RolesEnum } from '../entity/user.entity';
 export class CreateUserDto {
   constructor(body: CreateUserDto | null = null) {
     if (body) {
+      this.employeeId = body.employeeId;
       this.username = body.username;
       this.password = body.password;
       this.email = body.email;
@@ -24,6 +25,10 @@ export class CreateUserDto {
       this.baseStoreId = body.baseStoreId;
     }
   }
+
+  @ApiProperty({ type: String })
+  @IsString()
+  readonly employeeId: string;
 
   @ApiProperty({ type: String })
   @IsNotEmpty()
