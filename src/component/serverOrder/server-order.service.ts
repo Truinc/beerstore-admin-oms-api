@@ -228,12 +228,17 @@ export class ServerOrderService {
   async addServerOrder(serverOrder: CreateServerOrderDto): Promise<string> {
     try {
       const timeSplit = serverOrder.fulfillmentTime.split('-') || '';
+      const orderDateTimeString = moment
+        .utc(serverOrder.orderDateTime)
+        .format('YYYY-MM-DD hh:mm:ss');
+      const orderDateTime = orderDateTimeString.split(' ');
       const serverOrdeParsed = {
         ...serverOrder,
         fulfillmentTime: moment(timeSplit[0]?.trim(), ['h:mm A']).format(
           'HH:mm:ss',
         ),
-        orderTime: moment(serverOrder.orderTime, ['h:mm A']).format('HH:mm:ss'),
+        orderTime: orderDateTime[1].trim(),
+        orderDate: orderDateTime[0].trim(),
       };
 
       const createOrder = await this.serverOrderRepository.create(
