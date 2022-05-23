@@ -27,6 +27,7 @@ export class CreateServerOrderDto {
       this.fulfillmentTime = body.fulfillmentTime;
       this.cancellationDate = body.cancellationDate;
       this.cancellationReason = body.cancellationReason;
+      this.transactionId = body.transactionId;
     }
   }
 
@@ -106,6 +107,12 @@ export class CreateServerOrderDto {
   @MaxLength(500)
   @IsString()
   readonly cancellationReason: string;
+
+  @ApiProperty({ type: String })
+  @IsOptional()
+  @IsString()
+  @MaxLength(99)
+  readonly transactionId: string;
 
   @ApiProperty({ type: String })
   @IsOptional()
