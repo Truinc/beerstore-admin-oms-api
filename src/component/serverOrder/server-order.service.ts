@@ -231,9 +231,12 @@ export class ServerOrderService {
       const orderDateTimeString = moment
         .utc(serverOrder.orderDateTime)
         .format('YYYY-MM-DD hh:mm:ss');
-      const cancellationDate = moment
-        .utc(serverOrder.cancellationDate)
-        .format('YYYY-MM-DD hh:mm:ss');
+      let cancellationDate = null;
+      if (serverOrder.cancellationDate) {
+        cancellationDate = moment
+          .utc(serverOrder.cancellationDate)
+          .format('YYYY-MM-DD hh:mm:ss');
+      }
       const orderDateTime = orderDateTimeString.split(' ');
       const serverOrderParsed = {
         ...serverOrder,
