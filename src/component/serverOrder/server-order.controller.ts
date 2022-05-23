@@ -46,6 +46,9 @@ import { CreateOrderHistoryDto } from '../order-history/dto/create-order-history
 import { CreateOrderDto } from '../orders/dto';
 import LocalAuthGuard from 'src/guards/local-auth.guard';
 import ExternalGuard from '@beerstore/core/guards/external.guard';
+import RolesGuard from 'src/guards/role.guard';
+import { Roles } from 'src/decorators/roles.decorator';
+import { RolesEnum } from '../user/entity/user.entity';
 
 @ApiTags('server-order')
 @ApiBearerAuth()
@@ -100,7 +103,13 @@ export class ServerOrderController {
   })
   @ApiPaginatedResponse(Order)
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(JwtAccessGuard)
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Roles(
+    RolesEnum.superadmin,
+    RolesEnum.customerservicerep,
+    RolesEnum.storemanager,
+  )
+  @UseGuards()
   @HttpCode(HttpStatus.OK)
   @Get()
   async findAll(
@@ -127,15 +136,25 @@ export class ServerOrderController {
     );
   }
 
-  @UseGuards(JwtAccessGuard)
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(JwtAccessGuard, UseGuards)
+  @Roles(
+    RolesEnum.superadmin,
+    RolesEnum.customerservicerep,
+    RolesEnum.storemanager,
+  )
   @Post('post-feed')
   async createPostFeed(@Body() createPostFeed: CreatePostFeedDto) {
     const postFeed = await this.serverOrderService.addPostFeed(createPostFeed);
     return postFeed;
   }
 
-  @UseGuards(JwtAccessGuard)
+  @UseGuards(JwtAccessGuard, UseGuards)
+  @Roles(
+    RolesEnum.superadmin,
+    RolesEnum.customerservicerep,
+    RolesEnum.storemanager,
+  )
   @HttpCode(HttpStatus.CREATED)
   @Post('customer-proof')
   async saveCustomerProof(@Body() createCustomerProof: CreateCustomerProofDto) {
@@ -148,7 +167,12 @@ export class ServerOrderController {
   @ApiOkResponse({ description: '200. Success', type: CustomerProof })
   @ApiNotFoundResponse({ description: 'proof not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(JwtAccessGuard)
+  @UseGuards(JwtAccessGuard, UseGuards)
+  @Roles(
+    RolesEnum.superadmin,
+    RolesEnum.customerservicerep,
+    RolesEnum.storemanager,
+  )
   @HttpCode(HttpStatus.OK)
   @Get('customer-proof/:orderId')
   async getCustomerProof(@Param('orderId', ParseIntPipe) orderId: number) {
@@ -208,7 +232,12 @@ export class ServerOrderController {
   @ApiOkResponse({ description: '200. Success', type: Order })
   @ApiNotFoundResponse({ description: 'order not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(JwtAccessGuard)
+  @UseGuards(JwtAccessGuard, UseGuards)
+  @Roles(
+    RolesEnum.superadmin,
+    RolesEnum.customerservicerep,
+    RolesEnum.storemanager,
+  )
   @HttpCode(HttpStatus.OK)
   @Get('details/:id')
   async completeDetails(@Param('id', ParseIntPipe) id: number) {
@@ -220,7 +249,12 @@ export class ServerOrderController {
   }
 
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(JwtAccessGuard)
+  @UseGuards(JwtAccessGuard, UseGuards)
+  @Roles(
+    RolesEnum.superadmin,
+    RolesEnum.customerservicerep,
+    RolesEnum.storemanager,
+  )
   @HttpCode(HttpStatus.OK)
   @Get('post-feed/:orderId')
   async fetchPostFeed(@Param('orderId', ParseIntPipe) orderId: number) {
@@ -231,7 +265,12 @@ export class ServerOrderController {
   @ApiNoContentResponse()
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
   @ApiNotFoundResponse({ description: 'post feed not found' })
-  @UseGuards(JwtAccessGuard)
+  @UseGuards(JwtAccessGuard, UseGuards)
+  @Roles(
+    RolesEnum.superadmin,
+    RolesEnum.customerservicerep,
+    RolesEnum.storemanager,
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete('postFeed/:id')
   async deletePostFeed(@Param('id', ParseIntPipe) PostFeedId: number) {
@@ -242,8 +281,12 @@ export class ServerOrderController {
   @ApiOkResponse({ description: '204. Success', type: Order })
   @ApiNotFoundResponse({ description: 'order not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(LocalAuthGuard)
-  @UseGuards(JwtAccessGuard)
+  @UseGuards(LocalAuthGuard, JwtAccessGuard, UseGuards)
+  @Roles(
+    RolesEnum.superadmin,
+    RolesEnum.customerservicerep,
+    RolesEnum.storemanager,
+  )
   @HttpCode(HttpStatus.OK)
   @Post('/cancel-order/:id')
   async cancelOrder(
@@ -268,7 +311,12 @@ export class ServerOrderController {
   @ApiOkResponse({ description: '200. Success', type: Order })
   @ApiNotFoundResponse({ description: 'order not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(JwtAccessGuard)
+  @UseGuards(JwtAccessGuard, UseGuards)
+  @Roles(
+    RolesEnum.superadmin,
+    RolesEnum.customerservicerep,
+    RolesEnum.storemanager,
+  )
   @HttpCode(HttpStatus.OK)
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
@@ -282,7 +330,12 @@ export class ServerOrderController {
   @ApiOkResponse({ description: '204. Success', type: Order })
   @ApiNotFoundResponse({ description: 'order not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(JwtAccessGuard)
+  @UseGuards(JwtAccessGuard, UseGuards)
+  @Roles(
+    RolesEnum.superadmin,
+    RolesEnum.customerservicerep,
+    RolesEnum.storemanager,
+  )
   @HttpCode(HttpStatus.OK)
   @Patch('finish-order/:id')
   async finishOrder(
@@ -310,7 +363,12 @@ export class ServerOrderController {
   @ApiOkResponse({ description: '204. Success', type: Order })
   @ApiNotFoundResponse({ description: 'order not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(JwtAccessGuard)
+  @UseGuards(JwtAccessGuard, UseGuards)
+  @Roles(
+    RolesEnum.superadmin,
+    RolesEnum.customerservicerep,
+    RolesEnum.storemanager,
+  )
   @HttpCode(HttpStatus.OK)
   @Patch('/:id')
   async updateServerOrder(
@@ -335,7 +393,12 @@ export class ServerOrderController {
   @ApiNoContentResponse()
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
   @ApiNotFoundResponse({ description: 'order not found' })
-  @UseGuards(JwtAccessGuard)
+  @UseGuards(JwtAccessGuard, UseGuards)
+  @Roles(
+    RolesEnum.superadmin,
+    RolesEnum.customerservicerep,
+    RolesEnum.storemanager,
+  )
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete('/:id')
   async deleteOrder(@Param('id', ParseIntPipe) serverOrderId: number) {

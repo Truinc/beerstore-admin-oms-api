@@ -158,4 +158,20 @@ export class ServerOrder {
     nullable: true,
   })
   employeeNote: string;
+
+  @ApiProperty({ type: String })
+  @Column({
+    type: 'nvarchar',
+    length: 200,
+    nullable: true,
+  })
+  transactionId: string;
+
+  @ApiProperty({ type: String })
+  @Column({
+    type: 'nvarchar',
+    length: 50,
+    nullable: true,
+  })
+  partial: string;
 }

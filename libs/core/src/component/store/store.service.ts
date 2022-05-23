@@ -2,6 +2,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import {
+  // BadGatewayException,
   BadRequestException,
   HttpException,
   Injectable,
@@ -14,7 +15,7 @@ import {
   getConnection,
   Repository,
   getRepository,
-  TableForeignKey,
+  // TableForeignKey,
   Between,
 } from 'typeorm';
 

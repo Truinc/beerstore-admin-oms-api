@@ -166,7 +166,7 @@ export class UserController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
   @ApiNotFoundResponse({ description: 'user not found' })
   @UseGuards(JwtAccessGuard, RolesGuard)
-  @Roles(RolesEnum.superadmin, RolesEnum.ithelpdesk)
+  @Roles(RolesEnum.superadmin, RolesEnum.ithelpdesk, RolesEnum.storemanager)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number) {
@@ -180,7 +180,7 @@ export class UserController {
 
   @ApiNoContentResponse()
   @UseGuards(JwtAccessGuard, RolesGuard)
-  @Roles(RolesEnum.superadmin, RolesEnum.ithelpdesk)
+  @Roles(RolesEnum.superadmin, RolesEnum.ithelpdesk, RolesEnum.storemanager)
   @ApiInternalServerErrorResponse()
   @HttpCode(HttpStatus.OK)
   @Post('add-password')

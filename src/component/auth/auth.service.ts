@@ -28,6 +28,7 @@ export default class AuthService {
       throw new UnauthorizedException('Username not found.');
     }
     if (user.isActive !== 1) {
+      this.usersService.upsertSignInlog(user.id, SIGNINLOGS.ACCOUNT_LOCKED);
       throw new UnauthorizedException(
         'Your account is disabled, Please get in contact with your store manager.',
       );
@@ -59,6 +60,7 @@ export default class AuthService {
         user.id,
         SIGNINLOGS.LAST_UNSUCCESSFUL_LOGIN,
       );
+      this.usersService.upsertSignInlog(user.id, SIGNINLOGS.ACCOUNT_LOCKED);
       throw new UnauthorizedException(
         'Your account is disabled, Please get in contact with your store manager.',
       );
