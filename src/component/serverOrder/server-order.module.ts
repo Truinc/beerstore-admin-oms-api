@@ -9,12 +9,14 @@ import { CustomerProof } from './entity/customer-proof.entity';
 import { OrdersModule } from '../orders/orders.module';
 import { OrderHistoryModule } from '../order-history/order-history.module';
 import { AuthModule } from '../auth/auth.module';
+import { BamboraModule } from '@beerstore/core/component/bambora/bambora.module';
 
 @Module({
   imports: [
     AuthModule,
     OrdersModule,
     OrderHistoryModule,
+    BamboraModule,
     TypeOrmModule.forFeature([
       ServerOrder,
       PostFeed,

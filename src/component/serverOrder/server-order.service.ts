@@ -22,12 +22,15 @@ import { OrderEnum, ServerOrder } from './entity/server-order.entity';
 import { CreateOrderDto } from '../orders/dto/createOrder.dto';
 import AuthService from '../auth/auth.service';
 import * as moment from 'moment';
+import { BamboraService } from '@beerstore/core/component/bambora/bambora.service';
+import { BeerGuyUpdateDto } from './dto/beerguy-order-update.dto';
 
 @Injectable()
 export class ServerOrderService {
   constructor(
     private authService: AuthService,
     private ordersService: OrdersService,
+    private bamboraService: BamboraService,
     private orderHistoryService: OrderHistoryService,
     @InjectRepository(ServerOrder)
     private serverOrderRepository: Repository<ServerOrder>,
@@ -300,6 +303,14 @@ export class ServerOrderService {
     return this.findOne(id);
   }
 
+  /**
+   *  updates order (except cancel and complete)
+   * @param id
+   * @param createOrderHistoryDto
+   * @param orderStatus
+   * @param createOrderDto
+   * @returns
+   */
   async updateOrderDetails(
     id: number,
     createOrderHistoryDto: CreateOrderHistoryDto,
@@ -318,6 +329,49 @@ export class ServerOrderService {
     }
   }
 
+  // async handleBeerGuy(updateOrder: BeerGuyUpdateDto): Promise<ServerOrder> {
+  //   //fields
+  //   // orderId, drivername, orderStatus, cancellationDate, cancellationReason, cancellationBy
+  //   // delivery date, deliverytime , employeeNote, underInfluence, dobBefore, photoId,
+
+  //   // const { orderDetails } = data;
+  //   // console.log('data', data);
+  //   try {
+  //     const serverOrder = {
+  //       orderStatus: +updateOrder.orderId,
+  //       cancellationReason: updateOrder.cancellationReason,
+  //       cancellationBy: updateOrder.cancellationBy,
+  //     };
+  //     const orderHistory = {
+  //       orderId: updateOrder.orderId,
+  //       orderStatus: updateOrder.orderStatus,
+  //       name: updateOrder.driverName,
+  //       identifier: '1', // to be replaced with beerguy id
+  //     };
+  //     const orderDetails = {
+  //       status_id: updateOrder.orderStatus,
+  //     };
+  //     const customerProof = {
+  //       orderId: updateOrder.orderId,
+  //       underInfluence: updateOrder.underInfluence,
+  //       dobBefore: updateOrder.dobBefore,
+  //       photoId: updateOrder.photoId,
+  //       ...(updateOrder?.driverName && { driverName: updateOrder.driverName }),
+  //     };
+  //     if (updateOrder.orderType === 'delivery') {
+  //       this.updateOrder(
+  //         updateOrder.orderId,
+  //         orderDetails,
+  //         serverOrder,
+  //         orderHistory,
+  //         customerProof,
+  //       );
+  //     }
+  //   } catch (err) {
+  //     throw new BadRequestException(err.message);
+  //   }
+  // }
+
   async cancelOrder(
     id: number,
     orderHistory: CreateOrderHistoryDto,
@@ -325,8 +379,22 @@ export class ServerOrderService {
     serverOrder: UpdateOrderDto,
   ): Promise<ServerOrder> {
     try {
+      if (
+        serverOrder.orderType === 'pickup' ||
+        serverOrder.orderType === 'curbside'
+      ) {
+        if (serverOrder?.transactionId) {
+          await this.bamboraService.UpdatePaymentStatus(
+            serverOrder.transactionId,
+            {
+              amount: 0,
+            },
+          );
+        }
+      } else if (serverOrder.orderType === 'delivery') {
+        // hit the beerguy api
+      }
       const resp = await this.ordersService.updateOrder(`${id}`, orderDetails);
-      console.log('res', resp);
       const response = await Promise.all([
         this.updateServerOrder(id, serverOrder),
         this.orderHistoryService.create(orderHistory),
@@ -347,6 +415,24 @@ export class ServerOrderService {
   ): Promise<ServerOrder> {
     const requests = [];
     try {
+      if (serverOrder.orderStatus === OrderEnum.completed) {
+        if (
+          serverOrder.orderType === 'pickup' ||
+          serverOrder.orderType === 'curbside'
+        ) {
+          if (serverOrder?.transactionId) {
+            // await this.bamboraService.UpdatePaymentStatus(
+            //   serverOrder.transactionId,
+            //   {
+            //     amount: 0,
+            //   },
+            // );
+          }
+        }
+      } else if (serverOrder.orderStatus === OrderEnum.awaiting_shipment) {
+        // update the beerguy
+      }
+
       const resp = await this.ordersService.updateOrder(
         orderId,
         createOrderDto,

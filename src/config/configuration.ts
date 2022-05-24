@@ -67,6 +67,18 @@ export default () => ({
     url: process.env.THE_BEER_GUY_URL,
     key: process.env.THE_BEER_GUY_KEY,
   },
+  bambora: {
+    enabled3dsecure: process.env.ENABLED3DSECURE == 'true',
+    version3dsecure: process.env.VERSION3DSECURE || 2,
+    language: process.env.LANGUAGE || 'en-US',
+    color_depth: process.env.COLOR_DEPTH || '24',
+    screen_width: Number(process.env.SCREEN_WIDTH) || 1920,
+    screen_height: Number(process.env.SCREEN_HEIGHT) || 1080,
+    time_zone: Number(process.env.TIME_ZONE) || -120,
+    url: process.env.BAMBORA_URL,
+    authtoken: process.env.AUTHTOKEN,
+    termUrl: process.env.TERMURL,
+  },
   canadapost: {
     url: process.env.CANADAPOST_API_URL,
     version: process.env.CANADAPOST_V,
