@@ -1,4 +1,3 @@
-// require more fields to be added
 export class CreateOrderDto {
   readonly billing_address: {
     first_name: string;

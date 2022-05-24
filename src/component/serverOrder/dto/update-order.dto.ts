@@ -90,4 +90,10 @@ export class UpdateOrderDto {
   @MaxLength(500)
   @IsString()
   readonly employeeNote: string;
+
+  @ApiProperty({ type: String })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  readonly transactionId?: string;
 }

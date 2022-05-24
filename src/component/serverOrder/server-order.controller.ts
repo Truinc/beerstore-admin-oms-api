@@ -30,7 +30,7 @@ import JwtAccessGuard from '@beerstore/core/guards/jwt-access.guard';
 import { PaginationInputPipe } from '@beerstore/core/pipes/pagination-input.pipe';
 import { PaginationInputDto } from '@beerstore/core/swagger/dto/pagination.dto';
 import { ApiPaginatedResponse } from '@beerstore/core/swagger/paginated-response';
-import { ServerOrder as Order } from './entity/server-order.entity';
+import { OrderEnum, ServerOrder as Order } from './entity/server-order.entity';
 import { ServerOrderService } from './server-order.service';
 import { CreateServerOrderDto } from './dto/create-server-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -49,6 +49,7 @@ import ExternalGuard from '@beerstore/core/guards/external.guard';
 import RolesGuard from 'src/guards/role.guard';
 import { Roles } from 'src/decorators/roles.decorator';
 import { RolesEnum } from '../user/entity/user.entity';
+import { BeerGuyUpdateDto } from './dto/beerguy-order-update.dto';
 
 @ApiTags('server-order')
 @ApiBearerAuth()
@@ -326,6 +327,17 @@ export class ServerOrderController {
     }
     return order;
   }
+
+  // @ApiOkResponse({ description: '204. Success', type: Order })
+  // @ApiNotFoundResponse({ description: 'order not found' })
+  // @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
+  // @UseGuards(ExternalGuard)
+  // @Post('beer-guy')
+  // async beerguyUpdate(@Body() serverOrder: BeerGuyUpdateDto) {
+  //   console.log('testing', serverOrder);
+  //   const response = await this.serverOrderService.handleBeerGuy(serverOrder);
+  //   return response;
+  // }
 
   @ApiOkResponse({ description: '204. Success', type: Order })
   @ApiNotFoundResponse({ description: 'order not found' })
