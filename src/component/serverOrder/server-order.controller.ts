@@ -64,7 +64,7 @@ export class ServerOrderController {
     description: '400. ValidationException',
   })
   @ApiUnauthorizedResponse({ description: 'UnauthorizedResponse' })
-  @UseGuards(ExternalGuard)
+  // @UseGuards(ExternalGuard)
   @HttpCode(HttpStatus.CREATED)
   @Post('/')
   async create(@Body() serverOrder: CreateServerOrderDto) {
@@ -390,14 +390,17 @@ export class ServerOrderController {
       orderStatus: number;
       orderHistory: CreateOrderHistoryDto;
       orderDetails: CreateOrderDto;
+      partial?: string;
     },
   ): Promise<any> {
-    const { orderHistory, orderStatus, orderDetails } = data;
+    const { orderHistory, orderStatus, orderDetails, partial } = data;
+    console.log(data, 'TTTTTTTT');
     const response = await this.serverOrderService.updateOrderDetails(
       serverOrderId,
       orderHistory,
       orderStatus,
       orderDetails,
+      partial,
     );
     return response;
   }

@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional } from 'class-validator';
 import {
   Entity,
   Column,
@@ -168,9 +169,9 @@ export class ServerOrder {
   transactionId: string;
 
   @ApiProperty({ type: String })
+  @IsOptional()
   @Column({
     type: 'nvarchar',
-    length: 50,
     nullable: true,
   })
   partial: string;

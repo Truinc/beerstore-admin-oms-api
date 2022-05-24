@@ -123,12 +123,14 @@ export class ServerOrderService {
         this.orderHistoryService.findAll(1000, 0, null, {
           order: `${orderId}`,
         }),
+        this.getCustomerProof(orderId),
       ]);
       return {
         orderDetails: resp[0],
         serverOrder: resp[1] || [],
         orderFeed: resp[2] || [],
         orderHistory: resp[3]?.items || [],
+        ctmProof: resp[4] || [],
       };
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -292,6 +294,7 @@ export class ServerOrderService {
   async updateServerOrderStatus(
     id: number,
     orderStatus: number,
+    partial: string,
   ): Promise<ServerOrder> {
     const order = await this.findOne(id);
     if (!order) {
@@ -299,6 +302,7 @@ export class ServerOrderService {
     }
     await this.serverOrderRepository.update(order.id, {
       orderStatus,
+      partial,
     });
     return this.findOne(id);
   }
@@ -316,11 +320,12 @@ export class ServerOrderService {
     createOrderHistoryDto: CreateOrderHistoryDto,
     orderStatus: number,
     createOrderDto: CreateOrderDto,
+    partial?: string,
   ): Promise<ServerOrder> {
     try {
       await this.ordersService.updateOrder(`${id}`, createOrderDto);
       const response = await Promise.all([
-        this.updateServerOrderStatus(id, orderStatus),
+        this.updateServerOrderStatus(id, orderStatus, partial),
         this.orderHistoryService.create(createOrderHistoryDto),
       ]);
       return response[0];
