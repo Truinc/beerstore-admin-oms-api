@@ -344,8 +344,8 @@ export class ServerOrderService {
   //   try {
   //     const serverOrder = {
   //       orderStatus: +updateOrder.orderId,
-  //       cancellationReason: updateOrder.cancellationReason,
-  //       cancellationBy: updateOrder.cancellationBy,
+  //       cancellationReason: updateOrder?.cancellationReason || '',
+  //       cancellationBy: updateOrder?.cancellationBy || '',
   //     };
   //     const orderHistory = {
   //       orderId: updateOrder.orderId,
@@ -371,6 +371,8 @@ export class ServerOrderService {
   //         orderHistory,
   //         customerProof,
   //       );
+  //     } else {
+  //       throw new BadRequestException('Order type is not delivery');
   //     }
   //   } catch (err) {
   //     throw new BadRequestException(err.message);
@@ -417,32 +419,31 @@ export class ServerOrderService {
     serverOrder: UpdateOrderDto,
     createOrderHistoryDto: CreateOrderHistoryDto,
     customerProof: CreateCustomerProofDto,
-  ): Promise<ServerOrder> {
+  ): Promise<any> {
     const requests = [];
     try {
-      if (serverOrder.orderStatus === OrderEnum.completed) {
-        if (
-          serverOrder.orderType === 'pickup' ||
-          serverOrder.orderType === 'curbside'
-        ) {
-          if (serverOrder?.transactionId) {
-            // await this.bamboraService.UpdatePaymentStatus(
-            //   serverOrder.transactionId,
-            //   {
-            //     amount: 0,
-            //   },
-            // );
-          }
+      const { amount, ...orderDetails } = serverOrder;
+      if (
+        serverOrder.orderType === 'pickup' ||
+        serverOrder.orderType === 'curbside'
+      ) {
+        if (serverOrder?.transactionId) {
+          await this.bamboraService.UpdatePaymentStatus(
+            serverOrder.transactionId,
+            {
+              amount: Number(parseFloat(amount).toFixed(2)),
+            },
+          );
         }
-      } else if (serverOrder.orderStatus === OrderEnum.awaiting_shipment) {
-        // update the beerguy
+      } else if (serverOrder.orderType === 'delivery') {
+        // update beer guy
       }
 
       const resp = await this.ordersService.updateOrder(
         orderId,
         createOrderDto,
       );
-      requests.push(this.updateServerOrder(+orderId, serverOrder));
+      requests.push(this.updateServerOrder(+orderId, orderDetails));
       requests.push(this.orderHistoryService.create(createOrderHistoryDto));
       requests.push(this.addCustomerProof(customerProof));
       const response = await Promise.all(requests);

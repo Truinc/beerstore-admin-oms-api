@@ -3,6 +3,7 @@ import {
   IsDate,
   IsEmail,
   IsMilitaryTime,
+  IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
@@ -96,4 +97,10 @@ export class UpdateOrderDto {
   @IsString()
   @MaxLength(200)
   readonly transactionId?: string;
+
+  @ApiProperty({ type: String })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  readonly amount?: string;
 }

@@ -1,5 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsOptional } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  MaxLength,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
 import { OrderEnum } from 'src/component/serverOrder/entity/server-order.entity';
 
 // class OrderProducts {
@@ -8,17 +16,45 @@ import { OrderEnum } from 'src/component/serverOrder/entity/server-order.entity'
 //   readonly price_inc_tax: number;
 //   readonly price_ex_tax: number;
 // }
+
+export class Products {
+  @ApiProperty({ type: String })
+  @IsOptional()
+  @MinLength(1)
+  @MaxLength(99)
+  name: string;
+
+  @ApiProperty({ type: Number })
+  @IsOptional()
+  @IsNumber()
+  quantity: number;
+
+  @ApiProperty({ type: Number })
+  @IsOptional()
+  @IsNumber()
+  price_inc_tax: number;
+
+  @ApiProperty({ type: Number })
+  @IsOptional()
+  @IsNumber()
+  price_ex_tax: number;
+}
 export class CreateOrderDto {
   @ApiProperty({ type: Number })
   @IsOptional()
   status_id: number;
 
-  products: [
-    {
-      name: string;
-      quantity: number;
-      price_inc_tax: number;
-      price_ex_tax: number;
-    },
-  ];
+  @Type(() => Products)
+  @IsOptional()
+  @ValidateNested()
+  readonly info?: Products[];
+
+  // products: [
+  //   {
+  //     name: string;
+  //     quantity: number;
+  //     price_inc_tax: number;
+  //     price_ex_tax: number;
+  //   },
+  // ];
 }

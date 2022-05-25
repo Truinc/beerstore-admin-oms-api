@@ -64,7 +64,7 @@ export class ServerOrderController {
     description: '400. ValidationException',
   })
   @ApiUnauthorizedResponse({ description: 'UnauthorizedResponse' })
-  // @UseGuards(ExternalGuard)
+  @UseGuards(ExternalGuard)
   @HttpCode(HttpStatus.CREATED)
   @Post('/')
   async create(@Body() serverOrder: CreateServerOrderDto) {
@@ -148,86 +148,6 @@ export class ServerOrderController {
   async createPostFeed(@Body() createPostFeed: CreatePostFeedDto) {
     const postFeed = await this.serverOrderService.addPostFeed(createPostFeed);
     return postFeed;
-  }
-
-  @UseGuards(JwtAccessGuard, UseGuards)
-  @Roles(
-    RolesEnum.superadmin,
-    RolesEnum.customerservicerep,
-    RolesEnum.storemanager,
-  )
-  @HttpCode(HttpStatus.CREATED)
-  @Post('customer-proof')
-  async saveCustomerProof(@Body() createCustomerProof: CreateCustomerProofDto) {
-    const customerProof = await this.serverOrderService.addCustomerProof(
-      createCustomerProof,
-    );
-    return customerProof;
-  }
-
-  @ApiOkResponse({ description: '200. Success', type: CustomerProof })
-  @ApiNotFoundResponse({ description: 'proof not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(JwtAccessGuard, UseGuards)
-  @Roles(
-    RolesEnum.superadmin,
-    RolesEnum.customerservicerep,
-    RolesEnum.storemanager,
-  )
-  @HttpCode(HttpStatus.OK)
-  @Get('customer-proof/:orderId')
-  async getCustomerProof(@Param('orderId', ParseIntPipe) orderId: number) {
-    const customerProof = await this.serverOrderService.getCustomerProof(
-      orderId,
-    );
-    if (!customerProof) {
-      throw new NotFoundException('proof not found');
-    }
-    return customerProof;
-  }
-
-  @ApiOkResponse({ description: '204. Success', type: CustomerProof })
-  @ApiNotFoundResponse({ description: 'proof not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(JwtAccessGuard)
-  @HttpCode(HttpStatus.OK)
-  @Patch('customer-proof/:id')
-  async updateCustomerProof(
-    @Param('id', ParseIntPipe) serverOrderId: number,
-    @Body() customerProof: UpdateCustomerProofDto,
-  ): Promise<CustomerProof> {
-    const response = await this.serverOrderService.updateCustomerProof(
-      serverOrderId,
-      customerProof,
-    );
-    // update order on Big commerce data
-    return response;
-  }
-
-  @UseGuards(JwtAccessGuard)
-  @HttpCode(HttpStatus.CREATED)
-  @Post('payment-detail')
-  async savePaymentDetail(
-    @Body() createPaymentDetail: CreatePaymentDetailsDto,
-  ) {
-    const paymentDetail = await this.serverOrderService.addPaymentDetail(
-      createPaymentDetail,
-    );
-    return paymentDetail;
-  }
-
-  @ApiOkResponse({ description: '200. Success', type: PaymentDetails })
-  @ApiNotFoundResponse({ description: 'payment not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(JwtAccessGuard)
-  @HttpCode(HttpStatus.OK)
-  @Get('payment-detail/:id')
-  async getPaymentDetails(@Param('id', ParseIntPipe) id: number) {
-    const paymentDetail = await this.serverOrderService.getPaymentDetail(id);
-    if (!paymentDetail) {
-      throw new NotFoundException('payment not found');
-    }
-    return paymentDetail;
   }
 
   @ApiOkResponse({ description: '200. Success', type: Order })
@@ -394,7 +314,6 @@ export class ServerOrderController {
     },
   ): Promise<any> {
     const { orderHistory, orderStatus, orderDetails, partial } = data;
-    console.log(data, 'TTTTTTTT');
     const response = await this.serverOrderService.updateOrderDetails(
       serverOrderId,
       orderHistory,
