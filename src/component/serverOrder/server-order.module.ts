@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServerOrderService } from './server-order.service';
 import { ServerOrder } from './entity/server-order.entity';
@@ -14,6 +15,7 @@ import { BamboraModule } from '@beerstore/core/component/bambora/bambora.module'
 @Module({
   imports: [
     AuthModule,
+    HttpModule,
     OrdersModule,
     OrderHistoryModule,
     BamboraModule,

@@ -248,16 +248,15 @@ export class ServerOrderController {
     return order;
   }
 
-  // @ApiOkResponse({ description: '204. Success', type: Order })
-  // @ApiNotFoundResponse({ description: 'order not found' })
-  // @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  // @UseGuards(ExternalGuard)
-  // @Post('beer-guy')
-  // async beerguyUpdate(@Body() serverOrder: BeerGuyUpdateDto) {
-  //   console.log('testing', serverOrder);
-  //   const response = await this.serverOrderService.handleBeerGuy(serverOrder);
-  //   return response;
-  // }
+  @ApiOkResponse({ description: '204. Success', type: Order })
+  @ApiNotFoundResponse({ description: 'order not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
+  @UseGuards(ExternalGuard)
+  @Post('beer-guy')
+  async beerguyUpdate(@Body() serverOrder: BeerGuyUpdateDto) {
+    const response = await this.serverOrderService.handleBeerGuy(serverOrder);
+    return response;
+  }
 
   @ApiOkResponse({ description: '204. Success', type: Order })
   @ApiNotFoundResponse({ description: 'order not found' })
