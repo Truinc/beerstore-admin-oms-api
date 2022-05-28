@@ -44,6 +44,15 @@ export class CreateOrderDto {
   @IsOptional()
   status_id: number;
 
+
+  @ApiProperty({ type: Number })
+  @IsOptional()
+  shipping_cost_ex_tax?: number;
+
+  @ApiProperty({ type: Number })
+  @IsOptional()
+  shipping_cost_inc_tax?: number;
+
   @Type(() => Products)
   @IsOptional()
   @ValidateNested()

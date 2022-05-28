@@ -10,6 +10,7 @@ import { Repository, getRepository, Brackets } from 'typeorm';
 import { CreateOrderHistoryDto } from '../order-history/dto/create-order-history.dto';
 import { OrderHistoryService } from '../order-history/order-history.service';
 import { OrdersService } from '../orders/orders.service';
+import { StoreService } from '@beerstore/core/component/store/store.service';
 import { CreateCustomerProofDto } from './dto/create-customer-proof.dto';
 import { CreateServerOrderDto } from './dto/create-server-order.dto';
 import { CreatePaymentDetailsDto } from './dto/create-payment-details.dto';
@@ -38,6 +39,7 @@ export class ServerOrderService {
     private configService: ConfigService,
     private ordersService: OrdersService,
     private bamboraService: BamboraService,
+    private storeService: StoreService,
     private orderHistoryService: OrderHistoryService,
     @InjectRepository(ServerOrder)
     private serverOrderRepository: Repository<ServerOrder>,
@@ -121,6 +123,7 @@ export class ServerOrderService {
 
   async completeDetail(orderId: number) {
     try {
+      const storeId = 2002;
       const resp = await Promise.all([
         this.ordersService.getOrderDetails(`${orderId}`),
         this.serverOrderRepository.findOne({
@@ -131,6 +134,7 @@ export class ServerOrderService {
           order: `${orderId}`,
         }),
         this.getCustomerProof(orderId),
+        this.storeService.getStore(storeId, false, null),
       ]);
       return {
         orderDetails: resp[0],
@@ -138,6 +142,7 @@ export class ServerOrderService {
         orderFeed: resp[2] || [],
         orderHistory: resp[3]?.items || [],
         ctmProof: resp[4] || [],
+        deliveryCharges: resp[5]?.deliveryFee?.fee || '11.95',
       };
     } catch (error) {
       throw new BadRequestException(error.message);

@@ -174,7 +174,7 @@ export class ServerOrderController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
   @UseGuards(ExternalGuard)
   @HttpCode(HttpStatus.OK)
-  @Post('order-queue/cancel-order/:id')
+  @Post('/order-queue/cancel-order/:id')
   async orderQueueCancelOrder(
     @Param('id', ParseIntPipe) id: number,
     @Body()

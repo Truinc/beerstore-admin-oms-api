@@ -11,6 +11,7 @@ import { OrdersModule } from '../orders/orders.module';
 import { OrderHistoryModule } from '../order-history/order-history.module';
 import { AuthModule } from '../auth/auth.module';
 import { BamboraModule } from '@beerstore/core/component/bambora/bambora.module';
+import { StoreModule } from '@beerstore/core/component/store/store.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { BamboraModule } from '@beerstore/core/component/bambora/bambora.module'
     OrdersModule,
     OrderHistoryModule,
     BamboraModule,
+    StoreModule,
     TypeOrmModule.forFeature([
       ServerOrder,
       PostFeed,
