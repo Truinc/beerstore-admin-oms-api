@@ -400,9 +400,9 @@ export class ServerOrderService {
       } = data;
       if (orderType === 'pickup' || orderType === 'curbside') {
         if (transactionId) {
-          await this.bamboraService.UpdatePaymentStatus(transactionId, {
-            amount: 0,
-          });
+          // await this.bamboraService.UpdatePaymentStatus(transactionId, {
+          //   amount: 0,
+          // });
         }
       } else if (orderType === 'delivery') {
         await this.cancelBeerGuyOrder(`${id}`, cancellationReason);
