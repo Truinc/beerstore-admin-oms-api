@@ -86,11 +86,6 @@ export class CreateServerOrderDto {
   @IsString()
   readonly orderDateTime: string;
 
-  // @ApiProperty({ type: String })
-  // @IsNotEmpty()
-  // @IsString()
-  // readonly orderTime: string;
-
   @ApiProperty({ type: String })
   @IsOptional()
   @IsString()

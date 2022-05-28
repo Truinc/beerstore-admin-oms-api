@@ -138,7 +138,7 @@ export class ServerOrderController {
   }
 
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(JwtAccessGuard, UseGuards)
+  @UseGuards(JwtAccessGuard, RolesGuard)
   @Roles(
     RolesEnum.superadmin,
     RolesEnum.customerservicerep,
@@ -153,7 +153,7 @@ export class ServerOrderController {
   @ApiOkResponse({ description: '200. Success', type: Order })
   @ApiNotFoundResponse({ description: 'order not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(JwtAccessGuard, UseGuards)
+  @UseGuards(JwtAccessGuard, RolesGuard)
   @Roles(
     RolesEnum.superadmin,
     RolesEnum.customerservicerep,
@@ -169,40 +169,25 @@ export class ServerOrderController {
     return order;
   }
 
+  @ApiOkResponse({ description: '204. Success', type: Order })
+  @ApiNotFoundResponse({ description: 'order not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(JwtAccessGuard, UseGuards)
-  @Roles(
-    RolesEnum.superadmin,
-    RolesEnum.customerservicerep,
-    RolesEnum.storemanager,
-  )
+  @UseGuards(ExternalGuard)
   @HttpCode(HttpStatus.OK)
-  @Get('post-feed/:orderId')
-  async fetchPostFeed(@Param('orderId', ParseIntPipe) orderId: number) {
-    const postFeeds = await this.serverOrderService.findAllPostFeed(orderId);
-    return postFeeds;
-  }
-
-  @ApiNoContentResponse()
-  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @ApiNotFoundResponse({ description: 'post feed not found' })
-  @UseGuards(JwtAccessGuard, UseGuards)
-  @Roles(
-    RolesEnum.superadmin,
-    RolesEnum.customerservicerep,
-    RolesEnum.storemanager,
-  )
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete('postFeed/:id')
-  async deletePostFeed(@Param('id', ParseIntPipe) PostFeedId: number) {
-    const response = await this.serverOrderService.removePostFeed(PostFeedId);
+  @Post('order-queue/cancel-order/:id')
+  async orderQueueCancelOrder(
+    @Param('id', ParseIntPipe) id: number,
+    @Body()
+    data: CancelOrderDto,
+  ): Promise<any> {
+    const response = await this.serverOrderService.cancelOrder(id, data);
     return response;
   }
 
   @ApiOkResponse({ description: '204. Success', type: Order })
   @ApiNotFoundResponse({ description: 'order not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(LocalAuthGuard, JwtAccessGuard, UseGuards)
+  @UseGuards(LocalAuthGuard, JwtAccessGuard, RolesGuard)
   @Roles(
     RolesEnum.superadmin,
     RolesEnum.customerservicerep,
@@ -213,19 +198,9 @@ export class ServerOrderController {
   async cancelOrder(
     @Param('id', ParseIntPipe) id: number,
     @Body()
-    data: {
-      orderHistory: CreateOrderHistoryDto;
-      orderDetails: CreateOrderDto;
-      serverOrder: UpdateOrderDto;
-    },
+    data: CancelOrderDto,
   ): Promise<any> {
-    const { orderHistory, orderDetails, serverOrder } = data;
-    const response = await this.serverOrderService.cancelOrder(
-      id,
-      orderHistory,
-      orderDetails,
-      serverOrder,
-    );
+    const response = await this.serverOrderService.cancelOrder(id, data);
     return response;
   }
 
@@ -319,24 +294,6 @@ export class ServerOrderController {
       orderStatus,
       orderDetails,
       partial,
-    );
-    return response;
-  }
-
-  @ApiNoContentResponse()
-  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @ApiNotFoundResponse({ description: 'order not found' })
-  @UseGuards(JwtAccessGuard, UseGuards)
-  @Roles(
-    RolesEnum.superadmin,
-    RolesEnum.customerservicerep,
-    RolesEnum.storemanager,
-  )
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete('/:id')
-  async deleteOrder(@Param('id', ParseIntPipe) serverOrderId: number) {
-    const response = await this.serverOrderService.removeServerOrder(
-      serverOrderId,
     );
     return response;
   }

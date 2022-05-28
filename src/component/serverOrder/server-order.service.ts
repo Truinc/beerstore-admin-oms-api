@@ -28,6 +28,7 @@ import { ConfigService } from '@nestjs/config';
 import { BamboraService } from '@beerstore/core/component/bambora/bambora.service';
 import { BeerGuyUpdateDto } from './dto/beerguy-order-update.dto';
 import { catchError, lastValueFrom, map } from 'rxjs';
+import { CancelOrderDto } from './dto/cancel-order.dto';
 
 @Injectable()
 export class ServerOrderService {
@@ -71,12 +72,12 @@ export class ServerOrderService {
     }
 
     if (searchFromDate === searchToDate) {
-      table.andWhere('ServerOrder.fulfillmentDate = :searchFromDate', {
+      table.andWhere('ServerOrder.orderDate = :searchFromDate', {
         searchFromDate,
       });
     } else {
       table.andWhere(
-        'ServerOrder.fulfillmentDate BETWEEN :searchFromDate AND :searchToDate',
+        'ServerOrder.orderDate BETWEEN :searchFromDate AND :searchToDate',
         {
           searchFromDate,
           searchToDate,
@@ -277,13 +278,13 @@ export class ServerOrderService {
     return order;
   }
 
-  async removeServerOrder(id: number) {
-    const order = await this.serverOrderRepository.findOne(id);
-    if (!order) {
-      throw new NotFoundException('Order not found');
-    }
-    return this.serverOrderRepository.delete(id);
-  }
+  // async removeServerOrder(id: number) {
+  //   const order = await this.serverOrderRepository.findOne(id);
+  //   if (!order) {
+  //     throw new NotFoundException('Order not found');
+  //   }
+  //   return this.serverOrderRepository.delete(id);
+  // }
 
   async updateServerOrder(
     id: number,
@@ -381,37 +382,47 @@ export class ServerOrderService {
     }
   }
 
-  async cancelOrder(
-    id: number,
-    orderHistory: CreateOrderHistoryDto,
-    orderDetails: CreateOrderDto,
-    serverOrder: UpdateOrderDto,
-  ): Promise<ServerOrder> {
+  async cancelOrder(id: number, data: CancelOrderDto): Promise<ServerOrder> {
     try {
-      if (
-        serverOrder.orderType === 'pickup' ||
-        serverOrder.orderType === 'curbside'
-      ) {
-        if (serverOrder?.transactionId) {
-          await this.bamboraService.UpdatePaymentStatus(
-            serverOrder.transactionId,
-            {
-              amount: 0,
-            },
-          );
+      const {
+        orderType,
+        transactionId,
+        cancellationReason,
+        orderStatus,
+        cancellationBy,
+        cancellationDate,
+        cancellationNote,
+      } = data;
+      if (orderType === 'pickup' || orderType === 'curbside') {
+        if (transactionId) {
+          await this.bamboraService.UpdatePaymentStatus(transactionId, {
+            amount: 0,
+          });
         }
-      } else if (serverOrder.orderType === 'delivery') {
-        await this.cancelBeerGuyOrder(
-          serverOrder.orderId,
-          serverOrder.cancellationReason,
-        );
+      } else if (orderType === 'delivery') {
+        await this.cancelBeerGuyOrder(`${id}`, cancellationReason);
       }
-      const resp = await this.ordersService.updateOrder(`${id}`, orderDetails);
+      const resp = await this.ordersService.updateOrder(`${id}`, {
+        status_id: +orderStatus,
+      });
+      // console.log('res', resp);
       const response = await Promise.all([
-        this.updateServerOrder(id, serverOrder),
-        this.orderHistoryService.create(orderHistory),
+        this.updateServerOrder(id, {
+          orderId: `${id}`,
+          orderStatus: +orderStatus,
+          cancellationBy,
+          cancellationDate,
+          cancellationReason,
+          cancellationNote: cancellationNote || '',
+        }),
+        this.orderHistoryService.create({
+          orderId: `${id}`,
+          orderStatus: +orderStatus,
+          name: cancellationBy,
+          identifier: '',
+        }),
       ]);
-      console.log('response', response);
+      // console.log('response', response);
       return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);

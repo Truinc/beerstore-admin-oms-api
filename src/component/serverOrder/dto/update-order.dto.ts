@@ -90,7 +90,7 @@ export class UpdateOrderDto {
   @IsOptional()
   @MaxLength(500)
   @IsString()
-  readonly employeeNote?: string;
+  readonly cancellationNote?: string;
 
   @ApiProperty({ type: String })
   @IsOptional()
