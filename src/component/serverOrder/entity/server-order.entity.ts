@@ -152,13 +152,13 @@ export class ServerOrder {
   @UpdateDateColumn()
   updatedDate: Date;
 
-  // @ApiProperty({ type: String })
-  // @Column({
-  //   type: 'nvarchar',
-  //   length: 250,
-  //   nullable: true,
-  // })
-  // employeeNote: string;
+  @ApiProperty({ type: String })
+  @Column({
+    type: 'nvarchar',
+    length: 250,
+    nullable: true,
+  })
+  employeeNote: string;
 
   @ApiProperty({ type: String })
   @Column({

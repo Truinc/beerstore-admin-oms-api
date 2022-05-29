@@ -121,9 +121,8 @@ export class ServerOrderService {
     };
   }
 
-  async completeDetail(orderId: number) {
+  async completeDetail(orderId: number, storeId: number, tranId: string) {
     try {
-      const storeId = 2002;
       const resp = await Promise.all([
         this.ordersService.getOrderDetails(`${orderId}`),
         this.serverOrderRepository.findOne({
@@ -135,6 +134,9 @@ export class ServerOrderService {
         }),
         this.getCustomerProof(orderId),
         this.storeService.getStore(storeId, false, null),
+        ...(tranId !== 'na'
+          ? [this.bamboraService.getPaymentInfoByTranasctionId(tranId)]
+          : []),
       ]);
       return {
         orderDetails: resp[0],
@@ -143,6 +145,13 @@ export class ServerOrderService {
         orderHistory: resp[3]?.items || [],
         ctmProof: resp[4] || [],
         deliveryCharges: resp[5]?.deliveryFee?.fee || '11.95',
+        ...(tranId !== 'na' && {
+          cardDetails: {
+            lastFour: resp[6]?.card?.last_four || '',
+            cardType: resp[6]?.card?.card_type || '',
+            payment: resp[6]?.amount || '',
+          },
+        }),
       };
     } catch (error) {
       throw new BadRequestException(error.message);

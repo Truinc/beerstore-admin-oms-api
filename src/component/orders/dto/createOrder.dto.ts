@@ -43,8 +43,6 @@ export class CreateOrderDto {
   @ApiProperty({ type: Number })
   @IsOptional()
   status_id: number;
-
-
   @ApiProperty({ type: Number })
   @IsOptional()
   shipping_cost_ex_tax?: number;

@@ -160,9 +160,17 @@ export class ServerOrderController {
     RolesEnum.storemanager,
   )
   @HttpCode(HttpStatus.OK)
-  @Get('details/:id')
-  async completeDetails(@Param('id', ParseIntPipe) id: number) {
-    const order = await this.serverOrderService.completeDetail(id);
+  @Get('details/:id/store/:storeId/tranId/:tranId')
+  async completeDetails(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('storeId', ParseIntPipe) storeId: number,
+    @Param('tranId') tranId: string,
+  ) {
+    const order = await this.serverOrderService.completeDetail(
+      id,
+      storeId,
+      tranId,
+    );
     if (!order) {
       throw new NotFoundException('order not found');
     }
