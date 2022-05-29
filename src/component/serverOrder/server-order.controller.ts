@@ -144,7 +144,7 @@ export class ServerOrderController {
     RolesEnum.customerservicerep,
     RolesEnum.storemanager,
   )
-  @Post('post-feed')
+  @Post('/post-feed')
   async createPostFeed(@Body() createPostFeed: CreatePostFeedDto) {
     const postFeed = await this.serverOrderService.addPostFeed(createPostFeed);
     return postFeed;
@@ -160,7 +160,7 @@ export class ServerOrderController {
     RolesEnum.storemanager,
   )
   @HttpCode(HttpStatus.OK)
-  @Get('details/:id/store/:storeId/tranId/:tranId')
+  @Get('/details/:id/store/:storeId/tranId/:tranId')
   async completeDetails(
     @Param('id', ParseIntPipe) id: number,
     @Param('storeId', ParseIntPipe) storeId: number,
@@ -222,7 +222,7 @@ export class ServerOrderController {
     RolesEnum.storemanager,
   )
   @HttpCode(HttpStatus.OK)
-  @Get(':id')
+  @Get('/:id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const order = await this.serverOrderService.findOne(id);
     if (!order) {
@@ -235,7 +235,7 @@ export class ServerOrderController {
   @ApiNotFoundResponse({ description: 'order not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
   @UseGuards(ExternalGuard)
-  @Post('beer-guy')
+  @Post('/beer-guy')
   async beerguyUpdate(@Body() serverOrder: BeerGuyUpdateDto) {
     const response = await this.serverOrderService.handleBeerGuy(serverOrder);
     return response;
@@ -251,7 +251,7 @@ export class ServerOrderController {
     RolesEnum.storemanager,
   )
   @HttpCode(HttpStatus.OK)
-  @Patch('finish-order/:id')
+  @Patch('/finish-order/:id')
   async finishOrder(
     @Param('id', ParseIntPipe) serverOrderId: number,
     @Body()
