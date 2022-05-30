@@ -84,5 +84,9 @@ export default () => ({
     version: process.env.CANADAPOST_V,
     api_key: process.env.CANADAPOST_API_KEY,
   },
-  pushNotificationToken: process.env.PUSH_NOTIFICATION,
+  beerstoreApp: {
+    url: process.env.BEERSTORE_APP_URL,
+    token: process.env.BEERSTORE_APP_TOKEN,
+    title: process.env.BEERSTORE_APP_PUSH_Title,
+  },
 });
