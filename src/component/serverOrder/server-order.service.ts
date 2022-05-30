@@ -30,7 +30,12 @@ import { BamboraService } from '@beerstore/core/component/bambora/bambora.servic
 import { BeerGuyUpdateDto } from './dto/beerguy-order-update.dto';
 import { catchError, lastValueFrom, map } from 'rxjs';
 import { CancelOrderDto } from './dto/cancel-order.dto';
-
+const OrderstatusText = {
+  5: 'cancelled',
+  10: 'completed',
+  8: 'awaiting pickup',
+  3: 'partial shipped',
+};
 @Injectable()
 export class ServerOrderService {
   constructor(
@@ -351,6 +356,12 @@ export class ServerOrderService {
         this.updateServerOrderStatus(id, orderStatus, partial),
         this.orderHistoryService.create(createOrderHistoryDto),
       ]);
+      await this.sendPushNotification(
+        this.configService.get('beerstoreApp').title,
+        `Your Order #${id} has been ${OrderstatusText[orderStatus]}.`,
+        checkoutId,
+        id.toString(),
+      );
       return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -411,6 +422,7 @@ export class ServerOrderService {
         cancellationBy,
         cancellationDate,
         cancellationNote,
+        checkoutId,
       } = data;
       if (orderType === 'pickup' || orderType === 'curbside') {
         if (transactionId) {
@@ -441,7 +453,12 @@ export class ServerOrderService {
           identifier: '',
         }),
       ]);
-      // console.log('response', response);
+      await this.sendPushNotification(
+        this.configService.get('beerstoreApp').title,
+        `Your Order #${id} has been cancelled.`,
+        checkoutId,
+        id.toString(),
+      );
       return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -485,12 +502,63 @@ export class ServerOrderService {
       requests.push(this.addCustomerProof(customerProof));
       const response = await Promise.all(requests);
       console.log('response', response);
+      await this.sendPushNotification(
+        this.configService.get('beerstoreApp').title,
+        `Your Order #${orderId} has been ${
+          OrderstatusText[serverOrder.orderStatus]
+        }.`,
+        checkoutId,
+        orderId,
+      );
       return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);
     }
   }
+  sendPushNotification = async (
+    title: string,
+    subtitle: string,
+    checkoutId: string,
+    order_id: string,
+  ) => {
+    const payload = {
+      title,
+      subtitle,
+      checkoutId,
+      order_id,
+    };
+    const sendpush = await lastValueFrom(
+      this.httpService
+        .post(
+          `${
+            this.configService.get('beerstoreApp').url
+          }/customer/SendPushNotificaton`,
+          {
+            headers: {
+              Authorization:
+                'Bearer ' + this.configService.get('beerstoreApp').token,
+            },
+            payload,
+          },
+        )
+        .pipe(
+          map((response) => response.data),
+          catchError((err) => {
+            if (
+              err &&
+              err.response &&
+              err.response.status &&
+              err.response.status === 404
+            ) {
+              throw new NotFoundException(err.message);
+            }
 
+            throw new BadRequestException(err.message);
+          }),
+        ),
+    );
+    return sendpush;
+  };
   cancelBeerGuyOrder = async (orderId: string, cancelReason: string) => {
     const payload = {
       tbs_purchase_id: orderId,
