@@ -4,15 +4,64 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
+import { UserStores } from './userStores.entity';
 
+// export enum RolesEnum {
+//   admin = 'admin',
+//   staff = 'staff',
+//   guest = 'guest',
+//   manager = 'manager',
+// }
+
+// same list on the admin side
 export enum RolesEnum {
-  admin = 'admin',
-  staff = 'staff',
-  guest = 'guest',
-  manager = 'manager',
+  superadmin = 'superadmin',
+  storemanager = 'storemanager',
+  storerepresentative = 'storerepresentative',
+  ithelpdesk = 'ithelpdesk',
+  reportingadmin = 'reportingadmin',
+  customerservicerep = 'customerservicerep',
 }
+
+export const userPermissions = {
+  superadmin: [
+    RolesEnum.superadmin,
+    RolesEnum.storemanager,
+    RolesEnum.storerepresentative,
+    RolesEnum.reportingadmin,
+    RolesEnum.ithelpdesk,
+    RolesEnum.customerservicerep,
+  ],
+  storemanager: [
+    // RolesEnum.storemanager,
+    RolesEnum.storerepresentative,
+    // RolesEnum.reportingadmin,
+    // RolesEnum.ithelpdesk,
+    // RolesEnum.customerservicerep,
+  ],
+  storerepresentative: [
+    // RolesEnum.storerepresentative,
+    // RolesEnum.reportingadmin,
+    // RolesEnum.ithelpdesk,
+    // RolesEnum.customerservicerep,
+  ],
+  reportingadmin: [
+    // RolesEnum.reportingadmin,
+    // RolesEnum.ithelpdesk,
+    // RolesEnum.customerservicerep,
+  ],
+  ithelpdesk: [
+    RolesEnum.storemanager,
+    RolesEnum.storerepresentative,
+    RolesEnum.reportingadmin,
+    RolesEnum.ithelpdesk,
+    RolesEnum.customerservicerep,
+  ],
+  customerservicerep: [RolesEnum.customerservicerep],
+};
 
 @Entity()
 export class User {
@@ -61,11 +110,20 @@ export class User {
   })
   password?: string;
 
+  @ApiProperty({ type: String })
+  @Column({
+    type: 'nvarchar',
+    length: 150,
+    select: false,
+    default: null,
+  })
+  employeeId: string;
+
   @ApiProperty({ type: 'enum', enum: RolesEnum })
   @Column({
     type: 'nvarchar',
     length: 50,
-    default: RolesEnum.staff,
+    default: RolesEnum.storerepresentative,
   })
   role: string;
 
@@ -80,4 +138,19 @@ export class User {
   @Column({ type: 'datetime2' })
   @UpdateDateColumn()
   updatedDate: Date;
+
+  @OneToMany(() => UserStores, (store) => store.userId)
+  usersStores: UserStores[];
+
+  @ApiProperty({ type: String })
+  @Column({
+    type: 'nvarchar',
+    length: 150,
+    default: null,
+  })
+  manager: string;
+
+  @ApiProperty({ type: Number })
+  @Column({ type: 'smallint', default: 0 })
+  loginAttempts: number;
 }

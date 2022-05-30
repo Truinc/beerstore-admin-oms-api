@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -30,4 +31,8 @@ export class SignInLogs {
   @Column({ type: 'datetime2' })
   @CreateDateColumn()
   createdDate: Date;
+
+  @Column({ type: 'datetime2' })
+  @UpdateDateColumn()
+  updatedDate: Date;
 }

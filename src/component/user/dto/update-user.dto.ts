@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsEmail,
   IsEnum,
   IsOptional,
@@ -16,11 +17,18 @@ export class UpdateUserDto {
       this.username = body.username;
       this.firstName = body.firstName;
       this.lastName = body.lastName;
+      this.employeeId = body.employeeId;
       this.isActive = body.isActive;
       this.role = body.role;
-      this.password = body.password;
+      // this.password = body.password;
+      this.manager = body.manager;
     }
   }
+
+  @ApiProperty({ type: String })
+  @IsString()
+  @IsOptional()
+  readonly employeeId?: string;
 
   @ApiProperty({ type: String })
   @IsOptional()
@@ -61,4 +69,22 @@ export class UpdateUserDto {
   @ApiProperty({ type: Number })
   @IsOptional()
   isActive?: number;
+
+  @ApiProperty({ type: String })
+  @IsOptional()
+  @IsString()
+  // @MaxLength(128)
+  readonly manager?: string;
+
+  @ApiProperty({ type: Number })
+  @IsOptional()
+  readonly baseStoreId?: number;
+
+  @ApiProperty({ type: [Number] })
+  @IsOptional()
+  readonly optionalStoreIds?: number[];
+
+  @ApiProperty({ type: Number })
+  @IsOptional()
+  readonly loginAttempts?: number;
 }

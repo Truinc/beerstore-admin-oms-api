@@ -1,31 +1,33 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsDate,
   IsEmail,
   IsEnum,
-  IsMilitaryTime,
   IsNotEmpty,
   IsOptional,
   IsString,
-  maxLength,
   MaxLength,
   MinLength,
 } from 'class-validator';
 import { OrderEnum } from '../entity/server-order.entity';
 
-export class CreateOrderDto {
-  constructor(body: CreateOrderDto | null = null) {
+export class CreateServerOrderDto {
+  constructor(body: CreateServerOrderDto | null = null) {
     if (body) {
       this.orderId = body.orderId;
       this.storeId = body.storeId;
+      // this.orderTime = body.orderTime;
       this.orderType = body.orderType;
+      this.orderDateTime = body.orderDateTime;
       this.orderStatus = body.orderStatus;
       this.customerName = body.customerName;
+      this.employeeNote = body.employeeNote;
       this.customerEmail = body.customerEmail;
-
+      this.cancellationBy = body.cancellationBy;
       this.fulfillmentDate = body.fulfillmentDate;
       this.fulfillmentTime = body.fulfillmentTime;
-      this.orderDate = body.orderDate;
+      this.cancellationDate = body.cancellationDate;
+      this.cancellationReason = body.cancellationReason;
+      this.transactionId = body.transactionId;
     }
   }
 
@@ -76,13 +78,13 @@ export class CreateOrderDto {
   @ApiProperty({ type: String })
   @IsNotEmpty()
   @IsString()
-  @IsMilitaryTime()
+  @MaxLength(50)
   readonly fulfillmentTime: string;
 
   @ApiProperty({ type: String })
   @IsNotEmpty()
   @IsString()
-  readonly orderDate: string;
+  readonly orderDateTime: string;
 
   @ApiProperty({ type: String })
   @IsOptional()
@@ -100,6 +102,12 @@ export class CreateOrderDto {
   @MaxLength(500)
   @IsString()
   readonly cancellationReason: string;
+
+  @ApiProperty({ type: String })
+  @IsOptional()
+  @IsString()
+  @MaxLength(99)
+  readonly transactionId: string;
 
   @ApiProperty({ type: String })
   @IsOptional()

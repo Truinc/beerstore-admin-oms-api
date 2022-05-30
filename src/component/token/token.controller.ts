@@ -44,7 +44,7 @@ export class TokenController {
   })
   @ApiUnauthorizedResponse({ description: 'UnauthorizedResponse' })
   @UseGuards(JwtAccessGuard, RolesGuard)
-  @Roles(RolesEnum.admin)
+  @Roles(RolesEnum.superadmin)
   @HttpCode(HttpStatus.CREATED)
   @Post()
   create(@Body() createTokenDto: CreateTokenDto) {
@@ -55,7 +55,7 @@ export class TokenController {
   @ApiNotFoundResponse({ description: 'token not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
   @UseGuards(JwtAccessGuard, RolesGuard)
-  @Roles(RolesEnum.admin)
+  @Roles(RolesEnum.superadmin)
   @HttpCode(HttpStatus.OK)
   @Get(':token')
   async findOne(@Param('token') token: string) {
@@ -71,7 +71,7 @@ export class TokenController {
   @ApiNotFoundResponse({ description: 'token not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
   @UseGuards(JwtAccessGuard, RolesGuard)
-  @Roles(RolesEnum.admin)
+  @Roles(RolesEnum.superadmin)
   @HttpCode(HttpStatus.OK)
   @Patch(':token')
   update(
@@ -85,7 +85,7 @@ export class TokenController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
   @ApiNotFoundResponse({ description: 'token not found' })
   @UseGuards(JwtAccessGuard, RolesGuard)
-  @Roles(RolesEnum.admin)
+  @Roles(RolesEnum.superadmin)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':token')
   remove(@Param('token') token: string) {

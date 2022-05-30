@@ -9,9 +9,9 @@ import { UserService } from '../user/user.service';
 import { TokenService } from '../token/token.service';
 import SignUpDto from './dto/sign-up.dto';
 import JwtTokensDto from './dto/jwt-tokens.dto';
-import { User } from '../user/entity/user.entity';
+import { RolesEnum, User } from '../user/entity/user.entity';
 import { TokenEnum } from '../token/entity/token.entity';
-
+import { SIGNINLOGS } from '@beerstore/core/utils';
 @Injectable()
 export default class AuthService {
   constructor(
@@ -24,30 +24,92 @@ export default class AuthService {
     password: string,
   ): Promise<null | User> {
     const user = await this.usersService.findWithUsername(username);
-
     if (!user) {
-      this.usersService.addSignInLog(user.id, 'Last Unsuccessful Login');
-      throw new UnauthorizedException('username not found');
+      throw new UnauthorizedException('Incorrect iD or password.');
     }
-
+    if (user.isActive !== 1) {
+      this.usersService.upsertSignInlog(user.id, SIGNINLOGS.ACCOUNT_LOCKED);
+      throw new UnauthorizedException(
+        'Your account has been disabled. Please get in contact with your store manager to reset your password.',
+      );
+    }
     const passwordCompared = await bcrypt.compare(password, user.password);
     if (passwordCompared) {
-      this.usersService.addSignInLog(user.id, 'Last Successful Login');
+      this.usersService.upsertSignInlog(
+        user.id,
+        SIGNINLOGS.LAST_SUCCESSFUL_LOGIN,
+      );
+      this.usersService.patch(user.id, {
+        loginAttempts: 0,
+        isActive: 1,
+      });
       return user;
     }
-    this.usersService.addSignInLog(user.id, 'Last Unsuccessful Login');
-    throw new UnauthorizedException('username or password is wrong');
+    await this.usersService.upsertSignInlog(
+      user.id,
+      SIGNINLOGS.LAST_UNSUCCESSFUL_LOGIN,
+    );
+    const prevAttemptsCount = user?.loginAttempts || 0;
+    if (prevAttemptsCount + 1 >= 3) {
+      // make user inactive
+      this.usersService.patch(user.id, {
+        loginAttempts: prevAttemptsCount + 1,
+        isActive: 0,
+      });
+      this.usersService.upsertSignInlog(
+        user.id,
+        SIGNINLOGS.LAST_UNSUCCESSFUL_LOGIN,
+      );
+      this.usersService.upsertSignInlog(user.id, SIGNINLOGS.ACCOUNT_LOCKED);
+      throw new UnauthorizedException(
+        'Your account has been disabled. Please get in contact with your store manager to reset your password.',
+      );
+    } else {
+      this.usersService.patch(user.id, {
+        isActive: 1,
+        loginAttempts: prevAttemptsCount + 1,
+      });
+    }
+
+    throw new UnauthorizedException('Incorrect ID or password.');
+  }
+
+  /**
+   * method to verify user credentials before cancelling order
+   * @param username
+   * @param password
+   */
+  public async validateCredentials(
+    username: string,
+    password: string,
+  ): Promise<boolean> {
+    const user = await this.usersService.findWithUsername(username);
+    if (!user) {
+      throw new UnauthorizedException('Incorrect EmployeeId');
+    }
+    const passwordCompared = await bcrypt.compare(password, user.password);
+    if (passwordCompared) {
+      return true;
+    }
+    throw new UnauthorizedException('Incorrect Password.');
   }
 
   public async login(username: string): Promise<JwtTokensDto> {
     try {
       const user = await this.usersService.findWithUsername(username);
+      console.log('user', user);
       if (!user) {
-        throw new UnauthorizedException('username or password is wrong');
+        throw new UnauthorizedException('Incorrect ID or Password.');
+      }
+
+      if (user.isActive !== 1) {
+        throw new UnauthorizedException(
+          'Your account has been disabled. Please get in contact with your store manager to reset your password.',
+        );
       }
       // const passwordCompared = await bcrypt.compare(password, user.password);
       // if (!passwordCompared) {
-      //   throw new UnauthorizedException('username or password is wrong');
+      //   throw new UnauthorizedException('Incorrect ID or Password.');
       // }
       const token = await this.tokenService.create(user);
       return new JwtTokensDto({
@@ -68,6 +130,7 @@ export default class AuthService {
         tokens: token,
       });
     } catch (err) {
+      console.log('err', err.message);
       throw err;
     }
   }

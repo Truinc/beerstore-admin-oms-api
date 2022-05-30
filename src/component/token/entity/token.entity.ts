@@ -13,6 +13,8 @@ export enum TokenEnum {
   refresh = 'refresh',
   access = 'access',
   reset = 'reset',
+  beerguy = 'beerguy',
+  orderqueue = 'orderqueue',
 }
 
 @Entity()

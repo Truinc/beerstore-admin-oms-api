@@ -5,10 +5,13 @@ import {
   Entity,
   UpdateDateColumn,
   OneToMany,
+  OneToOne,
   PrimaryColumn,
 } from 'typeorm';
 import { StoreHours } from './storeHours.entity';
 import { StoreFeatures } from './storeFeatures.entity';
+import { StoreDeliveryCharges } from './storeDeliveryFee.entity';
+import { StoreExtraFeatures } from './storeExtraFeatures.entity';
 
 @Entity()
 export class Store {
@@ -128,4 +131,26 @@ export class Store {
     onDelete: 'CASCADE',
   })
   storeFeatures: StoreFeatures[];
+
+  // @OneToMany(
+  //   () => StoreExtraFeatures,
+  //   (storeExtraFeatures) => storeExtraFeatures.store,
+  //   {
+  //     eager: true,
+  //     cascade: ['insert', 'update'],
+  //     // onDelete: 'CASCADE',
+  //   },
+  // )
+  // storeExtraFeatures: StoreExtraFeatures[];
+
+  // @OneToOne(
+  //   () => StoreDeliveryCharges,
+  //   (storeDeliveryFee) => storeDeliveryFee.store,
+  //   {
+  //     eager: true,
+  //     cascade: ['insert', 'update'],
+  //     // onDelete: 'CASCADE',
+  //   },
+  // )
+  // storeDeliveryFee: StoreDeliveryCharges;
 }

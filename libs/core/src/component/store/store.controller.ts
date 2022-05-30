@@ -15,9 +15,9 @@ import {
   ParseFloatPipe,
   ParseBoolPipe,
   DefaultValuePipe,
-  CacheInterceptor,
-  UseInterceptors,
-  CacheTTL,
+  // CacheInterceptor,
+  // UseInterceptors,
+  // CacheTTL,
   Post,
   Delete,
 } from '@nestjs/common';
@@ -41,7 +41,9 @@ import { UpdateStoreMetaDto } from './dto/update-store-meta.dto';
 import { Store } from './entities/store.entity';
 import { StoreService } from './store.service';
 import { CreateDto } from './dto/create.dto';
-
+import { HolidayHours } from './entities/holidayHrs.entity';
+import { RequestUser } from '@beerstore/core/decorators/request-user';
+import { User } from 'src/component/user/entity/user.entity';
 @ApiTags('store')
 @Controller('store')
 @ApiBearerAuth()
@@ -59,6 +61,74 @@ export class StoreController {
   //   }
   //   return store;
   // }
+
+  @ApiQuery({
+    required: false,
+    name: 'id',
+    type: Number,
+  })
+  @ApiQuery({
+    required: false,
+    name: 'street',
+    description: 'search in locationName ',
+  })
+  @ApiQuery({
+    required: false,
+    name: 'location',
+    description: 'search in locationName ',
+  })
+  @ApiQuery({
+    required: false,
+    name: 'postal',
+  })
+  @ApiQuery({
+    required: false,
+    name: 'city',
+  })
+  @ApiQuery({
+    required: true,
+    name: 'lat',
+    type: 'number',
+  })
+  @ApiQuery({
+    required: true,
+    name: 'lang',
+    type: 'number',
+  })
+  @ApiPaginatedResponse(Store)
+  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
+  // @UseInterceptors(CacheInterceptor)
+  // @CacheTTL(300)
+  @UseGuards(JwtAccessGuard)
+  @HttpCode(HttpStatus.OK)
+  @Get('/selectedStores')
+  async getStores(
+    @RequestUser() user: User,
+    @Query('location') location: string,
+    @Query('street') street: string,
+    @Query('postal') postal_code: string,
+    @Query('city') city: string,
+    @Query('id') id: number,
+    @Query(PaginationInputPipe) paginationDto: PaginationInputDto,
+  ) {
+    try {
+      console.log('user', user);
+      const { take, skip, sort } = paginationDto;
+      return this.storeService.storesList(
+        location,
+        street,
+        postal_code,
+        city,
+        take,
+        skip,
+        sort,
+        id,
+        user,
+      );
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
 
   @ApiUnauthorizedResponse({ description: 'UnauthorizedResponse' })
   @ApiQuery({
@@ -101,11 +171,11 @@ export class StoreController {
     return store;
   }
 
-  // @ApiQuery({
-  //   required: false,
-  //   name: 'storeId',
-  //   type: Number,
-  // })
+  @ApiQuery({
+    required: false,
+    name: 'id',
+    type: Number,
+  })
   @ApiQuery({
     required: false,
     name: 'street',
@@ -160,6 +230,7 @@ export class StoreController {
     @Query('street') street: string,
     @Query('postal') postal_code: string,
     @Query('city') city: string,
+    @Query('id') id: number,
     @Query('customer', new DefaultValuePipe(0), ParseIntPipe) customer: number,
     @Query('date', new DefaultValuePipe(new Date())) dateForHoliday: Date,
     @Query(PaginationInputPipe) paginationDto: PaginationInputDto,
@@ -185,6 +256,7 @@ export class StoreController {
         sort,
         customer,
         dateForHoliday,
+        id,
       );
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -264,35 +336,34 @@ export class StoreController {
   async getAllExtraFeatures() {
     return [
       {
-        code: 'pickup_available',
-        feature: 'In-Store Pickup',
+        code: 'accept_empties',
+        feature: 'Empties Accepted',
+      },
+      {
+        code: 'kiosk_available',
+        feature: 'Self-Serve Kiosk',
       },
       {
         code: 'delivery_available',
         feature: 'Home Delivery',
       },
       {
+        code: 'pickup_available',
+        feature: 'In-store Pickup',
+      },
+      {
         code: 'curbside_available',
-        feature: 'Crubside Pickup',
+        feature: 'Curbside Pickup',
       },
 
       {
         code: 'drive_thru_available',
-        feature: 'Drive-thru',
+        feature: 'Drive-Thru',
       },
-
       // {
       //   code: 'not_accept_empties',
       //   feature: 'Currently Not Accepting Empties',
       // },
-      {
-        code: 'kiosk_available',
-        feature: 'Self-Serve Kiosk',
-      },
-      {
-        code: 'accept_empties',
-        feature: 'Empties Accepted',
-      },
     ];
   }
 
@@ -361,5 +432,26 @@ export class StoreController {
   @Delete('save/holiday/calender/:parentId')
   async deleteHoliday(@Param('parentId', ParseIntPipe) parentId: number) {
     return this.storeService.deleteHoliday(parentId);
+  }
+
+  @ApiPaginatedResponse(HolidayHours)
+  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
+  @UseGuards(JwtAccessGuard)
+  @HttpCode(HttpStatus.OK)
+  @Get('/save/holiday/calender')
+  async findAllholidays(
+    @Query(PaginationInputPipe) paginationDto: PaginationInputDto,
+  ) {
+    try {
+      const { take, skip, sort } = paginationDto;
+      const holidays = await this.storeService.findAllHolidays(
+        take,
+        skip,
+        sort,
+      );
+      return holidays;
+    } catch (error) {
+      throw error;
+    }
   }
 }

@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   Column,
+  JoinColumn,
+  OneToOne,
   CreateDateColumn,
   Entity,
   ManyToOne,

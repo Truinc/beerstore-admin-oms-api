@@ -1,7 +1,9 @@
 import {
+  IsArray,
   IsEmail,
   IsEnum,
   IsNotEmpty,
+  IsOptional,
   IsString,
   MaxLength,
   MinLength,
@@ -12,6 +14,7 @@ import { RolesEnum } from '../entity/user.entity';
 export class CreateUserDto {
   constructor(body: CreateUserDto | null = null) {
     if (body) {
+      this.employeeId = body.employeeId;
       this.username = body.username;
       this.password = body.password;
       this.email = body.email;
@@ -19,8 +22,13 @@ export class CreateUserDto {
       this.lastName = body.lastName;
       this.isActive = body.isActive;
       this.role = body.role;
+      this.baseStoreId = body.baseStoreId;
     }
   }
+
+  @ApiProperty({ type: String })
+  @IsString()
+  readonly employeeId: string;
 
   @ApiProperty({ type: String })
   @IsNotEmpty()
@@ -60,4 +68,8 @@ export class CreateUserDto {
 
   @ApiProperty({ type: Number, default: 1 })
   isActive: number;
+
+  @ApiProperty({ type: Number })
+  @IsOptional()
+  baseStoreId: number;
 }

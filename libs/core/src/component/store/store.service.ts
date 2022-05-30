@@ -2,6 +2,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import {
+  // BadGatewayException,
   BadRequestException,
   HttpException,
   Injectable,
@@ -14,28 +15,35 @@ import {
   getConnection,
   Repository,
   getRepository,
-  TableForeignKey,
+  // TableForeignKey,
   Between,
 } from 'typeorm';
 
 import { UpdateStoreMetaDto } from './dto/update-store-meta.dto';
+// import { CreateDelveryChargesDto } from './dto/create-store-deliveryCharges.dto';
+// import { CreateExtraFeaturesDto } from './dto/create-store-extraFeatures.dto';
 import { Store } from './entities/store.entity';
 import { StoreFeatures } from './entities/storeFeatures.entity';
 import { StoreHours } from './entities/storeHours.entity';
+import { StoreExtraFeatures } from './entities/storeExtraFeatures.entity';
+import { StoreDeliveryCharges } from './entities/storeDeliveryFee.entity';
 import { catchError, lastValueFrom, map } from 'rxjs';
 import IStores from './interfaces/store.interface';
 import { CreateDeliveryDto } from './dto/create-delivery-fee.dto';
 import { ImportExtraFeatureDto } from './dto/import-extra-feature.dto';
 import { ImportDeliveryFeeDto } from './dto/import-delivery-fee.dto';
 import { CreateStoreExtraFeaturesDto } from './dto/create-store-extra-feature.dto';
-import { StoreExtraFeatures } from './entities/storeExtraFeatures.entity';
-import { StoreDeliveryCharges } from './entities/storeDeliveryFee.entity';
 import { groupBy, pick } from 'lodash';
 import { StoreFavorite } from './entities/storeFavorite.entity';
 import { HolidayHours } from './entities/holidayHrs.entity';
 import { HolidayInfo } from './entities/holidayInfo.entity';
 import { CreateHolidayHoursDto } from './dto/create-holiday-hours.dto';
 import { CreateHolidayInfoDto } from './dto/create-holiday-info.dto';
+import { RolesEnum, User } from 'src/component/user/entity/user.entity';
+// import {
+//   RolesEnum,
+//   User,
+// } from 'apps/oms/src/component/user/entity/user.entity';
 
 @Injectable()
 export class StoreService {
@@ -44,12 +52,12 @@ export class StoreService {
     private storeRepository: Repository<Store>,
     @InjectRepository(StoreHours)
     private storeHoursRepository: Repository<StoreHours>,
-    @InjectRepository(StoreFeatures)
-    private storeFeaturesRepository: Repository<StoreFeatures>,
     @InjectRepository(StoreExtraFeatures)
     private storeExtraFeaturesRepository: Repository<StoreExtraFeatures>,
     @InjectRepository(StoreDeliveryCharges)
     private storeDeliveryRepository: Repository<StoreDeliveryCharges>,
+    @InjectRepository(StoreFeatures)
+    private storeFeaturesRepository: Repository<StoreFeatures>,
     @InjectRepository(StoreFavorite)
     private storeFavoriteRepository: Repository<StoreFavorite>,
     @InjectRepository(HolidayHours)
@@ -357,6 +365,7 @@ export class StoreService {
     sort: object,
     customerId = 0,
     dateForHoliday = new Date(),
+    id: number,
   ) {
     const formattedSlotDate = moment(dateForHoliday).format('YYYY-MM-DD');
     const table = getRepository(Store)
@@ -403,10 +412,10 @@ export class StoreService {
       Object.assign(value, { city: `%${city}%` });
     }
 
-    // if (store_id) {
-    //   where.push('storeId like :store_id');
-    //   Object.assign(value, { store_id: `%${store_id}%` });
-    // }
+    if (id) {
+      where.push('id like :id');
+      Object.assign(value, { id: `%${id}%` });
+    }
 
     if (where.length > 0) {
       table.where(where.join(' OR '), value);
@@ -417,7 +426,7 @@ export class StoreService {
     }
 
     table.orderBy(sort as { [key: string]: 'ASC' | 'DESC' });
-
+    const total = await table.getCount();
     if (skip) {
       table.skip(skip);
     }
@@ -449,7 +458,7 @@ export class StoreService {
       return o;
     });
 
-    const total = await this.storeRepository.count();
+    // const total = await this.storeRepository.count();
 
     const responseToSend = {
       lat,
@@ -466,6 +475,133 @@ export class StoreService {
     return responseToSend;
   }
 
+  async storesList(
+    location: string,
+    street: string,
+    postal_code: string,
+    city: string,
+    take: number,
+    skip: number,
+    sort: object,
+    id: number,
+    user: User,
+  ) {
+    const storeIds = [];
+    console.log('user', user);
+    if (user && user.role === RolesEnum.storemanager && user?.usersStores) {
+      user?.usersStores.forEach((userStore) => {
+        storeIds.push(userStore.storeId);
+      });
+    }
+    let queryString = '';
+    const table = getRepository(Store)
+      .createQueryBuilder('Store')
+      .select([
+        'Store.id AS id',
+        'Store.locationName AS locationName',
+        'Store.streetNo AS streetNo',
+        'Store.street AS street',
+        'Store.city AS city',
+        'Store.province AS province',
+        'Store.postalCode AS postalCode',
+        'Store.country AS country',
+        'Store.latitude AS latitude',
+        'Store.longitude AS longitude',
+        'Store.phone AS phone',
+        'Store.createdDate AS createdDate',
+        'Store.updatedDate AS updatedDate',
+      ]);
+
+    const where = [];
+    const value = {};
+    if (location) {
+      where.push('locationName like :location');
+      Object.assign(value, { location: `%${location}%` });
+    }
+
+    if (street) {
+      where.push('street like :street');
+      Object.assign(value, { street: `%${street}%` });
+    }
+
+    if (postal_code) {
+      where.push('postalCode like :postal_code');
+      Object.assign(value, { postal_code: `%${postal_code}%` });
+    }
+
+    if (city) {
+      where.push('city like :city');
+      Object.assign(value, { city: `%${city}%` });
+    }
+
+    if (id) {
+      where.push('id like :id');
+      Object.assign(value, { id: `%${id}%` });
+    }
+
+    if (where.length > 0) {
+      queryString = where.join(' OR ');
+      // table.where(where.join(' OR '), value);
+    }
+
+    if (storeIds.length) {
+      queryString = queryString
+        ? `( ${queryString} ) AND id IN (:...ids)`
+        : `id IN (:...ids)`;
+      Object.assign(value, { ids: storeIds });
+    }
+
+    table.where(queryString, value);
+
+    if (!sort) {
+      sort = { distance: 'ASC' };
+    }
+
+    table.orderBy(sort as { [key: string]: 'ASC' | 'DESC' });
+    const total = await table.getCount();
+    if (skip) {
+      table.skip(skip);
+    }
+    if (take) {
+      table.take(take);
+    }
+    let items: Store[] = await table.getRawMany();
+
+    const stores = items.map((item) => item.id);
+    let extraFeature = [];
+    if (stores.length > 0) {
+      extraFeature = await this.storeExtraFeaturesRepository
+        .createQueryBuilder('feature')
+        .where('feature.storeId IN (:...stores)', {
+          stores: [...stores],
+          status: 1,
+        })
+        .getRawMany();
+    }
+
+    // AND feature.isActive = :status
+    const storeExtraFeatures = groupBy(extraFeature, 'feature_storeId');
+    items = items.map((o) => {
+      if (storeExtraFeatures[o.id]) {
+        Object.assign(o, { extraFeature: storeExtraFeatures[o.id] });
+      } else {
+        Object.assign(o, { extraFeature: [] });
+      }
+      return o;
+    });
+
+    // const total = await this.storeRepository.count();
+
+    const responseToSend = {
+      total,
+      take,
+      skip,
+      items,
+    };
+
+    return responseToSend;
+  }
+
   async updateStore(
     id: number,
     updateStoreDto: UpdateStoreMetaDto,
@@ -477,7 +613,22 @@ export class StoreService {
       throw new NotFoundException('store not found');
     }
 
-    const payload = { ...updateStoreDto, id: store.id };
+    if (updateStoreDto.featuresIds.length) {
+      await this.deleteStoreFeatures(updateStoreDto.featuresIds);
+    }
+
+    delete updateStoreDto['featuresIds'];
+
+    const strFeatures = updateStoreDto.storeFeatures.map((item) => {
+      const { feature } = item;
+      return { feature };
+    });
+
+    const payload = {
+      ...updateStoreDto,
+      storeFeatures: strFeatures,
+      id: store.id,
+    };
     const storeToSave = await this.storeRepository.preload(payload);
     await this.storeRepository.save(storeToSave);
 
@@ -515,6 +666,11 @@ export class StoreService {
 
     const updatedStore = await this.getStore(store.id, false, null);
     return updatedStore;
+  }
+
+  async deleteStoreFeatures(idArr: number[]) {
+    await this.storeFeaturesRepository.delete(idArr);
+    return;
   }
 
   formatStoreHours(store: Store): Store {
@@ -563,7 +719,7 @@ export class StoreService {
       where: { store },
     });
 
-    let storeResponse: Store = { ...store };
+    let storeResponse: Store | any = { ...store };
     if (format) {
       storeResponse = this.formatStoreHours(storeResponse);
     }
@@ -846,6 +1002,10 @@ export class StoreService {
     holidayInfo: CreateHolidayInfoDto[],
   ) {
     const holidayInfoList = [];
+    if (holidayHour.id) {
+      await this.deleteHoliday(holidayHour.id);
+      delete holidayHour.id;
+    }
     for (const info of holidayInfo) {
       if (Array.isArray(info.storeIdList) && info.storeIdList.length > 0) {
         for (const storeId of info.storeIdList) {
@@ -873,6 +1033,24 @@ export class StoreService {
   async deleteHoliday(id: number) {
     await this.storeHolidayHrsRepository.delete(id);
     return;
+  }
+
+  async findAllHolidays(take: number, skip: number, sort: object) {
+    const [result, total] = await this.storeHolidayHrsRepository.findAndCount({
+      take,
+      skip,
+      ...(sort && { sort }),
+    });
+    return {
+      items: result,
+      count: total,
+      take,
+      skip,
+    };
+  }
+
+  async getHoliday(id: number): Promise<any> {
+    return this.storeHolidayHrsRepository.findOne(id);
   }
 }
 

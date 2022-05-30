@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional } from 'class-validator';
 import {
   Entity,
   Column,
@@ -25,11 +26,8 @@ import {
 // "status_id": 10,
 // "status": "Completed",
 
-
 // "status_id": 11,
 // "status": "Awaiting Fulfillment",
-
-
 
 // "status_id": 8,
 // "status": "Awaiting Pickup",
@@ -161,4 +159,29 @@ export class ServerOrder {
     nullable: true,
   })
   employeeNote: string;
+
+  @ApiProperty({ type: String })
+  @Column({
+    type: 'nvarchar',
+    length: 250,
+    nullable: true,
+    default: '',
+  })
+  cancellationNote: string;
+
+  @ApiProperty({ type: String })
+  @Column({
+    type: 'nvarchar',
+    length: 200,
+    nullable: true,
+  })
+  transactionId: string;
+
+  @ApiProperty({ type: String })
+  @IsOptional()
+  @Column({
+    type: 'nvarchar',
+    nullable: true,
+  })
+  partial: string;
 }
