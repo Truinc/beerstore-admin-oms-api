@@ -163,6 +163,15 @@ export class ServerOrder {
   @ApiProperty({ type: String })
   @Column({
     type: 'nvarchar',
+    length: 250,
+    nullable: true,
+    default: '',
+  })
+  cancellationNote: string;
+
+  @ApiProperty({ type: String })
+  @Column({
+    type: 'nvarchar',
     length: 200,
     nullable: true,
   })

@@ -25,12 +25,12 @@ export default class AuthService {
   ): Promise<null | User> {
     const user = await this.usersService.findWithUsername(username);
     if (!user) {
-      throw new UnauthorizedException('Username not found.');
+      throw new UnauthorizedException('Incorrect id or password.');
     }
     if (user.isActive !== 1) {
       this.usersService.upsertSignInlog(user.id, SIGNINLOGS.ACCOUNT_LOCKED);
       throw new UnauthorizedException(
-        'Your account is disabled, Please get in contact with your store manager.',
+        'Your account has been disabled. Please get in contact with your store manager to reset your password.',
       );
     }
     const passwordCompared = await bcrypt.compare(password, user.password);
@@ -62,7 +62,7 @@ export default class AuthService {
       );
       this.usersService.upsertSignInlog(user.id, SIGNINLOGS.ACCOUNT_LOCKED);
       throw new UnauthorizedException(
-        'Your account is disabled, Please get in contact with your store manager.',
+        'Your account has been disabled. Please get in contact with your store manager to reset your password.',
       );
     } else {
       this.usersService.patch(user.id, {
@@ -104,7 +104,7 @@ export default class AuthService {
 
       if (user.isActive !== 1) {
         throw new UnauthorizedException(
-          'Your account is disabled, Please get in contact with your store manager',
+          'Your account has been disabled. Please get in contact with your store manager to reset your password.',
         );
       }
       // const passwordCompared = await bcrypt.compare(password, user.password);

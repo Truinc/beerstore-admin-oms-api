@@ -31,19 +31,18 @@ export class CreateOrderHistoryDto {
   @MaxLength(200)
   readonly identifier: string;
 
-  
-  @ApiProperty({ type: Number })
-  @IsOptional()
-  @IsNumber()
-  readonly employeeId?: number;
+  // @ApiProperty({ type: Number })
+  // @IsOptional()
+  // @IsNumber()
+  // readonly employeeId?: number;
 
-  @ApiProperty({ type: String })
-  @IsOptional()
-  @IsString()
-  readonly password?: string;
+  // @ApiProperty({ type: String })
+  // @IsOptional()
+  // @IsString()
+  // readonly password?: string;
 
-  @ApiProperty({ type: String })
-  @IsOptional()
-  @IsString()
-  readonly employeeNote?: string;
+  // @ApiProperty({ type: String })
+  // @IsOptional()
+  // @IsString()
+  // readonly employeeNote?: string;
 }

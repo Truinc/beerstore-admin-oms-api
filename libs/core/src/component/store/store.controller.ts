@@ -349,16 +349,16 @@ export class StoreController {
       },
       {
         code: 'pickup_available',
-        feature: 'In-Store Pickup',
+        feature: 'In-store Pickup',
       },
       {
         code: 'curbside_available',
-        feature: 'Crubside Pickup',
+        feature: 'Curbside Pickup',
       },
 
       {
         code: 'drive_thru_available',
-        feature: 'Drive-thru',
+        feature: 'Drive-Thru',
       },
       // {
       //   code: 'not_accept_empties',

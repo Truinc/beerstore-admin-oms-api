@@ -1,55 +1,60 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
 import {
-  IsDefined,
   IsNotEmpty,
-  IsNotEmptyObject,
-  IsObject,
+  IsNumber,
+  IsOptional,
+  IsString,
   MaxLength,
   MinLength,
-  ValidateNested,
 } from 'class-validator';
-import { CreateOrderHistoryDto } from 'src/component/order-history/dto/create-order-history.dto';
-import { CreateOrderDto } from 'src/component/orders/dto';
-import { UpdateOrderDto } from './update-order.dto';
+import { OrderEnum } from './search-order.dto';
 
 export class CancelOrderDto {
-  @ApiProperty({ type: String })
+
+  @ApiProperty({ type: Number })
   @IsNotEmpty()
-  @MinLength(1)
-  @MaxLength(99)
-  readonly orderId: string;
-
-  @IsDefined()
-  @IsNotEmptyObject()
-  @IsObject()
-  @ValidateNested()
-  @Type(() => CreateOrderDto)
-  createOrderDto!: CreateOrderDto;
-
-  @IsDefined()
-  @IsNotEmptyObject()
-  @IsObject()
-  @ValidateNested()
-  @Type(() => UpdateOrderDto)
-  serverOrder: UpdateOrderDto;
-
-  @IsDefined()
-  @IsNotEmptyObject()
-  @IsObject()
-  @ValidateNested()
-  @Type(() => CreateOrderHistoryDto)
-  createOrderHistoryDto: CreateOrderHistoryDto;
+  @IsNumber()
+  readonly orderStatus: OrderEnum;
 
   @ApiProperty({ type: String })
   @IsNotEmpty()
+  @IsString()
   @MinLength(1)
-  @MaxLength(99)
-  readonly username: string;
+  @MaxLength(50)
+  readonly orderType: string;
 
   @ApiProperty({ type: String })
-  @IsNotEmpty()
-  @MinLength(1)
+  @IsOptional()
+  @IsString()
   @MaxLength(99)
-  readonly password: string;
+  readonly transactionId: string;
+
+  @ApiProperty({ type: String })
+  @IsOptional()
+  @MaxLength(200)
+  @IsString()
+  readonly cancellationBy: string;
+
+  @ApiProperty({ type: String })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  readonly identifier: string;
+
+  @ApiProperty({ type: String })
+  @IsOptional()
+  @IsString()
+  readonly cancellationDate: string;
+
+  @ApiProperty({ type: String })
+  @IsOptional()
+  @MaxLength(500)
+  @IsString()
+  readonly cancellationReason: string;
+
+  @ApiProperty({ type: String })
+  @IsOptional()
+  @MaxLength(500)
+  @IsString()
+  readonly cancellationNote?: string;
 }

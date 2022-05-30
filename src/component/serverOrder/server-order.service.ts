@@ -3,12 +3,14 @@ import {
   Injectable,
   // InternalServerErrorException,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, getRepository, Brackets } from 'typeorm';
 import { CreateOrderHistoryDto } from '../order-history/dto/create-order-history.dto';
 import { OrderHistoryService } from '../order-history/order-history.service';
 import { OrdersService } from '../orders/orders.service';
+import { StoreService } from '@beerstore/core/component/store/store.service';
 import { CreateCustomerProofDto } from './dto/create-customer-proof.dto';
 import { CreateServerOrderDto } from './dto/create-server-order.dto';
 import { CreatePaymentDetailsDto } from './dto/create-payment-details.dto';
@@ -22,15 +24,22 @@ import { OrderEnum, ServerOrder } from './entity/server-order.entity';
 import { CreateOrderDto } from '../orders/dto/createOrder.dto';
 import AuthService from '../auth/auth.service';
 import * as moment from 'moment';
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
 import { BamboraService } from '@beerstore/core/component/bambora/bambora.service';
 import { BeerGuyUpdateDto } from './dto/beerguy-order-update.dto';
+import { catchError, lastValueFrom, map } from 'rxjs';
+import { CancelOrderDto } from './dto/cancel-order.dto';
 
 @Injectable()
 export class ServerOrderService {
   constructor(
     private authService: AuthService,
+    private httpService: HttpService,
+    private configService: ConfigService,
     private ordersService: OrdersService,
     private bamboraService: BamboraService,
+    private storeService: StoreService,
     private orderHistoryService: OrderHistoryService,
     @InjectRepository(ServerOrder)
     private serverOrderRepository: Repository<ServerOrder>,
@@ -65,12 +74,12 @@ export class ServerOrderService {
     }
 
     if (searchFromDate === searchToDate) {
-      table.andWhere('ServerOrder.fulfillmentDate = :searchFromDate', {
+      table.andWhere('ServerOrder.orderDate = :searchFromDate', {
         searchFromDate,
       });
     } else {
       table.andWhere(
-        'ServerOrder.fulfillmentDate BETWEEN :searchFromDate AND :searchToDate',
+        'ServerOrder.orderDate BETWEEN :searchFromDate AND :searchToDate',
         {
           searchFromDate,
           searchToDate,
@@ -112,7 +121,7 @@ export class ServerOrderService {
     };
   }
 
-  async completeDetail(orderId: number) {
+  async completeDetail(orderId: number, storeId: number, tranId: string) {
     try {
       const resp = await Promise.all([
         this.ordersService.getOrderDetails(`${orderId}`),
@@ -124,6 +133,10 @@ export class ServerOrderService {
           order: `${orderId}`,
         }),
         this.getCustomerProof(orderId),
+        this.storeService.getStore(storeId, false, null),
+        ...(tranId !== 'na'
+          ? [this.bamboraService.getPaymentInfoByTranasctionId(tranId)]
+          : []),
       ]);
       return {
         orderDetails: resp[0],
@@ -131,6 +144,14 @@ export class ServerOrderService {
         orderFeed: resp[2] || [],
         orderHistory: resp[3]?.items || [],
         ctmProof: resp[4] || [],
+        deliveryCharges: resp[5]?.deliveryFee?.fee || '11.95',
+        ...(tranId !== 'na' && {
+          cardDetails: {
+            lastFour: resp[6]?.card?.last_four || '',
+            cardType: resp[6]?.card?.card_type || '',
+            payment: resp[6]?.amount || '',
+          },
+        }),
       };
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -271,13 +292,13 @@ export class ServerOrderService {
     return order;
   }
 
-  async removeServerOrder(id: number) {
-    const order = await this.serverOrderRepository.findOne(id);
-    if (!order) {
-      throw new NotFoundException('Order not found');
-    }
-    return this.serverOrderRepository.delete(id);
-  }
+  // async removeServerOrder(id: number) {
+  //   const order = await this.serverOrderRepository.findOne(id);
+  //   if (!order) {
+  //     throw new NotFoundException('Order not found');
+  //   }
+  //   return this.serverOrderRepository.delete(id);
+  // }
 
   async updateServerOrder(
     id: number,
@@ -334,77 +355,88 @@ export class ServerOrderService {
     }
   }
 
-  // async handleBeerGuy(updateOrder: BeerGuyUpdateDto): Promise<ServerOrder> {
-  //   //fields
-  //   // orderId, drivername, orderStatus, cancellationDate, cancellationReason, cancellationBy
-  //   // delivery date, deliverytime , employeeNote, underInfluence, dobBefore, photoId,
-
-  //   // const { orderDetails } = data;
-  //   // console.log('data', data);
-  //   try {
-  //     const serverOrder = {
-  //       orderStatus: +updateOrder.orderId,
-  //       cancellationReason: updateOrder.cancellationReason,
-  //       cancellationBy: updateOrder.cancellationBy,
-  //     };
-  //     const orderHistory = {
-  //       orderId: updateOrder.orderId,
-  //       orderStatus: updateOrder.orderStatus,
-  //       name: updateOrder.driverName,
-  //       identifier: '1', // to be replaced with beerguy id
-  //     };
-  //     const orderDetails = {
-  //       status_id: updateOrder.orderStatus,
-  //     };
-  //     const customerProof = {
-  //       orderId: updateOrder.orderId,
-  //       underInfluence: updateOrder.underInfluence,
-  //       dobBefore: updateOrder.dobBefore,
-  //       photoId: updateOrder.photoId,
-  //       ...(updateOrder?.driverName && { driverName: updateOrder.driverName }),
-  //     };
-  //     if (updateOrder.orderType === 'delivery') {
-  //       this.updateOrder(
-  //         updateOrder.orderId,
-  //         orderDetails,
-  //         serverOrder,
-  //         orderHistory,
-  //         customerProof,
-  //       );
-  //     }
-  //   } catch (err) {
-  //     throw new BadRequestException(err.message);
-  //   }
-  // }
-
-  async cancelOrder(
-    id: number,
-    orderHistory: CreateOrderHistoryDto,
-    orderDetails: CreateOrderDto,
-    serverOrder: UpdateOrderDto,
-  ): Promise<ServerOrder> {
+  async handleBeerGuy(updateOrder: BeerGuyUpdateDto): Promise<ServerOrder> {
     try {
-      if (
-        serverOrder.orderType === 'pickup' ||
-        serverOrder.orderType === 'curbside'
-      ) {
-        if (serverOrder?.transactionId) {
-          await this.bamboraService.UpdatePaymentStatus(
-            serverOrder.transactionId,
-            {
-              amount: 0,
-            },
-          );
-        }
-      } else if (serverOrder.orderType === 'delivery') {
-        // hit the beerguy api
+      const serverOrder = {
+        orderStatus: +updateOrder.orderId,
+        cancellationReason: updateOrder?.cancellationReason || '',
+        cancellationBy: updateOrder?.cancellationBy || '',
+        cancellationDate: updateOrder.cancellationDate || null,
+      };
+      const orderHistory = {
+        orderId: updateOrder.orderId,
+        orderStatus: updateOrder.orderStatus,
+        name: updateOrder.driverName || '',
+        identifier: 'The Beer Guy',
+      };
+      const orderDetails = {
+        status_id: updateOrder.orderStatus,
+      };
+      const customerProof = {
+        orderId: updateOrder.orderId,
+        underInfluence: updateOrder.underInfluence,
+        dobBefore: updateOrder.dobBefore,
+        photoId: updateOrder.photoId,
+        ...(updateOrder?.driverName && { driverName: updateOrder.driverName }),
+      };
+      if (updateOrder.orderType === 'delivery') {
+        const response = this.updateOrder(
+          updateOrder.orderId,
+          orderDetails,
+          serverOrder,
+          orderHistory,
+          customerProof,
+        );
+        return response;
+      } else {
+        throw new BadRequestException('Order type is not delivery');
       }
-      const resp = await this.ordersService.updateOrder(`${id}`, orderDetails);
+    } catch (err) {
+      throw new BadRequestException(err.message);
+    }
+  }
+
+  async cancelOrder(id: number, data: CancelOrderDto): Promise<ServerOrder> {
+    try {
+      const {
+        orderType,
+        transactionId,
+        cancellationReason,
+        orderStatus,
+        cancellationBy,
+        cancellationDate,
+        cancellationNote,
+      } = data;
+      if (orderType === 'pickup' || orderType === 'curbside') {
+        if (transactionId) {
+          // await this.bamboraService.UpdatePaymentStatus(transactionId, {
+          //   amount: 0,
+          // });
+        }
+      } else if (orderType === 'delivery') {
+        await this.cancelBeerGuyOrder(`${id}`, cancellationReason);
+      }
+      const resp = await this.ordersService.updateOrder(`${id}`, {
+        status_id: +orderStatus,
+      });
+      // console.log('res', resp);
       const response = await Promise.all([
-        this.updateServerOrder(id, serverOrder),
-        this.orderHistoryService.create(orderHistory),
+        this.updateServerOrder(id, {
+          orderId: `${id}`,
+          orderStatus: +orderStatus,
+          cancellationBy,
+          cancellationDate,
+          cancellationReason,
+          cancellationNote: cancellationNote || '',
+        }),
+        this.orderHistoryService.create({
+          orderId: `${id}`,
+          orderStatus: +orderStatus,
+          name: cancellationBy,
+          identifier: '',
+        }),
       ]);
-      console.log('response', response);
+      // console.log('response', response);
       return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -417,32 +449,31 @@ export class ServerOrderService {
     serverOrder: UpdateOrderDto,
     createOrderHistoryDto: CreateOrderHistoryDto,
     customerProof: CreateCustomerProofDto,
-  ): Promise<ServerOrder> {
+  ): Promise<any> {
     const requests = [];
     try {
-      if (serverOrder.orderStatus === OrderEnum.completed) {
-        if (
-          serverOrder.orderType === 'pickup' ||
-          serverOrder.orderType === 'curbside'
-        ) {
-          if (serverOrder?.transactionId) {
-            // await this.bamboraService.UpdatePaymentStatus(
-            //   serverOrder.transactionId,
-            //   {
-            //     amount: 0,
-            //   },
-            // );
-          }
+      const { amount, ...orderDetails } = serverOrder;
+      if (
+        serverOrder.orderType === 'pickup' ||
+        serverOrder.orderType === 'curbside'
+      ) {
+        if (serverOrder?.transactionId) {
+          await this.bamboraService.UpdatePaymentStatus(
+            serverOrder.transactionId,
+            {
+              amount: Number(parseFloat(amount).toFixed(2)),
+            },
+          );
         }
-      } else if (serverOrder.orderStatus === OrderEnum.awaiting_shipment) {
-        // update the beerguy
+      } else if (serverOrder.orderType === 'delivery') {
+        // update beer guy
       }
 
       const resp = await this.ordersService.updateOrder(
         orderId,
         createOrderDto,
       );
-      requests.push(this.updateServerOrder(+orderId, serverOrder));
+      requests.push(this.updateServerOrder(+orderId, orderDetails));
       requests.push(this.orderHistoryService.create(createOrderHistoryDto));
       requests.push(this.addCustomerProof(customerProof));
       const response = await Promise.all(requests);
@@ -452,4 +483,33 @@ export class ServerOrderService {
       throw new BadRequestException(err.message);
     }
   }
+
+  cancelBeerGuyOrder = async (orderId: string, cancelReason: string) => {
+    const payload = {
+      tbs_purchase_id: orderId,
+      cancelReason,
+      order_status: 'cancelled',
+    };
+    const params = new URLSearchParams({
+      api_key: this.configService.get('thebeerguy').key,
+    });
+    const cancelOrderRes = await lastValueFrom(
+      this.httpService
+        .post<{ result: string; output: string }>(
+          `${
+            this.configService.get('thebeerguy').url
+          }/purchase/cancel/?${params.toString()}`,
+          payload,
+        )
+        .pipe(
+          map((response) => response.data),
+          catchError((err) => {
+            const message = err.message;
+            throw new UnprocessableEntityException(message);
+          }),
+        ),
+    );
+    console.log('beerguy cancel order', cancelOrderRes);
+    return cancelOrderRes;
+  };
 }

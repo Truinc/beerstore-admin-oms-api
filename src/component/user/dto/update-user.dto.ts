@@ -27,6 +27,7 @@ export class UpdateUserDto {
 
   @ApiProperty({ type: String })
   @IsString()
+  @IsOptional()
   readonly employeeId?: string;
 
   @ApiProperty({ type: String })

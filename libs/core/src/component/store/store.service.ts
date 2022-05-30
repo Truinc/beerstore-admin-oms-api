@@ -719,7 +719,7 @@ export class StoreService {
       where: { store },
     });
 
-    let storeResponse: Store = { ...store };
+    let storeResponse: Store | any = { ...store };
     if (format) {
       storeResponse = this.formatStoreHours(storeResponse);
     }
