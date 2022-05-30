@@ -533,12 +533,12 @@ export class ServerOrderService {
           `${
             this.configService.get('beerstoreApp').url
           }/customer/SendPushNotificaton`,
+          payload,
           {
             headers: {
               Authorization:
                 'Bearer ' + this.configService.get('beerstoreApp').token,
             },
-            payload,
           },
         )
         .pipe(

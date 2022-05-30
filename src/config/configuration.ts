@@ -89,5 +89,4 @@ export default () => ({
     token: process.env.BEERSTORE_APP_TOKEN,
     title: process.env.BEERSTORE_APP_PUSH_Title,
   },
-  pushNotificationToken: process.env.PUSH_NOTIFICATION,
 });
