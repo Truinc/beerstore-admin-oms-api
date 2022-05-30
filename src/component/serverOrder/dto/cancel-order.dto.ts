@@ -57,4 +57,10 @@ export class CancelOrderDto {
   @MaxLength(500)
   @IsString()
   readonly cancellationNote?: string;
+
+  @ApiProperty({ type: String })
+  @IsOptional()
+  @MaxLength(400)
+  @IsString()
+  readonly checkoutId?: string;
 }

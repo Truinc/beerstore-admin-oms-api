@@ -342,8 +342,10 @@ export class ServerOrderService {
     orderStatus: number,
     createOrderDto: CreateOrderDto,
     partial?: string,
+    checkoutId?: string,
   ): Promise<ServerOrder> {
     try {
+      console.log('checkoutId', checkoutId);
       await this.ordersService.updateOrder(`${id}`, createOrderDto);
       const response = await Promise.all([
         this.updateServerOrderStatus(id, orderStatus, partial),
@@ -380,12 +382,15 @@ export class ServerOrderService {
         ...(updateOrder?.driverName && { driverName: updateOrder.driverName }),
       };
       if (updateOrder.orderType === 'delivery') {
+        //TODO: fetch checkout id from bigcomm
+
         const response = this.updateOrder(
           updateOrder.orderId,
           orderDetails,
           serverOrder,
           orderHistory,
           customerProof,
+          '',
         );
         return response;
       } else {
@@ -449,7 +454,9 @@ export class ServerOrderService {
     serverOrder: UpdateOrderDto,
     createOrderHistoryDto: CreateOrderHistoryDto,
     customerProof: CreateCustomerProofDto,
+    checkoutId: string,
   ): Promise<any> {
+    console.log('checkoutId', checkoutId);
     const requests = [];
     try {
       const { amount, ...orderDetails } = serverOrder;

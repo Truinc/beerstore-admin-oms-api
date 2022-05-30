@@ -84,4 +84,5 @@ export default () => ({
     version: process.env.CANADAPOST_V,
     api_key: process.env.CANADAPOST_API_KEY,
   },
+  pushNotificationToken: process.env.PUSH_NOTIFICATION,
 });

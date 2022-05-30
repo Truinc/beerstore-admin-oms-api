@@ -260,9 +260,16 @@ export class ServerOrderController {
       serverOrder: UpdateOrderDto;
       orderHistory: CreateOrderHistoryDto;
       customerProof: CreateCustomerProofDto;
+      checkoutId?: string;
     },
   ): Promise<any> {
-    const { orderHistory, orderDetails, serverOrder, customerProof } = data;
+    const {
+      orderHistory,
+      orderDetails,
+      serverOrder,
+      customerProof,
+      checkoutId,
+    } = data;
     console.log('data', data);
     const response = await this.serverOrderService.updateOrder(
       `${serverOrderId}`,
@@ -270,6 +277,7 @@ export class ServerOrderController {
       serverOrder,
       orderHistory,
       customerProof,
+      checkoutId,
     );
     return response;
   }
@@ -293,15 +301,18 @@ export class ServerOrderController {
       orderHistory: CreateOrderHistoryDto;
       orderDetails: CreateOrderDto;
       partial?: string;
+      checkoutId?: string;
     },
   ): Promise<any> {
-    const { orderHistory, orderStatus, orderDetails, partial } = data;
+    const { orderHistory, orderStatus, orderDetails, partial, checkoutId } =
+      data;
     const response = await this.serverOrderService.updateOrderDetails(
       serverOrderId,
       orderHistory,
       orderStatus,
       orderDetails,
       partial,
+      checkoutId,
     );
     return response;
   }
