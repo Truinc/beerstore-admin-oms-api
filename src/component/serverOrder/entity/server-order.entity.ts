@@ -184,4 +184,9 @@ export class ServerOrder {
     nullable: true,
   })
   partial: string;
+
+  @ApiProperty({ type: Date })
+  @Column({ type: 'datetime2', nullable: true, default: null })
+  @IsOptional()
+  openDateTime?: Date;
 }
