@@ -85,22 +85,6 @@ export class ServerOrder {
 
   @ApiProperty({ type: String })
   @Column({
-    type: 'nvarchar',
-    length: 200,
-    nullable: false,
-  })
-  customerName: string;
-
-  @ApiProperty({ type: String })
-  @Column({
-    type: 'nvarchar',
-    length: 200,
-    nullable: true,
-  })
-  customerEmail: string;
-
-  @ApiProperty({ type: String })
-  @Column({
     type: 'date',
     nullable: false,
   })
@@ -184,4 +168,107 @@ export class ServerOrder {
     nullable: true,
   })
   partial: string;
+
+  @ApiProperty({ type: String })
+  @Column({
+    type: 'nvarchar',
+    length: 100,
+  })
+  orderVector: string;
+
+  @ApiProperty({ type: Boolean })
+  @Column()
+  partialOrder: boolean;
+
+  @Column({
+    type: "money",
+  })
+  productTotal: number;
+
+  @Column({
+    type: "money",
+  })
+  deliveryFee: number;
+
+  @Column({
+    type: "money",
+  })
+  deliveryFeeHST: number;
+
+  @Column({
+    type: "money",
+  })
+  grandTotal: number;
+
+  @Column({
+    type: "money",
+  })
+  volumeTotalHL: number;
+
+  @Column()
+  singleUnits: number;
+
+  @Column({
+    default: 0
+  })
+  packUnits2_6: number;
+
+  @Column({
+    default: 0
+  })
+  packUnits8_18: number;
+
+  @Column({
+    default: 0
+  })
+  packUnits_24Plus: number;
+
+  @Column({ type: 'datetime2' })
+  submittedDateTime: Date;
+
+  @Column({ type: 'datetime2', default: null, nullable: true })
+  openDateTime: Date;
+
+  @Column({ type: 'datetime2', default: null, nullable: true })
+  pickUpReadyDateTime: Date;
+
+  @Column({
+    default: null,
+    nullable: true
+  })
+  completedByEmpId: number;
+
+  @Column({ type: 'datetime2', default: null, nullable: true })
+  completedDateTime: Date;
+
+  @Column({ default: null })
+  idChecked: string;
+
+  @Column({ type: 'datetime2', default: null, nullable: true })
+  requestedPickUpTime: Date;
+
+  @Column({ type: 'nvarchar', length: 50 })
+  browserVersion: string;
+
+  @Column({
+    default: false
+  })
+  refunded: boolean;
+
+  @Column({
+    type: "money",
+    default: 0
+  })
+  refundedAmount: number
+
+  @Column({
+    type: 'nvarchar',
+    default: null
+  })
+  refundReason: string;
+
+  @Column({
+    type: 'nvarchar',
+  })
+  pickUpType: string;
 }

@@ -6,7 +6,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, getRepository, Brackets } from 'typeorm';
+import { Repository, getRepository, Brackets, getConnection } from 'typeorm';
 import { CreateOrderHistoryDto } from '../order-history/dto/create-order-history.dto';
 import { OrderHistoryService } from '../order-history/order-history.service';
 import { OrdersService } from '../orders/orders.service';
@@ -30,6 +30,9 @@ import { BamboraService } from '@beerstore/core/component/bambora/bambora.servic
 import { BeerGuyUpdateDto } from './dto/beerguy-order-update.dto';
 import { catchError, lastValueFrom, map } from 'rxjs';
 import { CancelOrderDto } from './dto/cancel-order.dto';
+import { ServerOrderDeliveryDetails } from './entity/server-order-delivery-details.entity';
+import { CustomerTypeEnum, ServerOrderCustomerDetails } from './entity/server-order-customer-details.entity';
+import { ServerOrderProductDetails } from './entity/server-order-product-details.entity';
 const OrderstatusText = {
   5: 'cancelled',
   10: 'completed',
@@ -257,7 +260,133 @@ export class ServerOrderService {
   }
 
   async addServerOrder(serverOrder: CreateServerOrderDto): Promise<string> {
+
+    let order = await this.serverOrderRepository.findOne({
+      where: {
+        orderId: serverOrder.orderId
+      }
+    });
+
+    if (order !== undefined) {
+      return "Order Already exist";
+    }
+
+    const queryRunner = getConnection().createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction()
     try {
+      const orderDetails = await lastValueFrom(this.httpService
+        .get(
+          `${this.configService.get('bigcom').url}/stores/${this.configService.get('bigcom').store
+          }/v2/orders/${serverOrder.orderId}`,
+          {
+            headers: {
+              'x-auth-token': this.configService.get('bigcom').access_token,
+            },
+          },
+        ).pipe(
+          map((response) => response.data),
+          catchError((err) => {
+            const message = err.message;
+            throw new UnprocessableEntityException(message);
+          }),
+        )
+      );
+
+      const productDetailsArr = await lastValueFrom(this.httpService
+        .get(orderDetails.products.url,
+          {
+            headers: {
+              'x-auth-token': this.configService.get('bigcom').access_token,
+            },
+          },
+        ).pipe(
+          map((response) => response.data),
+          catchError((err) => {
+            const message = err.message;
+            throw new UnprocessableEntityException(message);
+          }),
+        )
+      );
+
+      const transactionDetails = (serverOrder.transactionId) ? await this.bamboraService.getPaymentInfoByTranasctionId(serverOrder.transactionId): "";
+
+      const billingAddressFormFields = JSON.parse(orderDetails?.billing_address?.form_fields[0]?.value);
+
+      const deliveryDetails = {
+        orderId: serverOrder.orderId,
+        deliveryId: null,
+        deliveryGuyName: null,
+        deliveryDate: null,
+        deliveryAddress: `${orderDetails.billing_address.street_1}, ${orderDetails.billing_address.street_2} ${orderDetails.billing_address.street_2 ? ',' : ''}${orderDetails.billing_address.city
+          }${orderDetails.billing_address.city ? ',' : ''}${orderDetails.billing_address.state
+          }${orderDetails.billing_address.state ? ',' : ''}${orderDetails.billing_address.zip
+          }`,
+        deliveryCity: orderDetails.billing_address.city,
+        deliveryPostalCode: orderDetails.billing_address.zip,
+        deliveryType: null,
+        deliveryETA: null,
+        deliveryScheduledDateTime: null,
+      };
+
+      const customerDetails = {
+        orderId: serverOrder.orderId,
+        name: `${orderDetails.billing_address.first_name} ${orderDetails.billing_address.last_name}`,
+        email: orderDetails.billing_address.email,
+        postalCode: orderDetails.billing_address.zip,
+        dob: billingAddressFormFields.dob,
+        salutation: billingAddressFormFields.salutation,
+        customerType: CustomerTypeEnum.Email,
+        ccType: transactionDetails?.card?.card_type || null,
+        cardNumber: transactionDetails?.card?.last_four || null,
+        cardAmount: transactionDetails?.amount || 0,
+      }
+
+      let singleUnits = 0;
+      let twoSixUnits = 0;
+      let eightEighteenUnits = 0;
+      let twentyFourPlusUnits = 0;
+      let volumeTotalHL = 0;
+
+      let productsArr = productDetailsArr.map((product, index) => {
+        let temp = (product?.product_options[0]?.display_value)?.split(" ");
+        let packSize = temp[0] || 0;
+        let volume = temp[3] || 0;
+        let containerType = temp[2] || "";
+
+        if (packSize == 1) {
+          singleUnits += product?.quantity || 0;
+        } else if (packSize >= 2 && packSize <= 6) {
+          twoSixUnits += product?.quantity || 0;
+        } else if (packSize >= 8 && packSize <= 18) {
+          eightEighteenUnits += product?.quantity || 0;
+        } else if (packSize >= 24) {
+          twentyFourPlusUnits += product?.quantity || 0;
+        }
+
+        let hlTotal = ((((product.quantity * packSize) * volume) / 1000)/ 100);
+        volumeTotalHL += hlTotal;
+        return {
+          orderId: serverOrder.orderId,
+          lineItem: index + 1,
+          itemSKU: product.sku,
+          itemDescription: "",
+          brewer: "",
+          category: "",
+          quantity: product.quantity,
+          packSize,
+          volume,
+          containerType,
+          itemTotal: product.total_inc_tax,
+          itemHLTotal: hlTotal,
+          available: true,
+          utmSource: null,
+          utmMedium: null,
+          utmCampaign: null,
+          utmTerm: null,
+          utmContent: null,
+        }
+      });
       const timeSplit = serverOrder.fulfillmentTime.split('-') || '';
       const orderDateTimeString = moment
         .utc(serverOrder.orderDateTime)
@@ -277,16 +406,46 @@ export class ServerOrderService {
         orderTime: orderDateTime[1].trim(),
         orderDate: orderDateTime[0].trim(),
         cancellationDate,
+        orderVector: billingAddressFormFields.source,
+        partialOrder: false,
+        productTotal: Number(parseFloat(orderDetails.total_ex_tax).toFixed(2)),
+        deliveryFee: Number(parseFloat(orderDetails.shipping_cost_ex_tax).toFixed(2)),
+        deliveryFeeHST: Number(parseFloat(orderDetails.shipping_cost_tax).toFixed(2)),
+        grandTotal: Number(parseFloat(orderDetails.total_ex_tax).toFixed(2)) + Number(parseFloat(orderDetails.shipping_cost_ex_tax).toFixed(2)) + Number(parseFloat(orderDetails.shipping_cost_tax).toFixed(2)),
+        volumeTotalHL,
+        singleUnits: singleUnits,
+        packUnits2_6: twoSixUnits,
+        packUnits8_18: eightEighteenUnits,
+        packUnits_24Plus: twentyFourPlusUnits,
+        submittedDateTime: moment.utc(orderDetails.date_created).format('YYYY-MM-DD hh:mm:ss'),
+        openDateTime: null,
+        pickUpReadyDateTime: null,
+        completedByEmpId: null,
+        completedDateTime: null,
+        idChecked: "",
+        requestedPickUpTime: null,
+        browserVersion: "",
+        refunded: false,
+        refundedAmount: 0,
+        refundReason: "",
+        pickUpType: billingAddressFormFields.pickup_type,
       };
       delete serverOrderParsed.orderDateTime;
-      const createOrder = await this.serverOrderRepository.create(
-        serverOrderParsed,
-      );
-      const order = await this.serverOrderRepository.save(createOrder);
-      // return this.findOne(+order.orderId);
+      delete serverOrderParsed.customerName;
+      delete serverOrderParsed.customerEmail;
+
+      await queryRunner.manager.save(ServerOrder, serverOrderParsed);
+      await queryRunner.manager.save(ServerOrderProductDetails, productsArr);
+      await queryRunner.manager.save(ServerOrderCustomerDetails, customerDetails);
+      await queryRunner.manager.save(ServerOrderDeliveryDetails, deliveryDetails);
+
+      await queryRunner.commitTransaction();
       return 'Order placed';
     } catch (err) {
+      await queryRunner.rollbackTransaction();
       throw new BadRequestException(err.message);
+    } finally {
+      await queryRunner.release();
     }
   }
 
