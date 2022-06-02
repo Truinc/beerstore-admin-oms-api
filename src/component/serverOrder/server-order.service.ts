@@ -582,12 +582,13 @@ export class ServerOrderService {
         cancellationDate,
         cancellationNote,
         checkoutId,
+        identifier,
       } = data;
       if (orderType === 'pickup' || orderType === 'curbside') {
         if (transactionId) {
-          // await this.bamboraService.UpdatePaymentStatus(transactionId, {
-          //   amount: 0,
-          // });
+         const test =  await this.bamboraService.UpdatePaymentStatus(transactionId, {
+            amount: 0,
+          });
         }
       } else if (orderType === 'delivery') {
         await this.cancelBeerGuyOrder(`${id}`, cancellationReason);
@@ -595,7 +596,6 @@ export class ServerOrderService {
       const resp = await this.ordersService.updateOrder(`${id}`, {
         status_id: +orderStatus,
       });
-      // console.log('res', resp);
       const response = await Promise.all([
         this.updateServerOrder(id, {
           orderId: `${id}`,
@@ -609,9 +609,10 @@ export class ServerOrderService {
           orderId: `${id}`,
           orderStatus: +orderStatus,
           name: cancellationBy,
-          identifier: '',
+          identifier: cancellationBy.toLowerCase() === 'customer' ? '' : identifier ,
         }),
       ]);
+      // console.log('res', resp);
       await this.sendPushNotification(
         this.configService.get('beerstoreApp').title,
         `Your Order #${id} has been cancelled.`,
