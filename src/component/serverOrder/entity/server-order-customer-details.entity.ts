@@ -3,7 +3,10 @@ import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
+  OneToOne,
+  JoinColumn,
 } from 'typeorm';
+import { ServerOrder } from './server-order.entity';
 
 export enum CustomerTypeEnum {
   Email = "Email",
@@ -97,4 +100,10 @@ export class ServerOrderCustomerDetails {
     default: 0
   })
   cardAmount: number;
+
+  @OneToOne(() => ServerOrder, (serverOrder) => serverOrder.serverOrderCustomerDetails, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn()
+  serverOrder: ServerOrder;
 }

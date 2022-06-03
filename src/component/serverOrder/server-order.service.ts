@@ -6,7 +6,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, getRepository, Brackets, getConnection } from 'typeorm';
+import { Repository, Brackets } from 'typeorm';
 import { CreateOrderHistoryDto } from '../order-history/dto/create-order-history.dto';
 import { OrderHistoryService } from '../order-history/order-history.service';
 import { OrdersService } from '../orders/orders.service';
@@ -271,9 +271,6 @@ export class ServerOrderService {
       return "Order Already exist";
     }
 
-    const queryRunner = getConnection().createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction()
     try {
       const orderDetails = await lastValueFrom(this.httpService
         .get(
@@ -309,7 +306,7 @@ export class ServerOrderService {
         )
       );
 
-      const transactionDetails = (serverOrder.transactionId) ? await this.bamboraService.getPaymentInfoByTranasctionId(serverOrder.transactionId): "";
+      const transactionDetails = (serverOrder.transactionId) ? await this.bamboraService.getPaymentInfoByTranasctionId(serverOrder.transactionId) : "";
 
       const billingAddressFormFields = JSON.parse(orderDetails?.billing_address?.form_fields[0]?.value);
 
@@ -364,7 +361,7 @@ export class ServerOrderService {
           twentyFourPlusUnits += product?.quantity || 0;
         }
 
-        let hlTotal = ((((product.quantity * packSize) * volume) / 1000)/ 100);
+        let hlTotal = ((((product.quantity * packSize) * volume) / 1000) / 100);
         volumeTotalHL += hlTotal;
         return {
           orderId: serverOrder.orderId,
@@ -434,18 +431,16 @@ export class ServerOrderService {
       delete serverOrderParsed.customerName;
       delete serverOrderParsed.customerEmail;
 
-      await queryRunner.manager.save(ServerOrder, serverOrderParsed);
-      await queryRunner.manager.save(ServerOrderProductDetails, productsArr);
-      await queryRunner.manager.save(ServerOrderCustomerDetails, customerDetails);
-      await queryRunner.manager.save(ServerOrderDeliveryDetails, deliveryDetails);
+      await this.serverOrderRepository.save(this.serverOrderRepository.create({
+        ...serverOrderParsed,
+        serverOrderCustomerDetails: customerDetails,
+        serverOrderDeliveryDetails: deliveryDetails,
+        serverOrderProductDetails: productsArr,
+      }));
 
-      await queryRunner.commitTransaction();
       return 'Order placed';
     } catch (err) {
-      await queryRunner.rollbackTransaction();
       throw new BadRequestException(err.message);
-    } finally {
-      await queryRunner.release();
     }
   }
 

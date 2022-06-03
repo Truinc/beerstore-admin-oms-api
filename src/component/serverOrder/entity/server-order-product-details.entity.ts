@@ -3,7 +3,9 @@ import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
+  ManyToOne,
 } from 'typeorm';
+import { ServerOrder } from './server-order.entity';
 
 export enum OrderEnum {
   awaiting_fulfillment = 11,
@@ -144,4 +146,9 @@ export class ServerOrderProductDetails {
     nullable: true
   })
   utmContent: string;
+
+  @ManyToOne(() => ServerOrder, (serverOrder) => serverOrder.serverOrderProductDetails, {
+    onDelete: 'CASCADE',
+  })
+  serverOrder: ServerOrder;
 }

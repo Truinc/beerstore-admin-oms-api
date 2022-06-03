@@ -6,7 +6,12 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToOne,
+  OneToMany,
 } from 'typeorm';
+import { ServerOrderCustomerDetails } from './server-order-customer-details.entity';
+import { ServerOrderDeliveryDetails } from './server-order-delivery-details.entity';
+import { ServerOrderProductDetails } from './server-order-product-details.entity';
 
 /**
  * @info visit link for bigCom status https://developer.bigcommerce.com/api-reference/b3A6MzU5MDQ3NDE-get-a-single-order-status-by-id
@@ -271,4 +276,22 @@ export class ServerOrder {
     type: 'nvarchar',
   })
   pickUpType: string;
+
+  @OneToOne(() => ServerOrderCustomerDetails, (serverOrderCustomerDetails) => serverOrderCustomerDetails.serverOrder, {
+    cascade: ['insert', 'update'],
+    onDelete: 'CASCADE',
+  })
+  serverOrderCustomerDetails: ServerOrderCustomerDetails;
+
+  @OneToOne(() => ServerOrderDeliveryDetails, (serverOrderDeliveryDetails) => serverOrderDeliveryDetails.serverOrder, {
+    cascade: ['insert', 'update'],
+    onDelete: 'CASCADE',
+  })
+  serverOrderDeliveryDetails: ServerOrderDeliveryDetails;
+
+  @OneToMany(() => ServerOrderProductDetails, (serverOrderProductDetails) => serverOrderProductDetails.serverOrder, {
+    cascade: ['insert', 'update'],
+    onDelete: 'CASCADE',
+  })
+  serverOrderProductDetails: ServerOrderProductDetails[];
 }

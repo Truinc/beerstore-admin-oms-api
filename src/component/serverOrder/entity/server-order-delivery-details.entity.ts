@@ -3,7 +3,10 @@ import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
+  OneToOne,
+  JoinColumn,
 } from 'typeorm';
+import { ServerOrder } from './server-order.entity';
 
 @Entity()
 export class ServerOrderDeliveryDetails {
@@ -79,4 +82,10 @@ export class ServerOrderDeliveryDetails {
 
   @Column({ type: 'datetime2', default: null, nullable: true })
   deliveryScheduledDateTime: Date;
+
+  @OneToOne(() => ServerOrder, (serverOrder) => serverOrder.serverOrderDeliveryDetails, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn()
+  serverOrder: ServerOrder;
 }
