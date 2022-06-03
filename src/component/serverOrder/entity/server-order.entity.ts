@@ -87,6 +87,7 @@ export class ServerOrder {
   @Column({
     type: 'nvarchar',
     length: 200,
+    default: '',
     nullable: false,
   })
   customerName: string;
@@ -185,8 +186,8 @@ export class ServerOrder {
   })
   partial: string;
 
-  @ApiProperty({ type: Date })
-  @Column({ type: 'datetime2', nullable: true, default: null })
+  // @ApiProperty({ type: Date })
   @IsOptional()
-  openDateTime?: Date;
+  @Column({ type: 'datetime2', nullable: true, default: null })
+  openDateTime: Date;
 }
