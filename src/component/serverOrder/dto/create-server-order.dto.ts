@@ -28,6 +28,9 @@ export class CreateServerOrderDto {
       this.cancellationDate = body.cancellationDate;
       this.cancellationReason = body.cancellationReason;
       this.transactionId = body.transactionId;
+      this.orderData = body.orderData;
+      this.productsData = body.productsData;
+      this.paymentData = body.paymentData;
     }
   }
 
@@ -114,4 +117,13 @@ export class CreateServerOrderDto {
   @IsString()
   @MaxLength(500)
   readonly employeeNote: string;
+
+  @IsOptional()
+  readonly productsData: any;
+
+  @IsOptional()
+  readonly orderData: any;
+
+  @IsOptional()
+  readonly paymentData: any;
 }
