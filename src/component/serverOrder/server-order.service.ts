@@ -70,7 +70,7 @@ export class ServerOrderService {
     search?: string,
     orderType?: string,
   ): Promise<object> {
-    const table = this.serverOrderRepository.createQueryBuilder('ServerOrder');
+    const table = this.serverOrderRepository.createQueryBuilder('ServerOrder').leftJoinAndSelect('ServerOrder.serverOrderCustomerDetails', 'ServerOrderCustomerDetails');
     if (status) {
       table.where('ServerOrder.orderStatus = :orderStatus', {
         orderStatus: status,
@@ -82,9 +82,15 @@ export class ServerOrderService {
     }
 
     if (searchFromDate === searchToDate) {
-      table.andWhere('ServerOrder.orderDate = :searchFromDate', {
-        searchFromDate,
-      });
+      const fromDate = searchFromDate;
+      const toDate = `${searchFromDate} 23:59:59`;
+      table.andWhere(
+        'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
+        {
+          fromDate,
+          toDate,
+        },
+      );
     } else {
       table.andWhere(
         'ServerOrder.orderDate BETWEEN :searchFromDate AND :searchToDate',
@@ -103,7 +109,7 @@ export class ServerOrderService {
     if (search) {
       table.andWhere(
         new Brackets((qb) => {
-          qb.where('ServerOrder.customerName like :customerName', {
+          qb.where('serverOrderCustomerDetails.name like :customerName', {
             customerName: `%${search}%`,
           }).orWhere('ServerOrder.orderId like :orderId', {
             orderId: `%${search}%`,
@@ -112,7 +118,33 @@ export class ServerOrderService {
       );
     }
 
-    table.orderBy(sort as { [key: string]: 'ASC' | 'DESC' });
+    if (sort) {
+      const validSortKey = [
+        'id',
+        'orderId',
+        'orderDate',
+        'fulfillmentDate',
+        'cancellationDate',
+        'cancellationBy',
+        'name',
+      ];
+      let sortObjKey;
+      const sortKey = Object.keys(sort)[0];
+      if(sortKey.includes('name')){
+        sortObjKey = `ServerOrderCustomerDetails.name`
+      } else {
+        sortObjKey = `ServerOrder.${sortKey}`
+      }
+      if (validSortKey.includes(sortKey)) {
+        const sortObj = {
+          [sortObjKey]: sort[sortKey],
+        };
+        table.orderBy(sortObj as { [key: string]: 'ASC' | 'DESC' });
+      } else {
+        throw new BadRequestException(`Invalid sort param :- ${sortKey}`);
+      }
+    }
+    
     if (skip) {
       table.skip(skip);
     }
@@ -222,27 +254,27 @@ export class ServerOrderService {
     }
   }
 
-  async addPaymentDetail(paymentDetail: CreatePaymentDetailsDto) {
-    try {
-      const createPaymentDetail = await this.paymentDetailsRepository.create(
-        paymentDetail,
-      );
-      const response = await this.paymentDetailsRepository.save(
-        createPaymentDetail,
-      );
-      // console.log('response', response);
-      return this.paymentDetailsRepository.findOne(response.id);
-    } catch (err) {
-      throw new BadRequestException(err.message);
-    }
-  }
+  // async addPaymentDetail(paymentDetail: CreatePaymentDetailsDto) {
+  //   try {
+  //     const createPaymentDetail = await this.paymentDetailsRepository.create(
+  //       paymentDetail,
+  //     );
+  //     const response = await this.paymentDetailsRepository.save(
+  //       createPaymentDetail,
+  //     );
+  //     // console.log('response', response);
+  //     return this.paymentDetailsRepository.findOne(response.id);
+  //   } catch (err) {
+  //     throw new BadRequestException(err.message);
+  //   }
+  // }
 
-  async getPaymentDetail(orderId: number) {
-    const paymentDetail = await this.paymentDetailsRepository.findOne({
-      where: { orderId },
-    });
-    return paymentDetail;
-  }
+  // async getPaymentDetail(orderId: number) {
+  //   const paymentDetail = await this.paymentDetailsRepository.findOne({
+  //     where: { orderId },
+  //   });
+  //   return paymentDetail;
+  // }
 
   async findAllPostFeed(orderId: number) {
     const postFeed = await this.postFeedRepository.find({
@@ -259,59 +291,711 @@ export class ServerOrderService {
     return this.postFeedRepository.delete(id);
   }
 
-  async addServerOrder(serverOrder: CreateServerOrderDto): Promise<string> {
+  async addServerOrder(serverOrder1: CreateServerOrderDto): Promise<string> {
 
-    let order = await this.serverOrderRepository.findOne({
-      where: {
-        orderId: serverOrder.orderId
-      }
-    });
+    // let order = await this.serverOrderRepository.findOne({
+    //   where: {
+    //     orderId: serverOrder.orderId
+    //   }
+    // });
 
-    if (order !== undefined) {
-      return "Order Already exist";
-    }
+    // if (order !== undefined) {
+    //   return "Order Already exist";
+    // }
+
 
     try {
-      const orderDetails = await lastValueFrom(this.httpService
-        .get(
-          `${this.configService.get('bigcom').url}/stores/${this.configService.get('bigcom').store
-          }/v2/orders/${serverOrder.orderId}`,
+      const serverOrder = {
+        products: [
           {
-            headers: {
-              'x-auth-token': this.configService.get('bigcom').access_token,
-            },
+              "id": 9211,
+              "order_id": 7755,
+              "product_id": 2979965,
+              "variant_id": 13879107,
+              "order_address_id": 7659,
+              "name": "ace-hill-vienna-lager~2410",
+              "name_customer": "ace-hill-vienna-lager~2410",
+              "name_merchant": "ace-hill-vienna-lager~2410",
+              "sku": "3142004_2410",
+              "upc": "",
+              "type": "physical",
+              "base_price": "3.3500",
+              "price_ex_tax": "3.3500",
+              "price_inc_tax": "3.3500",
+              "price_tax": "0.0000",
+              "base_total": "60.3000",
+              "total_ex_tax": "60.3000",
+              "total_inc_tax": "60.3000",
+              "total_tax": "0.0000",
+              "weight": "1.0000",
+              "width": "0.0000",
+              "height": "0.0000",
+              "depth": "0.0000",
+              "quantity": 18,
+              "base_cost_price": "0.0000",
+              "cost_price_inc_tax": "0.0000",
+              "cost_price_ex_tax": "0.0000",
+              "cost_price_tax": "0.0000",
+              "is_refunded": false,
+              "quantity_refunded": 0,
+              "refund_amount": "0.0000",
+              "return_id": 0,
+              "wrapping_name": "",
+              "base_wrapping_cost": "0.0000",
+              "wrapping_cost_ex_tax": "0.0000",
+              "wrapping_cost_inc_tax": "0.0000",
+              "wrapping_cost_tax": "0.0000",
+              "wrapping_message": "",
+              "quantity_shipped": 0,
+              "event_name": null,
+              "event_date": "",
+              "fixed_shipping_cost": "0.0000",
+              "ebay_item_id": "",
+              "ebay_transaction_id": "",
+              "option_set_id": null,
+              "parent_order_product_id": null,
+              "is_bundled_product": false,
+              "bin_picking_number": "",
+              "external_id": null,
+              "fulfillment_source": "",
+              "applied_discounts": [
+                  {
+                      "id": "manual-discount",
+                      "amount": "5.5500",
+                      "name": "Manual Discount",
+                      "code": null,
+                      "target": "order"
+                  }
+              ],
+              "product_options": [
+                  {
+                      "id": 9239,
+                      "option_id": 2960573,
+                      "order_product_id": 9211,
+                      "product_option_id": 2960653,
+                      "display_name": "Beer",
+                      "display_name_customer": "Beer",
+                      "display_name_merchant": "Beer",
+                      "display_value": "1 X Can 473 ml",
+                      "display_value_customer": "1 X Can 473 ml",
+                      "display_value_merchant": "1 X Can 473 ml",
+                      "value": "11294647",
+                      "type": "Multiple choice",
+                      "name": "Beer1648116620-2979965",
+                      "display_style": "Rectangle"
+                  }
+              ],
+              "configurable_fields": [],
+              "product": {
+                  "data": {
+                      "id": 2979965,
+                      "name": "ace-hill-vienna-lager~2410",
+                      "type": "physical",
+                      "sku": "1712_2410",
+                      "description": "An easy-drinking Vienna-style amber lager with slow roasted caramel malts and a fine balance of character and smoothness.",
+                      "weight": 1,
+                      "width": 0,
+                      "depth": 0,
+                      "height": 0,
+                      "price": 36.25,
+                      "cost_price": 0,
+                      "retail_price": 0,
+                      "sale_price": 0,
+                      "map_price": 0,
+                      "tax_class_id": 0,
+                      "product_tax_code": "",
+                      "calculated_price": 36.25,
+                      "categories": [
+                          596,
+                          329,
+                          365,
+                          336,
+                          367,
+                          347,
+                          332,
+                          337,
+                          348,
+                          338,
+                          334,
+                          333
+                      ],
+                      "brand_id": 601,
+                      "option_set_id": 2960556,
+                      "option_set_display": "right",
+                      "inventory_level": 126,
+                      "inventory_warning_level": 0,
+                      "inventory_tracking": "variant",
+                      "reviews_rating_sum": 0,
+                      "reviews_count": 0,
+                      "total_sold": 0,
+                      "fixed_cost_shipping_price": 0,
+                      "is_free_shipping": false,
+                      "is_visible": true,
+                      "is_featured": false,
+                      "related_products": [
+                          -1
+                      ],
+                      "warranty": "",
+                      "bin_picking_number": "",
+                      "layout_file": "",
+                      "upc": "",
+                      "mpn": "",
+                      "gtin": "",
+                      "search_keywords": "",
+                      "availability": "available",
+                      "availability_description": "",
+                      "gift_wrapping_options_type": "any",
+                      "gift_wrapping_options_list": [],
+                      "sort_order": 0,
+                      "condition": "New",
+                      "is_condition_shown": false,
+                      "order_quantity_minimum": 0,
+                      "order_quantity_maximum": 0,
+                      "page_title": "ACE HILL VIENNA LAGER~2410",
+                      "meta_keywords": [],
+                      "meta_description": "",
+                      "date_created": "2022-03-24T10:10:20+00:00",
+                      "date_modified": "2022-05-20T06:24:36+00:00",
+                      "view_count": 0,
+                      "preorder_release_date": null,
+                      "preorder_message": "",
+                      "is_preorder_only": false,
+                      "is_price_hidden": false,
+                      "price_hidden_label": "",
+                      "custom_url": {
+                          "url": "/dnu-ace-hill-vienna-lager-2410/",
+                          "is_customized": false
+                      },
+                      "base_variant_id": null,
+                      "open_graph_type": "product",
+                      "open_graph_title": "",
+                      "open_graph_description": "",
+                      "open_graph_use_meta_description": true,
+                      "open_graph_use_product_name": true,
+                      "open_graph_use_image": true,
+                      "variants": [
+                          {
+                              "id": 13879107,
+                              "product_id": 2979965,
+                              "sku": "3142004_2410",
+                              "sku_id": 10917088,
+                              "price": 3.35,
+                              "calculated_price": 3.35,
+                              "sale_price": 3.35,
+                              "retail_price": null,
+                              "map_price": null,
+                              "weight": null,
+                              "calculated_weight": 1,
+                              "width": null,
+                              "height": null,
+                              "depth": null,
+                              "is_free_shipping": false,
+                              "fixed_cost_shipping_price": null,
+                              "purchasing_disabled": false,
+                              "purchasing_disabled_message": "",
+                              "image_url": "",
+                              "cost_price": 0,
+                              "upc": "",
+                              "mpn": "",
+                              "gtin": "",
+                              "inventory_level": 126,
+                              "inventory_warning_level": 0,
+                              "bin_picking_number": "",
+                              "option_values": [
+                                  {
+                                      "id": 11294647,
+                                      "label": "1 X Can 473 ml",
+                                      "option_id": 2960653,
+                                      "option_display_name": "Beer"
+                                  }
+                              ]
+                          },
+                          {
+                              "id": 13879108,
+                              "product_id": 2979965,
+                              "sku": "3142028_2410",
+                              "sku_id": 10917089,
+                              "price": 205.65,
+                              "calculated_price": 205.65,
+                              "sale_price": 205.65,
+                              "retail_price": null,
+                              "map_price": null,
+                              "weight": null,
+                              "calculated_weight": 1,
+                              "width": null,
+                              "height": null,
+                              "depth": null,
+                              "is_free_shipping": false,
+                              "fixed_cost_shipping_price": null,
+                              "purchasing_disabled": false,
+                              "purchasing_disabled_message": "",
+                              "image_url": "",
+                              "cost_price": 0,
+                              "upc": "",
+                              "mpn": "",
+                              "gtin": "",
+                              "inventory_level": 0,
+                              "inventory_warning_level": 0,
+                              "bin_picking_number": "",
+                              "option_values": [
+                                  {
+                                      "id": 11294648,
+                                      "label": "1 X Keg 30000 ml",
+                                      "option_id": 2960653,
+                                      "option_display_name": "Beer"
+                                  }
+                              ]
+                          },
+                          {
+                              "id": 13879109,
+                              "product_id": 2979965,
+                              "sku": "3142038_2410",
+                              "sku_id": 10917090,
+                              "price": 18.5,
+                              "calculated_price": 18.5,
+                              "sale_price": 18.5,
+                              "retail_price": null,
+                              "map_price": null,
+                              "weight": null,
+                              "calculated_weight": 1,
+                              "width": null,
+                              "height": null,
+                              "depth": null,
+                              "is_free_shipping": false,
+                              "fixed_cost_shipping_price": null,
+                              "purchasing_disabled": false,
+                              "purchasing_disabled_message": "",
+                              "image_url": "",
+                              "cost_price": 0,
+                              "upc": "",
+                              "mpn": "",
+                              "gtin": "",
+                              "inventory_level": 0,
+                              "inventory_warning_level": 0,
+                              "bin_picking_number": "",
+                              "option_values": [
+                                  {
+                                      "id": 11294649,
+                                      "label": "6 X Can 473 ml",
+                                      "option_id": 2960653,
+                                      "option_display_name": "Beer"
+                                  }
+                              ]
+                          },
+                          {
+                              "id": 13879110,
+                              "product_id": 2979965,
+                              "sku": "3142041_2410",
+                              "sku_id": 10917091,
+                              "price": 69.95,
+                              "calculated_price": 69.95,
+                              "sale_price": 69.95,
+                              "retail_price": null,
+                              "map_price": null,
+                              "weight": null,
+                              "calculated_weight": 1,
+                              "width": null,
+                              "height": null,
+                              "depth": null,
+                              "is_free_shipping": false,
+                              "fixed_cost_shipping_price": null,
+                              "purchasing_disabled": false,
+                              "purchasing_disabled_message": "",
+                              "image_url": "",
+                              "cost_price": 0,
+                              "upc": "",
+                              "mpn": "",
+                              "gtin": "",
+                              "inventory_level": 0,
+                              "inventory_warning_level": 0,
+                              "bin_picking_number": "",
+                              "option_values": [
+                                  {
+                                      "id": 11294650,
+                                      "label": "24 X Can 473 ml",
+                                      "option_id": 2960653,
+                                      "option_display_name": "Beer"
+                                  }
+                              ]
+                          },
+                          {
+                              "id": 13879111,
+                              "product_id": 2979965,
+                              "sku": "3142042_2410",
+                              "sku_id": 10917092,
+                              "price": 36.25,
+                              "calculated_price": 36.25,
+                              "sale_price": 36.25,
+                              "retail_price": null,
+                              "map_price": null,
+                              "weight": null,
+                              "calculated_weight": 1,
+                              "width": null,
+                              "height": null,
+                              "depth": null,
+                              "is_free_shipping": false,
+                              "fixed_cost_shipping_price": null,
+                              "purchasing_disabled": false,
+                              "purchasing_disabled_message": "",
+                              "image_url": "",
+                              "cost_price": 0,
+                              "upc": "",
+                              "mpn": "",
+                              "gtin": "",
+                              "inventory_level": 0,
+                              "inventory_warning_level": 0,
+                              "bin_picking_number": "",
+                              "option_values": [
+                                  {
+                                      "id": 11294651,
+                                      "label": "12 X Can 473 ml",
+                                      "option_id": 2960653,
+                                      "option_display_name": "Beer"
+                                  }
+                              ]
+                          }
+                      ],
+                      "custom_fields": [
+                          {
+                              "id": 36459732,
+                              "name": "ABV",
+                              "value": "5.00"
+                          },
+                          {
+                              "id": 36459733,
+                              "name": "Country",
+                              "value": "CA"
+                          },
+                          {
+                              "id": 36459734,
+                              "name": "Category",
+                              "value": "Ontario Craft"
+                          },
+                          {
+                              "id": 36459735,
+                              "name": "Type",
+                              "value": "Lager"
+                          },
+                          {
+                              "id": 36459736,
+                              "name": "Beverage_type",
+                              "value": "Beer"
+                          },
+                          {
+                              "id": 36459737,
+                              "name": "Producer",
+                              "value": "ACE BEVERAGE GROUP INC."
+                          },
+                          {
+                              "id": 36459738,
+                              "name": "Beer_styles",
+                              "value": "Amber"
+                          },
+                          {
+                              "id": 36459739,
+                              "name": "Price_Metadata_3142004",
+                              "value": "{\"current_price\":{\"deposit\":0.10,\"tax\":[{\"tax_type\":\"HST\",\"tax_amount\":0.37}],\"total_price\":3.35},\"previous_price\":{\"deposit\":0.10,\"tax\":[{\"tax_type\":\"HST\",\"tax_amount\":0.00}],\"total_price\":0.00},\"on_sale\":\"N\"}"
+                          },
+                          {
+                              "id": 36459740,
+                              "name": "Price_Metadata_3142028",
+                              "value": "{\"current_price\":{\"deposit\":50.00,\"tax\":[{\"tax_type\":\"HST\",\"tax_amount\":17.91}],\"total_price\":205.65},\"previous_price\":{\"deposit\":50.00,\"tax\":[{\"tax_type\":\"HST\",\"tax_amount\":0.00}],\"total_price\":0.00},\"on_sale\":\"N\"}"
+                          },
+                          {
+                              "id": 36459741,
+                              "name": "Price_Metadata_3142038",
+                              "value": "{\"current_price\":{\"deposit\":0.60,\"tax\":[{\"tax_type\":\"HST\",\"tax_amount\":2.06}],\"total_price\":18.50},\"previous_price\":{\"deposit\":0.60,\"tax\":[{\"tax_type\":\"HST\",\"tax_amount\":0.00}],\"total_price\":0.00},\"on_sale\":\"N\"}"
+                          },
+                          {
+                              "id": 36459742,
+                              "name": "Price_Metadata_3142041",
+                              "value": "{\"current_price\":{\"deposit\":2.40,\"tax\":[{\"tax_type\":\"HST\",\"tax_amount\":7.77}],\"total_price\":69.95},\"previous_price\":{\"deposit\":2.40,\"tax\":[{\"tax_type\":\"HST\",\"tax_amount\":0.00}],\"total_price\":0.00},\"on_sale\":\"N\"}"
+                          },
+                          {
+                              "id": 36459743,
+                              "name": "Price_Metadata_3142042",
+                              "value": "{\"current_price\":{\"deposit\":1.20,\"tax\":[{\"tax_type\":\"HST\",\"tax_amount\":4.03}],\"total_price\":36.25},\"previous_price\":{\"deposit\":1.20,\"tax\":[{\"tax_type\":\"HST\",\"tax_amount\":0.00}],\"total_price\":0.00},\"on_sale\":\"N\"}"
+                          },
+                          {
+                              "id": 36459744,
+                              "name": "product_image_1",
+                              "value": "https://cdn.brandfolder.io/DRTYD0A2/as/rpjnhh8wc4svstf2hc6gm38/1712.png?position=1"
+                          },
+                          {
+                              "id": 36459745,
+                              "name": "product_image_2",
+                              "value": "https://cdn.brandfolder.io/DRTYD0A2/as/rpjnhh8wc4svstf2hc6gm38/1712.png?position=2"
+                          },
+                          {
+                              "id": 36459746,
+                              "name": "container_type ",
+                              "value": "C,K"
+                          },
+                          {
+                              "id": 36459747,
+                              "name": "pack",
+                              "value": "1,6,24,12"
+                          }
+                      ],
+                      "options": [
+                          {
+                              "id": 2960653,
+                              "product_id": 2979965,
+                              "name": "Beer1648116620-2979965",
+                              "display_name": "Beer",
+                              "type": "rectangles",
+                              "sort_order": 0,
+                              "option_values": [
+                                  {
+                                      "id": 11294647,
+                                      "label": "1 X Can 473 ml",
+                                      "sort_order": 0,
+                                      "value_data": null,
+                                      "is_default": false
+                                  },
+                                  {
+                                      "id": 11294648,
+                                      "label": "1 X Keg 30000 ml",
+                                      "sort_order": 0,
+                                      "value_data": null,
+                                      "is_default": false
+                                  },
+                                  {
+                                      "id": 11294649,
+                                      "label": "6 X Can 473 ml",
+                                      "sort_order": 0,
+                                      "value_data": null,
+                                      "is_default": false
+                                  },
+                                  {
+                                      "id": 11294650,
+                                      "label": "24 X Can 473 ml",
+                                      "sort_order": 0,
+                                      "value_data": null,
+                                      "is_default": false
+                                  },
+                                  {
+                                      "id": 11294651,
+                                      "label": "12 X Can 473 ml",
+                                      "sort_order": 0,
+                                      "value_data": null,
+                                      "is_default": false
+                                  }
+                              ],
+                              "config": []
+                          }
+                      ]
+                  },
+                  "meta": {}
+              }
+          }
+      ],
+      orderDetails: {
+          "id": 7755,
+          "customer_id": 19448,
+          "date_created": "Fri, 03 Jun 2022 06:47:00 +0000",
+          "date_modified": "Fri, 03 Jun 2022 06:47:00 +0000",
+          "date_shipped": "",
+          "status_id": 11,
+          "status": "Awaiting Fulfillment",
+          "subtotal_ex_tax": "60.3000",
+          "subtotal_inc_tax": "60.3000",
+          "subtotal_tax": "0.0000",
+          "base_shipping_cost": "0.0000",
+          "shipping_cost_ex_tax": "0.0000",
+          "shipping_cost_inc_tax": "0.0000",
+          "shipping_cost_tax": "0.0000",
+          "shipping_cost_tax_class_id": 2,
+          "base_handling_cost": "0.0000",
+          "handling_cost_ex_tax": "0.0000",
+          "handling_cost_inc_tax": "0.0000",
+          "handling_cost_tax": "0.0000",
+          "handling_cost_tax_class_id": 2,
+          "base_wrapping_cost": "0.0000",
+          "wrapping_cost_ex_tax": "0.0000",
+          "wrapping_cost_inc_tax": "0.0000",
+          "wrapping_cost_tax": "0.0000",
+          "wrapping_cost_tax_class_id": 3,
+          "total_ex_tax": "54.7500",
+          "total_inc_tax": "54.7500",
+          "total_tax": "0.0000",
+          "items_total": 18,
+          "items_shipped": 0,
+          "payment_method": "Credit Card",
+          "payment_provider_id": null,
+          "payment_status": "",
+          "refunded_amount": "0.0000",
+          "order_is_digital": false,
+          "store_credit_amount": "0.0000",
+          "gift_certificate_amount": "0.0000",
+          "ip_address": "10.128.2.173",
+          "ip_address_v6": "",
+          "geoip_country": "",
+          "geoip_country_iso2": "",
+          "currency_id": 1,
+          "currency_code": "CAD",
+          "currency_exchange_rate": "1.0000000000",
+          "default_currency_id": 1,
+          "default_currency_code": "CAD",
+          "staff_notes": "[{\"variant_id\":13879107,\"packup_discount\":\"5.55\"}]",
+          "customer_message": "",
+          "discount_amount": "5.5500",
+          "coupon_discount": "0.0000",
+          "shipping_address_count": 1,
+          "is_deleted": false,
+          "ebay_order_id": "0",
+          "cart_id": "a6e9cb6c-1c42-4ce7-b104-9acac10e27dc",
+          "billing_address": {
+              "first_name": "Test",
+              "last_name": "User",
+              "company": "",
+              "street_1": "Jalandher Rd",
+              "street_2": "",
+              "city": "Punjab",
+              "state": "",
+              "zip": "A1A6H3",
+              "country": "Canada",
+              "country_iso2": "CA",
+              "phone": "+1(960) 886-1499",
+              "email": "Test29@gmail.com",
+              "form_fields": [
+                  {
+                      "name": "Other Info",
+                      "value": "{\"store_id\":2410,\"current_store_name\":\"QUEEN/RIVER\",\"current_store_address\":\"28 River St., M5A 3N9\",\"current_store_distance\":\"11382\",\"order_type\":\"pickup\",\"pick_delivery_date\":1654214400000,\"pick_delivery_time\":\"10:30 AM - 11:00 AM\",\"delivery_address\":\"\",\"order_email\":\"Test29@gmail.com\",\"order_payment_method\":\"card\",\"pick_delivery_date_text\":\"2022-06-03\",\"user_promotions\":\"\",\"salutation\":\"Mr\",\"contact_first_name\":\"Test\",\"contact_last_name\":\"User\",\"contact_phone\":\"+1(960) 886-1499\",\"contact_email\":\"Test29@gmail.com\",\"dob\":\"11-11-1999\",\"delivery_first_name\":\"\",\"delivery_last_name\":\"\",\"delivery_phone\":\"\",\"source\":\"app\",\"pickup_type\":\"pickup\",\"checkout_id\":\"a6e9cb6c-1c42-4ce7-b104-9acac10e27dc\"}"
+                  }
+              ]
           },
-        ).pipe(
-          map((response) => response.data),
-          catchError((err) => {
-            const message = err.message;
-            throw new UnprocessableEntityException(message);
-          }),
-        )
-      );
-
-      const productDetailsArr = await lastValueFrom(this.httpService
-        .get(orderDetails.products.url,
-          {
-            headers: {
-              'x-auth-token': this.configService.get('bigcom').access_token,
-            },
+          "is_email_opt_in": false,
+          "credit_card_type": null,
+          "order_source": "checkout_api",
+          "channel_id": 1,
+          "external_source": null,
+          "products": {
+              "url": "https://api.bigcommerce.com/stores/hivvn7uruo/v2/orders/7755/products",
+              "resource": "/orders/7755/products"
           },
-        ).pipe(
-          map((response) => response.data),
-          catchError((err) => {
-            const message = err.message;
-            throw new UnprocessableEntityException(message);
-          }),
-        )
-      );
+          "shipping_addresses": {
+              "url": "https://api.bigcommerce.com/stores/hivvn7uruo/v2/orders/7755/shipping_addresses",
+              "resource": "/orders/7755/shipping_addresses"
+          },
+          "coupons": {
+              "url": "https://api.bigcommerce.com/stores/hivvn7uruo/v2/orders/7755/coupons",
+              "resource": "/orders/7755/coupons"
+          },
+          "external_id": null,
+          "external_merchant_id": null,
+          "tax_provider_id": "",
+          "customer_locale": "en",
+          "store_default_currency_code": "CAD",
+          "store_default_to_transactional_exchange_rate": "1.0000000000",
+          "custom_status": "Awaiting Fulfillment"
+      },
+      transactionDetails: {
+          "id": 10004043,
+          "authorizing_merchant_id": 117682587,
+          "approved": 1,
+          "message_id": 62,
+          "message": "Approved",
+          "auth_code": "946344 ",
+          "created": "2022-06-03T13:46:54.3371338+00:00",
+          "amount": 54.75,
+          "order_number": "6c-1c42-4ce7-b104-9acac10e27dc",
+          "type": "PA",
+          "comments": "",
+          "batch_number": "0001",
+          "total_refunds": 0.0,
+          "total_completions": 0.0,
+          "payment_method": "CC",
+          "card": {
+              "name": "Gh",
+              "expiry_month": "11",
+              "expiry_year": "23",
+              "card_type": "VI",
+              "last_four": "4675",
+              "avs_result": "",
+              "cvd_result": "1",
+              "cavv_result": "2"
+          },
+          "billing": {
+              "name": "",
+              "address_line1": "",
+              "address_line2": "",
+              "city": "",
+              "province": "",
+              "country": "",
+              "postal_code": "",
+              "phone_number": "",
+              "email_address": ""
+          },
+          "shipping": {
+              "name": "",
+              "address_line1": "",
+              "address_line2": "",
+              "city": "",
+              "province": "",
+              "country": "",
+              "postal_code": "",
+              "phone_number": "",
+              "email_address": ""
+          },
+          "custom": {
+              "ref1": "",
+              "ref2": "",
+              "ref3": "",
+              "ref4": "",
+              "ref5": ""
+          },
+          "adjusted_by": [],
+          "links": [
+              {
+                  "rel": "complete",
+                  "href": "https://api.na.bambora.com/v1/payments/10004043/completions",
+                  "method": "POST"
+              }
+          ]
+      }
+      }
+      const { products, orderDetails, transactionDetails } = serverOrder;
+      // const orderDetails = await lastValueFrom(this.httpService
+      //   .get(
+      //     `${this.configService.get('bigcom').url}/stores/${this.configService.get('bigcom').store
+      //     }/v2/orders/${serverOrder.orderId}`,
+      //     {
+      //       headers: {
+      //         'x-auth-token': this.configService.get('bigcom').access_token,
+      //       },
+      //     },
+      //   ).pipe(
+      //     map((response) => response.data),
+      //     catchError((err) => {
+      //       const message = err.message;
+      //       throw new UnprocessableEntityException(message);
+      //     }),
+      //   )
+      // );
 
-      const transactionDetails = (serverOrder.transactionId) ? await this.bamboraService.getPaymentInfoByTranasctionId(serverOrder.transactionId) : "";
+      // const productDetailsArr = await lastValueFrom(this.httpService
+      //   .get(orderDetails.products.url,
+      //     {
+      //       headers: {
+      //         'x-auth-token': this.configService.get('bigcom').access_token,
+      //       },
+      //     },
+      //   ).pipe(
+      //     map((response) => response.data),
+      //     catchError((err) => {
+      //       const message = err.message;
+      //       throw new UnprocessableEntityException(message);
+      //     }),
+      //   )
+      // );
+
+      // const transactionDetails = (serverOrder.transactionId) ? await this.bamboraService.getPaymentInfoByTranasctionId(serverOrder.transactionId) : "";
 
       const billingAddressFormFields = JSON.parse(orderDetails?.billing_address?.form_fields[0]?.value);
 
       const deliveryDetails = {
-        orderId: serverOrder.orderId,
+        orderId: `${orderDetails.id}`,
         deliveryId: null,
         deliveryGuyName: null,
         deliveryDate: null,
@@ -327,7 +1011,7 @@ export class ServerOrderService {
       };
 
       const customerDetails = {
-        orderId: serverOrder.orderId,
+        orderId: `${orderDetails.id}`,
         name: `${orderDetails.billing_address.first_name} ${orderDetails.billing_address.last_name}`,
         email: orderDetails.billing_address.email,
         postalCode: orderDetails.billing_address.zip,
@@ -335,8 +1019,8 @@ export class ServerOrderService {
         salutation: billingAddressFormFields.salutation,
         customerType: CustomerTypeEnum.Email,
         ccType: transactionDetails?.card?.card_type || null,
-        cardNumber: transactionDetails?.card?.last_four || null,
-        cardAmount: transactionDetails?.amount || 0,
+        cardNumber: +transactionDetails?.card?.last_four || null,
+        cardAmount: +transactionDetails?.amount || 0,
       }
 
       let singleUnits = 0;
@@ -345,7 +1029,7 @@ export class ServerOrderService {
       let twentyFourPlusUnits = 0;
       let volumeTotalHL = 0;
 
-      let productsArr = productDetailsArr.map((product, index) => {
+      let productsArr = products.map((product, index) => {
         let temp = (product?.product_options[0]?.display_value)?.split(" ");
         let packSize = temp[0] || 0;
         let volume = temp[3] || 0;
@@ -361,20 +1045,20 @@ export class ServerOrderService {
           twentyFourPlusUnits += product?.quantity || 0;
         }
 
-        let hlTotal = ((((product.quantity * packSize) * volume) / 1000) / 100);
+        let hlTotal = ((((product.quantity * +packSize) * +volume) / 1000) / 100);
         volumeTotalHL += hlTotal;
         return {
-          orderId: serverOrder.orderId,
+          orderId: `${orderDetails.id}`,
           lineItem: index + 1,
           itemSKU: product.sku,
           itemDescription: "",
           brewer: "",
           category: "",
           quantity: product.quantity,
-          packSize,
-          volume,
+          packSize: +packSize,
+          volume: +volume,
           containerType,
-          itemTotal: product.total_inc_tax,
+          itemTotal: +product.total_inc_tax,
           itemHLTotal: hlTotal,
           available: true,
           utmSource: null,
@@ -384,25 +1068,22 @@ export class ServerOrderService {
           utmContent: null,
         }
       });
-      const timeSplit = serverOrder.fulfillmentTime.split('-') || '';
-      const orderDateTimeString = moment
-        .utc(serverOrder.orderDateTime)
-        .format('YYYY-MM-DD hh:mm:ss');
-      let cancellationDate = null;
-      if (serverOrder.cancellationDate) {
-        cancellationDate = moment
-          .utc(serverOrder.cancellationDate)
-          .format('YYYY-MM-DD hh:mm:ss');
-      }
-      const orderDateTime = orderDateTimeString.split(' ');
+      const timeSplit = billingAddressFormFields.pick_delivery_time.split('-') || '';
+      const orderDeliveryDate = billingAddressFormFields.pick_delivery_date_text;
+      const orderDate = orderDetails.date_created;
+      const fulfillmentDate = moment(`${orderDeliveryDate} ${timeSplit[0]}`, "YYYY-MM-DD HH:mm A").format("YYYY-MM-DD HH:mm:ss");
       const serverOrderParsed = {
-        ...serverOrder,
-        fulfillmentTime: moment(timeSplit[0]?.trim(), ['h:mm A']).format(
-          'HH:mm:ss',
-        ),
-        orderTime: orderDateTime[1].trim(),
-        orderDate: orderDateTime[0].trim(),
-        cancellationDate,
+        orderId: `${orderDetails.id}`,
+        storeId: `${billingAddressFormFields.store_id}`,
+        orderType: billingAddressFormFields.order_type === 'pickup' ? billingAddressFormFields.pickup_type : billingAddressFormFields.order_type,
+        orderStatus: orderDetails.status_id,
+        fulfillmentDate,
+        orderDate: moment.utc(orderDetails.date_created).format('YYYY-MM-DD hh:mm:ss'),
+        cancellationDate: null,
+        cancellationBy: null,
+        cancellationReason: null,
+        cancellationNote: null,
+        transactionId: billingAddressFormFields.transactionId || null,
         orderVector: billingAddressFormFields.source,
         partialOrder: false,
         productTotal: Number(parseFloat(orderDetails.total_ex_tax).toFixed(2)),
@@ -427,10 +1108,13 @@ export class ServerOrderService {
         refundReason: "",
         pickUpType: billingAddressFormFields.pickup_type,
       };
-      delete serverOrderParsed.orderDateTime;
-      delete serverOrderParsed.customerName;
-      delete serverOrderParsed.customerEmail;
 
+      console.log('orderCompleteDetails', {
+          ...serverOrderParsed,
+          serverOrderCustomerDetails: customerDetails,
+          serverOrderDeliveryDetails: deliveryDetails,
+          serverOrderProductDetails: productsArr,
+        });
       await this.serverOrderRepository.save(this.serverOrderRepository.create({
         ...serverOrderParsed,
         serverOrderCustomerDetails: customerDetails,
@@ -440,6 +1124,7 @@ export class ServerOrderService {
 
       return 'Order placed';
     } catch (err) {
+      console.log('err', err.message);
       throw new BadRequestException(err.message);
     }
   }
@@ -471,20 +1156,30 @@ export class ServerOrderService {
     return this.findOne(id);
   }
 
-  async updateServerOrderStatus(
-    id: number,
-    orderStatus: number,
-    partial: string,
-  ): Promise<ServerOrder> {
-    const order = await this.findOne(id);
-    if (!order) {
-      throw new NotFoundException('Order not found');
-    }
-    await this.serverOrderRepository.update(order.id, {
-      orderStatus,
-      partial,
-    });
-    return this.findOne(id);
+  // async updateServerOrderStatus(
+  //   id: number,
+  //   orderStatus: number,
+  //   partial: string,
+  // ): Promise<ServerOrder> {
+  //   const order = await this.findOne(id);
+  //   if (!order) {
+  //     throw new NotFoundException('Order not found');
+  //   }
+  //   await this.serverOrderRepository.update(order.id, {
+  //     orderStatus,
+  //     // partial,
+  //   });
+  //   return this.findOne(id);
+  // }
+
+
+  async serverOrderDetail(orderId: number): Promise<ServerOrder> {
+    const serverOrder = await this.serverOrderRepository.findOne({
+      orderId: `${orderId}`
+    },
+      { relations: ['serverOrderProductDetails', 'serverOrderDeliveryDetails', 'serverOrderCustomerDetails'] },
+    );
+    return serverOrder;
   }
 
   /**
@@ -502,12 +1197,29 @@ export class ServerOrderService {
     createOrderDto: CreateOrderDto,
     partial?: string,
     checkoutId?: string,
-  ): Promise<ServerOrder> {
+  ): Promise<any> {
     try {
-      console.log('checkoutId', checkoutId);
+      console.log('checkoutId', checkoutId, createOrderHistoryDto,
+      orderStatus,
+      createOrderDto,
+      partial,
+      checkoutId);
+      const serverOrder = await this.serverOrderDetail(id);
+      serverOrder.orderStatus = orderStatus;
+      serverOrder.partialOrder = partial !== '0';
+      if(serverOrder?.serverOrderProductDetails){
+        createOrderDto.products.forEach((product, _idx) => {
+          const updatedProduct = serverOrder.serverOrderProductDetails.find(prod => product.sku === prod.itemSKU);
+          if(updatedProduct?.id){
+            serverOrder.serverOrderProductDetails[_idx].quantity =  updatedProduct.quantity;
+          }
+        })
+      }
+
       await this.ordersService.updateOrder(`${id}`, createOrderDto);
+      const orderToSave = await this.serverOrderRepository.preload(serverOrder);
       const response = await Promise.all([
-        this.updateServerOrderStatus(id, orderStatus, partial),
+        this.serverOrderRepository.save(orderToSave),
         this.orderHistoryService.create(createOrderHistoryDto),
       ]);
       await this.sendPushNotification(
@@ -522,6 +1234,7 @@ export class ServerOrderService {
     }
   }
 
+  // to do refactor code for tables change
   async handleBeerGuy(updateOrder: BeerGuyUpdateDto): Promise<ServerOrder> {
     try {
       const serverOrder = {
@@ -588,18 +1301,22 @@ export class ServerOrderService {
       } else if (orderType === 'delivery') {
         await this.cancelBeerGuyOrder(`${id}`, cancellationReason);
       }
-      const resp = await this.ordersService.updateOrder(`${id}`, {
+      const resp = await Promise.all([this.ordersService.updateOrder(`${id}`, {
         status_id: +orderStatus,
-      });
+      }),
+      this.serverOrderDetail(id),
+      ]);
+
+      const serverOrder = resp[1];
+      serverOrder.orderStatus = +orderStatus;
+      serverOrder.cancellationBy = cancellationBy;
+      serverOrder.cancellationDate = cancellationDate;
+      serverOrder.cancellationReason = cancellationReason;
+      serverOrder.cancellationNote = cancellationNote || ''; 
+      const orderToSave = await this.serverOrderRepository.preload(serverOrder);
+
       const response = await Promise.all([
-        this.updateServerOrder(id, {
-          orderId: `${id}`,
-          orderStatus: +orderStatus,
-          cancellationBy,
-          cancellationDate,
-          cancellationReason,
-          cancellationNote: cancellationNote || '',
-        }),
+        this.serverOrderRepository.save(orderToSave),
         this.orderHistoryService.create({
           orderId: `${id}`,
           orderStatus: +orderStatus,
@@ -628,7 +1345,7 @@ export class ServerOrderService {
     customerProof: CreateCustomerProofDto,
     checkoutId: string,
   ): Promise<any> {
-    console.log('checkoutId', checkoutId);
+    console.log('checkoutId123', checkoutId, createOrderDto);
     const requests = [];
     try {
       const { amount, ...orderDetails } = serverOrder;
@@ -648,24 +1365,68 @@ export class ServerOrderService {
         // update beer guy
       }
 
-      const resp = await this.ordersService.updateOrder(
-        orderId,
-        createOrderDto,
-      );
-      requests.push(this.updateServerOrder(+orderId, orderDetails));
-      requests.push(this.orderHistoryService.create(createOrderHistoryDto));
-      requests.push(this.addCustomerProof(customerProof));
-      const response = await Promise.all(requests);
-      console.log('response', response);
-      await this.sendPushNotification(
-        this.configService.get('beerstoreApp').title,
-        `Your Order #${orderId} has been ${
-          OrderstatusText[serverOrder.orderStatus]
-        }.`,
-        checkoutId,
-        orderId,
-      );
-      return response[0];
+      // await this.ordersService.updateOrder(
+      //   orderId,
+      //   createOrderDto,
+      // );
+      let prevOrder = await this.serverOrderDetail(+orderId);
+      console.log('serverOrder.orderStatus', serverOrder.orderStatus );
+      if(+serverOrder.orderStatus === 5){
+        //cancelled
+        console.log('cancelled', serverOrder.orderStatus);
+        prevOrder = {
+          ...prevOrder,
+          orderStatus: serverOrder.orderStatus,
+          cancellationDate: serverOrder.cancellationDate,
+          cancellationBy : serverOrder.cancellationBy,
+          cancellationReason: serverOrder.cancellationReason,
+          cancellationNote: serverOrder.cancellationNote,
+          // completedDateTime: serverOrder?.completedDateTime || '',
+          completedByEmpId: +createOrderHistoryDto.identifier || -1,
+          completedDateTime: moment().toDate(),
+          idChecked: customerProof.photoId,
+          underInfluence: customerProof.underInfluence === 1, 
+          dobBefore: customerProof.dobBefore === 1, 
+        }
+      } else if(+serverOrder.orderStatus === 10){
+        //completed
+        console.log('completed', serverOrder.orderStatus);
+        prevOrder = {
+          ...prevOrder,
+          orderStatus: serverOrder.orderStatus,
+          completedByEmpId: +createOrderHistoryDto.identifier || -1,
+          idChecked: customerProof.photoId,
+          underInfluence: false, 
+          dobBefore: false, 
+        }
+        if(prevOrder?.serverOrderProductDetails){
+          createOrderDto.products.forEach((product, _idx) => {
+            const updatedProduct = prevOrder.serverOrderProductDetails.find(prod => product.sku === prod.itemSKU);
+            if(updatedProduct?.id){
+              // prevOrder.serverOrderProductDetails[_idx].quantity =  updatedProduct.quantity;
+              prevOrder.serverOrderProductDetails[_idx].quantity = 0;
+            }
+          })
+        }
+      }
+      const orderToSave = await this.serverOrderRepository.preload(prevOrder);
+      // requests.push(this.updateServerOrder(+orderId, orderDetails));
+      
+      console.log('orderToSave', orderToSave);
+      // requests.push(this.serverOrderRepository.save(orderToSave));
+      // requests.push(this.orderHistoryService.create(createOrderHistoryDto));
+      // const response = await Promise.all(requests);
+      // console.log('response', response);
+      // await this.sendPushNotification(
+      //   this.configService.get('beerstoreApp').title,
+      //   `Your Order #${orderId} has been ${
+      //     OrderstatusText[serverOrder.orderStatus]
+      //   }.`,
+      //   checkoutId,
+      //   orderId,
+      // );
+      // return response[0];
+      return Promise.resolve('done');
     } catch (err) {
       throw new BadRequestException(err.message);
     }

@@ -9,10 +9,10 @@ import {
 import { ServerOrder } from './server-order.entity';
 
 export enum CustomerTypeEnum {
-  Email = "Email",
-  Guest = "Guest",
-  Google = "Google",
-  Facebook = "Facebook",
+  Email = "email",
+  Guest = "guest",
+  Google = "google",
+  Facebook = "facebook",
 }
 
 @Entity()

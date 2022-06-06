@@ -90,17 +90,17 @@ export class ServerOrder {
 
   @ApiProperty({ type: String })
   @Column({
-    type: 'date',
-    nullable: false,
+    type: 'datetime2',
+    default: null,
   })
   fulfillmentDate: string;
 
-  @ApiProperty({ type: String })
-  @Column({
-    type: 'time',
-    nullable: false,
-  })
-  fulfillmentTime: string;
+  // @ApiProperty({ type: String })
+  // @Column({
+  //   type: 'time',
+  //   nullable: false,
+  // })
+  // fulfillmentTime: string;
 
   @ApiProperty({ type: String })
   @Column({
@@ -141,13 +141,13 @@ export class ServerOrder {
   @UpdateDateColumn()
   updatedDate: Date;
 
-  @ApiProperty({ type: String })
-  @Column({
-    type: 'nvarchar',
-    length: 250,
-    nullable: true,
-  })
-  employeeNote: string;
+  // @ApiProperty({ type: String })
+  // @Column({
+  //   type: 'nvarchar',
+  //   length: 250,
+  //   nullable: true,
+  // })
+  // employeeNote: string;
 
   @ApiProperty({ type: String })
   @Column({
@@ -166,51 +166,61 @@ export class ServerOrder {
   })
   transactionId: string;
 
-  @ApiProperty({ type: String })
-  @IsOptional()
-  @Column({
-    type: 'nvarchar',
-    nullable: true,
-  })
-  partial: string;
+  // @ApiProperty({ type: String })
+  // @IsOptional()
+  // @Column({
+  //   type: 'nvarchar',
+  //   nullable: true,
+  // })
+  // partial: string;
 
   @ApiProperty({ type: String })
   @Column({
     type: 'nvarchar',
     length: 100,
+    default: '',
   })
   orderVector: string;
 
-  @ApiProperty({ type: Boolean })
-  @Column()
+  @ApiProperty({ type: Boolean})
+  @Column({
+    default: false,
+  })
   partialOrder: boolean;
 
   @Column({
     type: "money",
+    default: 0,
   })
   productTotal: number;
 
   @Column({
     type: "money",
+    default: 0
   })
   deliveryFee: number;
 
   @Column({
     type: "money",
+    default: 0,
   })
   deliveryFeeHST: number;
 
   @Column({
     type: "money",
+    default: 0
   })
   grandTotal: number;
 
   @Column({
     type: "money",
+    default: 0
   })
   volumeTotalHL: number;
 
-  @Column()
+  @Column({
+    default : 0
+  })
   singleUnits: number;
 
   @Column({
@@ -228,7 +238,7 @@ export class ServerOrder {
   })
   packUnits_24Plus: number;
 
-  @Column({ type: 'datetime2' })
+  @Column({ type: 'datetime2', default: null })
   submittedDateTime: Date;
 
   @Column({ type: 'datetime2', default: null, nullable: true })
@@ -252,7 +262,7 @@ export class ServerOrder {
   @Column({ type: 'datetime2', default: null, nullable: true })
   requestedPickUpTime: Date;
 
-  @Column({ type: 'nvarchar', length: 50 })
+  @Column({ type: 'nvarchar', length: 50, default: null })
   browserVersion: string;
 
   @Column({
@@ -274,8 +284,22 @@ export class ServerOrder {
 
   @Column({
     type: 'nvarchar',
+    default: '',
   })
   pickUpType: string;
+
+  @ApiProperty({ type: Boolean })
+  @Column({
+    default: false
+  })
+  underInfluence: boolean;
+
+  @ApiProperty({ type: Boolean })
+  @Column({
+    default: false
+  })
+  dobBefore: boolean;
+
 
   @OneToOne(() => ServerOrderCustomerDetails, (serverOrderCustomerDetails) => serverOrderCustomerDetails.serverOrder, {
     cascade: ['insert', 'update'],
