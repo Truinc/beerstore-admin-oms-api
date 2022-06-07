@@ -25,7 +25,7 @@ export default class AuthService {
   ): Promise<null | User> {
     const user = await this.usersService.findWithUsername(username);
     if (!user) {
-      throw new UnauthorizedException('Incorrect iD or password.');
+      throw new UnauthorizedException('Incorrect ID or Password.');
     }
     if (user.isActive !== 1) {
       this.usersService.upsertSignInlog(user.id, SIGNINLOGS.ACCOUNT_LOCKED);
@@ -71,7 +71,7 @@ export default class AuthService {
       });
     }
 
-    throw new UnauthorizedException('Incorrect ID or password.');
+    throw new UnauthorizedException('Incorrect ID or Password.');
   }
 
   /**
