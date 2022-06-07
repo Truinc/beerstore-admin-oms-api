@@ -210,72 +210,12 @@ export class ServerOrderService {
     }
   }
 
-  // async addCustomerProof(customerProof: CreateCustomerProofDto) {
-  //   try {
-  //     let id;
-  //     const { orderId } = customerProof;
-  //     const prevProof = await this.customerProofRepository.findOne({
-  //       where: { orderId },
-  //     });
-  //     if (prevProof) {
-  //       id = prevProof.id;
-  //       await this.updateCustomerProof(+orderId, customerProof);
-  //     } else {
-  //       const createCustomerProof = await this.customerProofRepository.create(
-  //         customerProof,
-  //       );
-  //       const response = await this.customerProofRepository.save(
-  //         createCustomerProof,
-  //       );
-  //       id = response.id;
-  //     }
-  //     return this.customerProofRepository.findOne(id);
-  //   } catch (err) {
-  //     throw new BadRequestException(err.message);
-  //   }
-  // }
-
   async getCustomerProof(orderId: number) {
     const customerProof = await this.customerProofRepository.findOne({
       where: { orderId },
     });
     return customerProof;
   }
-
-  // async updateCustomerProof(
-  //   orderId: number,
-  //   updatedProof: UpdateCustomerProofDto,
-  // ) {
-  //   const customerProof = await this.getCustomerProof(orderId);
-  //   if (customerProof) {
-  //     await this.customerProofRepository.update(customerProof.id, updatedProof);
-  //     return this.customerProofRepository.findOne(customerProof.id);
-  //   } else {
-  //     throw new NotFoundException('Customer proof not found');
-  //   }
-  // }
-
-  // async addPaymentDetail(paymentDetail: CreatePaymentDetailsDto) {
-  //   try {
-  //     const createPaymentDetail = await this.paymentDetailsRepository.create(
-  //       paymentDetail,
-  //     );
-  //     const response = await this.paymentDetailsRepository.save(
-  //       createPaymentDetail,
-  //     );
-  //     // console.log('response', response);
-  //     return this.paymentDetailsRepository.findOne(response.id);
-  //   } catch (err) {
-  //     throw new BadRequestException(err.message);
-  //   }
-  // }
-
-  // async getPaymentDetail(orderId: number) {
-  //   const paymentDetail = await this.paymentDetailsRepository.findOne({
-  //     where: { orderId },
-  //   });
-  //   return paymentDetail;
-  // }
 
   async findAllPostFeed(orderId: number) {
     const postFeed = await this.postFeedRepository.find({
@@ -401,7 +341,7 @@ export class ServerOrderService {
         cancellationBy: null,
         cancellationReason: null,
         cancellationNote: null,
-        transactionId: billingAddressFormFields.transactionId || null,
+        transactionId: serverOrder.transactionId || null,
         orderVector: billingAddressFormFields.source,
         partialOrder: false,
         productTotal: Number(parseFloat(orderDetails.total_ex_tax).toFixed(2)),
@@ -439,7 +379,6 @@ export class ServerOrderService {
         serverOrderDeliveryDetails: deliveryDetails,
         serverOrderProductDetails: productsArr,
       }));
-
       return 'Order placed';
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -512,6 +451,7 @@ export class ServerOrderService {
     createOrderHistoryDto: CreateOrderHistoryDto,
     orderStatus: number,
     createOrderDto: CreateOrderDto,
+    serverOrder: UpdateOrderDto,
     partial?: string,
     checkoutId?: string,
   ): Promise<any> {
@@ -536,20 +476,19 @@ export class ServerOrderService {
         })
       }
 
-      // await this.ordersService.updateOrder(`${id}`, createOrderDto);
-      // const orderToSave = await this.serverOrderRepository.preload(serverOrder);
-      // const response = await Promise.all([
-      //   this.serverOrderRepository.save(orderToSave),
-      //   this.orderHistoryService.create(createOrderHistoryDto),
-      // ]);
-      // await this.sendPushNotification(
-      //   this.configService.get('beerstoreApp').title,
-      //   `Your Order #${id} has been ${OrderstatusText[orderStatus]}.`,
-      //   checkoutId,
-      //   id.toString(),
-      // );
-      // return response[0];
-      return Promise.resolve('done@');
+      await this.ordersService.updateOrder(`${id}`, createOrderDto);
+      const orderToSave = await this.serverOrderRepository.preload(serverOrder);
+      const response = await Promise.all([
+        this.serverOrderRepository.save(orderToSave),
+        this.orderHistoryService.create(createOrderHistoryDto),
+      ]);
+      await this.sendPushNotification(
+        this.configService.get('beerstoreApp').title,
+        `Your Order #${id} has been ${OrderstatusText[orderStatus]}.`,
+        checkoutId,
+        id.toString(),
+      );
+      return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);
     }

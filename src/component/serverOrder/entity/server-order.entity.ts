@@ -300,6 +300,18 @@ export class ServerOrder {
   })
   dobBefore: boolean;
 
+  @ApiProperty({ type: Boolean })
+  @Column({
+    default: false
+  })
+  cancelledByCustomer: boolean;
+
+  @ApiProperty({ type: Boolean })
+  @Column({
+    default: false
+  })
+  cancelledByDriver: boolean;
+
 
   @OneToOne(() => ServerOrderCustomerDetails, (serverOrderCustomerDetails) => serverOrderCustomerDetails.serverOrder, {
     cascade: ['insert', 'update'],
