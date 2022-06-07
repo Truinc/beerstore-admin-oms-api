@@ -1,10 +1,11 @@
 import { HttpModule } from '@nestjs/axios';
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
+import { ServerOrderModule } from '../serverOrder/server-order.module';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 
 @Module({
-  imports: [HttpModule],
+  imports: [HttpModule, forwardRef(() => ServerOrderModule)],
   controllers: [OrdersController],
   providers: [OrdersService],
   exports: [OrdersService],

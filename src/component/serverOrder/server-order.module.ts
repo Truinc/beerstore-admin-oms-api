@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServerOrderService } from './server-order.service';
@@ -20,7 +20,7 @@ import { ServerOrderProductDetails } from './entity/server-order-product-details
   imports: [
     AuthModule,
     HttpModule,
-    OrdersModule,
+    forwardRef(() => OrdersModule),
     OrderHistoryModule,
     BamboraModule,
     StoreModule,
@@ -36,5 +36,6 @@ import { ServerOrderProductDetails } from './entity/server-order-product-details
   ],
   providers: [ServerOrderService],
   controllers: [ServerOrderController],
+  exports: [ServerOrderService]
 })
 export class ServerOrderModule {}

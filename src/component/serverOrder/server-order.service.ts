@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  forwardRef,
+  Inject,
   Injectable,
   // InternalServerErrorException,
   NotFoundException,
@@ -46,12 +48,15 @@ export class ServerOrderService {
     private authService: AuthService,
     private httpService: HttpService,
     private configService: ConfigService,
+    @Inject(forwardRef(() => OrdersService))
     private ordersService: OrdersService,
     private bamboraService: BamboraService,
     private storeService: StoreService,
     private orderHistoryService: OrderHistoryService,
     @InjectRepository(ServerOrder)
     private serverOrderRepository: Repository<ServerOrder>,
+    @InjectRepository(ServerOrderProductDetails)
+    private serverOrderProductDetailsRepository: Repository<ServerOrderProductDetails>,
     @InjectRepository(PostFeed)
     private postFeedRepository: Repository<PostFeed>,
     @InjectRepository(CustomerProof)
@@ -160,6 +165,167 @@ export class ServerOrderService {
       skip,
       items,
     };
+  }
+
+  async getAllServerOrderWithRelationData(
+    reportType: number,
+    status_id: number,
+    store_id: number,
+    min_date_created: Date,
+    max_date_created: Date,
+    vector: string,
+    brewer: string
+  ): Promise<object> {
+    if (reportType == 1) {
+      return this.generateTransactionReportData(
+        status_id,
+        store_id,
+        min_date_created,
+        max_date_created,
+        vector,
+        brewer
+      );
+    }
+
+    if (reportType == 2) {
+      return this.generateOrderReportData(
+        status_id,
+        store_id,
+        min_date_created,
+        max_date_created,
+        vector,
+        brewer
+      );
+    }
+  }
+
+  private async generateTransactionReportData(
+    status_id: number,
+    store_id: number,
+    min_date_created: Date,
+    max_date_created: Date,
+    vector: string,
+    brewer: string
+  ): Promise<object> {
+    const table = this.serverOrderRepository.createQueryBuilder('ServerOrder').leftJoinAndSelect('ServerOrder.serverOrderCustomerDetails', 'serverOrderCustomerDetails').leftJoinAndSelect('ServerOrder.serverOrderDeliveryDetails', 'serverOrderDeliveryDetails').leftJoinAndSelect('ServerOrder.serverOrderProductDetails', 'serverOrderProductDetails');
+
+    if (brewer) {
+      let orderIds = await this.serverOrderProductDetailsRepository.createQueryBuilder('ServerOrderProductDetails')
+        .where("ServerOrderProductDetails.brewer = :brewer", { brewer })
+        .select('DISTINCT(ServerOrderProductDetails.orderId)', 'id').getRawMany();
+
+      if (orderIds.length > 0) {
+        table.where('ServerOrder.orderId IN (:...ids) ', {
+          ids: orderIds.map(x => x.id),
+        });
+      }
+    }
+
+    if (status_id) {
+      table.andWhere('ServerOrder.orderStatus = :orderStatus', {
+        orderStatus: status_id,
+      });
+    }
+
+    if (store_id) {
+      table.andWhere('ServerOrder.storeId = :storeId', {
+        storeId: store_id,
+      });
+    }
+
+    if (min_date_created && max_date_created) {
+      if (moment(min_date_created).isSame(max_date_created)) {
+        const fromDate = min_date_created;
+        const toDate = moment(max_date_created).endOf('day').format();
+        table.andWhere(
+          'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
+          {
+            fromDate,
+            toDate,
+          },
+        );
+      } else {
+        table.andWhere(
+          'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
+          {
+            fromDate: min_date_created,
+            toDate: max_date_created,
+          },
+        );
+      }
+    }
+
+    if (vector) {
+      table.andWhere('ServerOrder.orderVector = :orderVector', {
+        orderVector: vector,
+      });
+    }
+    return table.getMany();
+  }
+
+  private async generateOrderReportData(
+    status_id: number,
+    store_id: number,
+    min_date_created: Date,
+    max_date_created: Date,
+    vector: string,
+    brewer: string
+  ): Promise<Object> {
+    const serverOrderQuery = this.serverOrderRepository.createQueryBuilder('ServerOrder').select('DISTINCT(ServerOrder.orderId)', 'id');
+
+    if (status_id) {
+      serverOrderQuery.andWhere('ServerOrder.orderStatus = :orderStatus', {
+        orderStatus: status_id,
+      });
+    }
+
+    if (store_id) {
+      serverOrderQuery.andWhere('ServerOrder.storeId = :storeId', {
+        storeId: store_id,
+      });
+    }
+
+    if (min_date_created && max_date_created) {
+      if (moment(min_date_created).isSame(max_date_created)) {
+        const fromDate = min_date_created;
+        const toDate = moment(max_date_created).endOf('day').format();
+        serverOrderQuery.andWhere(
+          'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
+          {
+            fromDate,
+            toDate,
+          },
+        );
+      } else {
+        serverOrderQuery.andWhere(
+          'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
+          {
+            fromDate: min_date_created,
+            toDate: max_date_created,
+          },
+        );
+      }
+    }
+
+    if (vector) {
+      serverOrderQuery.andWhere('ServerOrder.orderVector = :orderVector', {
+        orderVector: vector,
+      });
+    }
+
+    const ids = (await serverOrderQuery.getRawMany()).map(x => x.id);
+
+    const query = this.serverOrderProductDetailsRepository.createQueryBuilder("ServerOrderProductDetails")
+      .where("ServerOrderProductDetails.orderId IN (:...ids)", { ids })
+      .leftJoinAndSelect('ServerOrderProductDetails.serverOrder', 'serverOrderDetails')
+      .leftJoinAndSelect('serverOrderDetails.serverOrderCustomerDetails', 'serverOrderCustomer');
+;
+
+    if (brewer) {
+      query.andWhere("ServerOrderProductDetails.brewer = :brewer", { brewer })
+    }
+
+    return query.getMany();
   }
 
   async completeDetail(orderId: number, storeId: number, tranId: string) {

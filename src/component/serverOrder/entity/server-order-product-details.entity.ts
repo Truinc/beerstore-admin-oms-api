@@ -27,7 +27,6 @@ export class ServerOrderProductDetails {
   @Column({
     type: 'nvarchar',
     length: 100,
-    unique: true,
     nullable: false,
   })
   orderId: string;
