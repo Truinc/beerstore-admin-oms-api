@@ -1200,6 +1200,7 @@ export class ServerOrderService {
     createOrderHistoryDto: CreateOrderHistoryDto,
     orderStatus: number,
     createOrderDto: CreateOrderDto,
+    serverOrder: UpdateOrderDto,
     partial?: string,
     checkoutId?: string,
   ): Promise<any> {
@@ -1224,20 +1225,19 @@ export class ServerOrderService {
         })
       }
 
-      // await this.ordersService.updateOrder(`${id}`, createOrderDto);
-      // const orderToSave = await this.serverOrderRepository.preload(serverOrder);
-      // const response = await Promise.all([
-      //   this.serverOrderRepository.save(orderToSave),
-      //   this.orderHistoryService.create(createOrderHistoryDto),
-      // ]);
-      // await this.sendPushNotification(
-      //   this.configService.get('beerstoreApp').title,
-      //   `Your Order #${id} has been ${OrderstatusText[orderStatus]}.`,
-      //   checkoutId,
-      //   id.toString(),
-      // );
-      // return response[0];
-      return Promise.resolve('done@');
+      await this.ordersService.updateOrder(`${id}`, createOrderDto);
+      const orderToSave = await this.serverOrderRepository.preload(serverOrder);
+      const response = await Promise.all([
+        this.serverOrderRepository.save(orderToSave),
+        this.orderHistoryService.create(createOrderHistoryDto),
+      ]);
+      await this.sendPushNotification(
+        this.configService.get('beerstoreApp').title,
+        `Your Order #${id} has been ${OrderstatusText[orderStatus]}.`,
+        checkoutId,
+        id.toString(),
+      );
+      return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);
     }

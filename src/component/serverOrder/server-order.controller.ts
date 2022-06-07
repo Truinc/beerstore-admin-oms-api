@@ -300,17 +300,19 @@ export class ServerOrderController {
       orderStatus: number;
       orderHistory: CreateOrderHistoryDto;
       orderDetails: CreateOrderDto;
+      serverOrder: UpdateOrderDto;
       partial?: string;
       checkoutId?: string;
     },
   ): Promise<any> {
-    const { orderHistory, orderStatus, orderDetails, partial, checkoutId } =
+    const { orderHistory, orderStatus, orderDetails, partial, checkoutId, serverOrder } =
       data;
     const response = await this.serverOrderService.updateOrderDetails(
       serverOrderId,
       orderHistory,
       orderStatus,
       orderDetails,
+      serverOrder,
       partial,
       checkoutId,
     );
