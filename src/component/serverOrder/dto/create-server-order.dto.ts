@@ -9,6 +9,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { OrderEnum } from '../entity/server-order.entity';
+import { MetaOrPaymentData, OrderData, ProductsDataEntity } from './order-queue.dto';
 
 export class CreateServerOrderDto {
   constructor(body: CreateServerOrderDto | null = null) {
@@ -119,11 +120,11 @@ export class CreateServerOrderDto {
   readonly employeeNote: string;
 
   @IsOptional()
-  readonly productsData: any;
+  readonly productsData: ProductsDataEntity[];
 
   @IsOptional()
-  readonly orderData: any;
+  readonly orderData: OrderData;
 
   @IsOptional()
-  readonly paymentData: any;
+  readonly paymentData: MetaOrPaymentData;
 }
