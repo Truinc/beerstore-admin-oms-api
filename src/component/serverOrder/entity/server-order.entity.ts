@@ -180,10 +180,154 @@ export class ServerOrder {
     length: 100,
     default: '',
   })
-  partial: string;
+  orderVector: string;
 
-  @ApiProperty({ type: Date })
-  @Column({ type: 'datetime2', nullable: true, default: null })
-  @IsOptional()
-  openDateTime?: Date;
+  @ApiProperty({ type: Boolean})
+  @Column({
+    default: false,
+  })
+  partialOrder: boolean;
+
+  @Column({
+    type: "money",
+    default: 0,
+  })
+  productTotal: number;
+
+  @Column({
+    type: "money",
+    default: 0
+  })
+  deliveryFee: number;
+
+  @Column({
+    type: "money",
+    default: 0,
+  })
+  deliveryFeeHST: number;
+
+  @Column({
+    type: "money",
+    default: 0
+  })
+  grandTotal: number;
+
+  @Column({
+    type: "money",
+    default: 0
+  })
+  volumeTotalHL: number;
+
+  @Column({
+    default : 0
+  })
+  singleUnits: number;
+
+  @Column({
+    default: 0
+  })
+  packUnits2_6: number;
+
+  @Column({
+    default: 0
+  })
+  packUnits8_18: number;
+
+  @Column({
+    default: 0
+  })
+  packUnits_24Plus: number;
+
+  @Column({ type: 'datetime2', default: null })
+  submittedDateTime: Date;
+
+  @Column({ type: 'datetime2', default: null, nullable: true })
+  openDateTime: Date;
+
+  @Column({ type: 'datetime2', default: null, nullable: true })
+  pickUpReadyDateTime: Date;
+
+  @Column({
+    default: null,
+    nullable: true
+  })
+  completedByEmpId: number;
+
+  @Column({ type: 'datetime2', default: null, nullable: true })
+  completedDateTime: Date;
+
+  @Column({ default: null })
+  idChecked: string;
+
+  @Column({ type: 'datetime2', default: null, nullable: true })
+  requestedPickUpTime: Date;
+
+  @Column({ type: 'nvarchar', length: 50, default: null })
+  browserVersion: string;
+
+  @Column({
+    default: false
+  })
+  refunded: boolean;
+
+  @Column({
+    type: "money",
+    default: 0
+  })
+  refundedAmount: number
+
+  @Column({
+    type: 'nvarchar',
+    default: null
+  })
+  refundReason: string;
+
+  @Column({
+    type: 'nvarchar',
+    default: '',
+  })
+  pickUpType: string;
+
+  @ApiProperty({ type: Boolean })
+  @Column({
+    default: false
+  })
+  underInfluence: boolean;
+
+  @ApiProperty({ type: Boolean })
+  @Column({
+    default: false
+  })
+  dobBefore: boolean;
+
+  @ApiProperty({ type: Boolean })
+  @Column({
+    default: false
+  })
+  cancelledByCustomer: boolean;
+
+  @ApiProperty({ type: Boolean })
+  @Column({
+    default: false
+  })
+  cancelledByDriver: boolean;
+
+
+  @OneToOne(() => ServerOrderCustomerDetails, (serverOrderCustomerDetails) => serverOrderCustomerDetails.serverOrder, {
+    cascade: ['insert', 'update'],
+    onDelete: 'CASCADE',
+  })
+  serverOrderCustomerDetails: ServerOrderCustomerDetails;
+
+  @OneToOne(() => ServerOrderDeliveryDetails, (serverOrderDeliveryDetails) => serverOrderDeliveryDetails.serverOrder, {
+    cascade: ['insert', 'update'],
+    onDelete: 'CASCADE',
+  })
+  serverOrderDeliveryDetails: ServerOrderDeliveryDetails;
+
+  @OneToMany(() => ServerOrderProductDetails, (serverOrderProductDetails) => serverOrderProductDetails.serverOrder, {
+    cascade: ['insert', 'update'],
+    onDelete: 'CASCADE',
+  })
+  serverOrderProductDetails: ServerOrderProductDetails[];
 }
