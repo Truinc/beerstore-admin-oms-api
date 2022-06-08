@@ -334,11 +334,19 @@ export class ServerOrderService {
 
   async completeDetail(orderId: number, storeId: number, tranId: string) {
     try {
+      await this.serverOrderRepository
+        .createQueryBuilder()
+        .update(ServerOrder)
+        .set({ openDateTime: new Date() })
+        .where({ orderId })
+        .execute();
+
       const resp = await Promise.all([
         this.ordersService.getOrderDetails(`${orderId}`),
         this.serverOrderRepository.findOne({
           where: { orderId },
         }),
+
         this.findAllPostFeed(orderId),
         this.orderHistoryService.findAll(1000, 0, null, {
           order: `${orderId}`,
@@ -727,9 +735,12 @@ export class ServerOrderService {
       } = data;
       if (orderType === 'pickup' || orderType === 'curbside') {
         if (transactionId) {
-         const test =  await this.bamboraService.UpdatePaymentStatus(transactionId, {
-            amount: 0,
-          });
+          const test = await this.bamboraService.UpdatePaymentStatus(
+            transactionId,
+            {
+              amount: 0,
+            },
+          );
         }
       } else if (orderType === 'delivery') {
         await this.cancelBeerGuyOrder(`${id}`, cancellationReason);
@@ -755,7 +766,8 @@ export class ServerOrderService {
           orderId: `${id}`,
           orderStatus: +orderStatus,
           name: cancellationBy,
-          identifier: cancellationBy.toLowerCase() === 'customer' ? '' : identifier ,
+          identifier:
+            cancellationBy.toLowerCase() === 'customer' ? '' : identifier,
         }),
       ]);
       // console.log('res', resp);
