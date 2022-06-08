@@ -48,7 +48,9 @@ export class Token {
   type: string;
 
   @ApiProperty({ type: User })
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, {
+    onDelete: "CASCADE"
+  })
   user: User;
 
   @Column({ type: 'datetime2' })

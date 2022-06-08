@@ -139,7 +139,10 @@ export class User {
   @UpdateDateColumn()
   updatedDate: Date;
 
-  @OneToMany(() => UserStores, (store) => store.userId)
+  @OneToMany(() => UserStores, (store) => store.userId, {
+    cascade: true,
+    onDelete: "CASCADE"
+  })
   usersStores: UserStores[];
 
   @ApiProperty({ type: String })
