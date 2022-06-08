@@ -533,11 +533,12 @@ export class ServerOrderService {
         packUnits_24Plus: twentyFourPlusUnits,
         submittedDateTime: moment.utc(orderDetails.date_created).format('YYYY-MM-DD hh:mm:ss'),
         openDateTime: null,
-        pickUpReadyDateTime: '',
+        pickUpReadyDateTime: null,
         completedByEmpId: null,
         completedDateTime: null,
         idChecked: "",
-        requestedPickUpTime: `${orderDeliveryDate} ${orderDeliveryDate}`,
+        // requestedPickUpTime: `${orderDeliveryDate} ${orderDeliveryDate}`,
+        requestedPickUpTime: fulfillmentDate,
         browserVersion: "",
         refunded: false,
         refundedAmount: 0,
@@ -545,12 +546,12 @@ export class ServerOrderService {
         pickUpType: billingAddressFormFields.pickup_type,
       };
 
-      console.log('orderCompleteDetails', {
-          ...serverOrderParsed,
-          serverOrderCustomerDetails: customerDetails,
-          serverOrderDeliveryDetails: deliveryDetails,
-          serverOrderProductDetails: productsArr,
-        });
+      // console.log('orderCompleteDetails', {
+      //     ...serverOrderParsed,
+      //     serverOrderCustomerDetails: customerDetails,
+      //     serverOrderDeliveryDetails: deliveryDetails,
+      //     serverOrderProductDetails: productsArr,
+      //   });
       await this.serverOrderRepository.save(this.serverOrderRepository.create({
         ...serverOrderParsed,
         serverOrderCustomerDetails: customerDetails,
