@@ -9,6 +9,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { OrderEnum } from '../entity/server-order.entity';
+import { MetaOrPaymentData, OrderData, ProductsDataEntity } from './order-queue.dto';
 
 export class CreateServerOrderDto {
   constructor(body: CreateServerOrderDto | null = null) {
@@ -28,6 +29,9 @@ export class CreateServerOrderDto {
       this.cancellationDate = body.cancellationDate;
       this.cancellationReason = body.cancellationReason;
       this.transactionId = body.transactionId;
+      this.orderData = body.orderData;
+      this.productsData = body.productsData;
+      this.paymentData = body.paymentData;
     }
   }
 
@@ -114,4 +118,13 @@ export class CreateServerOrderDto {
   @IsString()
   @MaxLength(500)
   readonly employeeNote: string;
+
+  @IsOptional()
+  readonly productsData: ProductsDataEntity[];
+
+  @IsOptional()
+  readonly orderData: OrderData;
+
+  @IsOptional()
+  readonly paymentData: MetaOrPaymentData;
 }

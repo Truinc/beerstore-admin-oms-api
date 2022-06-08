@@ -9,6 +9,12 @@ import {
 } from 'class-validator';
 
 export class Products {
+  
+  @ApiProperty({ type: Number })
+  @IsOptional()
+  @IsNumber()
+  id: number;
+
   @ApiProperty({ type: String })
   @IsOptional()
   @MinLength(1)
@@ -19,6 +25,13 @@ export class Products {
   @IsOptional()
   @IsNumber()
   quantity: number;
+
+  @ApiProperty({ type: String })
+  @IsOptional()
+  @MinLength(1)
+  @MaxLength(99)
+  sku: string;
+
 }
 export class CreateOrderDto {
   @ApiProperty({ type: Number })
@@ -48,5 +61,5 @@ export class CreateOrderDto {
   @Type(() => Products)
   @IsOptional()
   @ValidateNested()
-  readonly info?: Products[];
+  readonly products?: Products[];
 }

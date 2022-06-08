@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServerOrderService } from './server-order.service';
@@ -12,12 +12,15 @@ import { OrderHistoryModule } from '../order-history/order-history.module';
 import { AuthModule } from '../auth/auth.module';
 import { BamboraModule } from '@beerstore/core/component/bambora/bambora.module';
 import { StoreModule } from '@beerstore/core/component/store/store.module';
+import { ServerOrderCustomerDetails } from './entity/server-order-customer-details.entity';
+import { ServerOrderDeliveryDetails } from './entity/server-order-delivery-details.entity';
+import { ServerOrderProductDetails } from './entity/server-order-product-details.entity';
 
 @Module({
   imports: [
     AuthModule,
     HttpModule,
-    OrdersModule,
+    forwardRef(() => OrdersModule),
     OrderHistoryModule,
     BamboraModule,
     StoreModule,
@@ -26,9 +29,13 @@ import { StoreModule } from '@beerstore/core/component/store/store.module';
       PostFeed,
       PaymentDetails,
       CustomerProof,
+      ServerOrderCustomerDetails,
+      ServerOrderDeliveryDetails,
+      ServerOrderProductDetails
     ]),
   ],
   providers: [ServerOrderService],
   controllers: [ServerOrderController],
+  exports: [ServerOrderService]
 })
 export class ServerOrderModule {}

@@ -4,6 +4,7 @@ import {
   IsEmail,
   IsMilitaryTime,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
@@ -103,4 +104,41 @@ export class UpdateOrderDto {
   @IsString()
   @MaxLength(200)
   readonly amount?: string;
+
+  @ApiProperty({ type: Number })
+  @IsNotEmpty()
+  @IsOptional()
+  @IsNumber()
+  readonly volumeTotalHL?: number;
+
+  @ApiProperty({ type: Number })
+  @IsNotEmpty()
+  @IsOptional()
+  @IsNumber()
+  readonly singleUnits?: number;
+
+  @ApiProperty({ type: Number })
+  @IsNotEmpty()
+  @IsOptional()
+  @IsNumber()
+  readonly packUnits2_6?: number;
+
+
+  @ApiProperty({ type: Number })
+  @IsNotEmpty()
+  @IsOptional()
+  @IsNumber()
+  readonly packUnits8_18?: number;
+
+  @ApiProperty({ type: Number })
+  @IsNotEmpty()
+  @IsOptional()
+  @IsNumber()
+  readonly packUnits_24Plus?: number;
+
+  @ApiProperty({ type: Number })
+  @IsNotEmpty()
+  @IsOptional()
+  @IsNumber()
+  readonly productTotal?: number;
 }
