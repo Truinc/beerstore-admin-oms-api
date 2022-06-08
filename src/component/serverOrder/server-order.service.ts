@@ -521,11 +521,11 @@ export class ServerOrderService {
         packUnits_24Plus: twentyFourPlusUnits,
         submittedDateTime: moment.utc(orderDetails.date_created).format('YYYY-MM-DD hh:mm:ss'),
         openDateTime: null,
-        pickUpReadyDateTime: null,
+        pickUpReadyDateTime: '',
         completedByEmpId: null,
         completedDateTime: null,
         idChecked: "",
-        requestedPickUpTime: null,
+        requestedPickUpTime: `${orderDeliveryDate} ${orderDeliveryDate}`,
         browserVersion: "",
         refunded: false,
         refundedAmount: 0,
@@ -617,7 +617,7 @@ export class ServerOrderService {
     createOrderHistoryDto: CreateOrderHistoryDto,
     orderStatus: number,
     createOrderDto: CreateOrderDto,
-    serverOrder: UpdateOrderDto,
+    // serverOrder: UpdateOrderDto,
     partial?: string,
     checkoutId?: string,
   ): Promise<any> {
@@ -630,6 +630,9 @@ export class ServerOrderService {
       const serverOrder = await this.serverOrderDetail(id);
       serverOrder.orderStatus = orderStatus;
       serverOrder.partialOrder = partial !== '0';
+      if(+serverOrder.orderStatus === +8 ){
+        serverOrder.pickUpReadyDateTime = moment().toDate()
+      }
       
       console.log('decrease', serverOrder?.serverOrderProductDetails);
 
@@ -739,6 +742,7 @@ export class ServerOrderService {
       serverOrder.cancellationDate = cancellationDate;
       serverOrder.cancellationReason = cancellationReason;
       serverOrder.cancellationNote = cancellationNote || ''; 
+      serverOrder.cancelledByCustomer = cancellationBy.toLowerCase() === 'customer';
       const orderToSave = await this.serverOrderRepository.preload(serverOrder);
 
       const response = await Promise.all([
@@ -810,7 +814,9 @@ export class ServerOrderService {
         singleUnits: serverOrder.singleUnits,
         packUnits2_6: serverOrder.packUnits2_6,
         packUnits8_18: serverOrder.packUnits8_18,
-        packUnits_24Plus: serverOrder.packUnits_24Plus
+        packUnits_24Plus: serverOrder.packUnits_24Plus,
+        underInfluence: customerProof.underInfluence === 1, 
+        dobBefore: customerProof.dobBefore === 1, 
       }
 
       if(+serverOrder.orderStatus === 5){
@@ -822,29 +828,25 @@ export class ServerOrderService {
           cancellationBy : serverOrder.cancellationBy,
           cancellationReason: serverOrder.cancellationReason,
           cancellationNote: serverOrder.cancellationNote,
-          // completedDateTime: serverOrder?.completedDateTime || '',
-          completedDateTime: moment().toDate(),
-          underInfluence: customerProof.underInfluence === 1, 
-          dobBefore: customerProof.dobBefore === 1, 
+          
         }
       } else if(+serverOrder.orderStatus === 10){
         //completed
         console.log('completed', serverOrder.orderStatus);
         prevOrder = {
           ...prevOrder,
-          underInfluence: false, 
-          dobBefore: false, 
+          completedDateTime: moment().toDate(),
         }
       }
-       await this.ordersService.updateOrder(
+      await this.ordersService.updateOrder(
         orderId,
         createOrderDto,
-      );
-      const orderToSave = await this.serverOrderRepository.preload(prevOrder);
-      // requests.push(this.updateServerOrder(+orderId, orderDetails));
-      requests.push(this.serverOrderRepository.save(orderToSave));
-      requests.push(this.orderHistoryService.create(createOrderHistoryDto));
-      const response = await Promise.all(requests);
+        );
+        const orderToSave = await this.serverOrderRepository.preload(prevOrder);
+        // requests.push(this.updateServerOrder(+orderId, orderDetails));
+        requests.push(this.serverOrderRepository.save(orderToSave));
+        requests.push(this.orderHistoryService.create(createOrderHistoryDto));
+        const response = await Promise.all(requests);
       console.log('response', response);
       await this.sendPushNotification(
         this.configService.get('beerstoreApp').title,

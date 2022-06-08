@@ -312,7 +312,7 @@ export class ServerOrderController {
       orderHistory,
       orderStatus,
       orderDetails,
-      serverOrder,
+      // serverOrder,
       partial,
       checkoutId,
     );
