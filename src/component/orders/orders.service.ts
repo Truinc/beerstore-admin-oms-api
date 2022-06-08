@@ -238,7 +238,6 @@ export class OrdersService {
   }
 
   async getOrderProductsReports(url: string): Promise<any> {
-    console.log('testing', url, this.configService.get('bigcom').access_token);
     return await lastValueFrom(
       this.httpService
         .get(url, {

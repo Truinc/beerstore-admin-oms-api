@@ -316,8 +316,12 @@ export class ServerOrderService {
     const ids = (await serverOrderQuery.getRawMany()).map(x => x.id);
 
     const query = this.serverOrderProductDetailsRepository.createQueryBuilder("ServerOrderProductDetails")
-      .where("ServerOrderProductDetails.orderId IN (:...ids)", { ids })
-      .leftJoinAndSelect('ServerOrderProductDetails.serverOrder', 'serverOrderDetails')
+    
+    if (ids.length > 0) {
+      query.where("ServerOrderProductDetails.orderId IN (:...ids)", { ids })
+    }  
+    
+    query.leftJoinAndSelect('ServerOrderProductDetails.serverOrder', 'serverOrderDetails')
       .leftJoinAndSelect('serverOrderDetails.serverOrderCustomerDetails', 'serverOrderCustomer');
 ;
 
