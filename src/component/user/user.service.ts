@@ -15,6 +15,7 @@ import { UserStores } from './entity/userStores.entity';
 // import { StoreService } from '../store/store.service';
 import { Store } from '@beerstore/core/component/store/entities/store.entity';
 import { SIGNINLOGS } from '@beerstore/core/utils';
+
 @Injectable()
 export class UserService {
   constructor(
@@ -414,4 +415,22 @@ export class UserService {
   //     assignType,
   //   });
   // };
+
+  deleteUser = async (id: number) => {
+    try {
+      await Promise.all([
+        this.signInLogsRepository
+          .createQueryBuilder()
+          .delete()
+          .from(SignInLogs)
+          .where({ userId: id })
+          .execute(),
+        this.usersRepository.delete(id),
+      ]);
+     
+      return "User deleted successfully!";
+    } catch (error) {
+      return error;
+    }
+  };
 }

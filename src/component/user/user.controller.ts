@@ -223,6 +223,22 @@ export class UserController {
       throw error;
     }
   }
+
+  
+  @ApiNoContentResponse({ description: '200. Success', type: User })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Roles(RolesEnum.superadmin)
+  @HttpCode(HttpStatus.OK)
+  @Delete('delete/:id')
+  async deleteUser(@Param('id', ParseIntPipe) id: number) {
+    try {
+      const user = await this.userService.deleteUser(id);
+      return user;
+    } catch (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+  }
 }
 
 // @ApiBadRequestResponse({

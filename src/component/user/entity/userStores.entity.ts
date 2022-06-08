@@ -43,7 +43,9 @@ export class UserStores {
   // @JoinTable()
   // store: Store;
 
-  @ManyToOne(() => User, (user) => user.id)
+  @ManyToOne(() => User, (user) => user.id, {
+    onDelete: "CASCADE"
+  })
   @JoinColumn({ name: 'userId' })
   userId: number;
 }
