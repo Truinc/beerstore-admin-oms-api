@@ -19,6 +19,7 @@ import * as moment from 'moment';
 import { CreateOrderDto } from './dto';
 import { Order, OrderQuery } from '@beerstore/core/interfaces';
 import { ServerOrderService } from '../serverOrder/server-order.service';
+import { GetOrderDto } from './dto/getOrder.dto';
 @Injectable()
 export class OrdersService {
   constructor(
@@ -224,23 +225,15 @@ export class OrdersService {
   //   );
   // }
 
-  async getAllOrdersReports(
-    reportType: number,
-    status_id: number,
-    store_id: number,
-    min_date_created: Date,
-    max_date_created: Date,
-    vector: string,
-    brewer: string
-  ): Promise<any> {
+  async getAllOrdersReports(params: GetOrderDto): Promise<any> {
     return this.serverOrderService.getAllServerOrderWithRelationData(
-      reportType,
-      status_id,
-      store_id,
-      min_date_created,
-      max_date_created,
-      vector,
-      brewer
+      params.reportType,
+      params.status_id,
+      params.store_id,
+      params.min_date_created,
+      params.max_date_created,
+      params.vector,
+      params.brewer
     );
   }
 
