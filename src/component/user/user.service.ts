@@ -416,8 +416,12 @@ export class UserService {
   //   });
   // };
 
-  deleteUser = async (id: number) => {
+  deleteUser = async (id: number) => { 
     try {
+      const user = await this.findOne(id);
+      if (!user) {
+        return new NotFoundException('User not found!');
+      }
       await Promise.all([
         this.signInLogsRepository
           .createQueryBuilder()
