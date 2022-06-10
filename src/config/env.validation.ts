@@ -12,6 +12,9 @@ class EnvironmentVariables {
   @IsEnum(Environment)
   ENVIRONMENT: Environment;
 
+  @IsString()
+  APP_URL: string;
+
   @IsNumber()
   PORT: number;
 

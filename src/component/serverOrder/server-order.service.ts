@@ -36,6 +36,12 @@ import { ServerOrderDeliveryDetails } from './entity/server-order-delivery-detai
 import { CustomerTypeEnum, ServerOrderCustomerDetails } from './entity/server-order-customer-details.entity';
 import { ServerOrderProductDetails } from './entity/server-order-product-details.entity';
 import { MetaOrPaymentData, Order, OrderData, ProductsDataEntity } from './dto/order-queue.dto';
+import * as XlsxPopulate from 'xlsx-populate';
+import { orderHeaders } from './reportHeaders/OrderReport.header';
+import { transactionReportHeader } from './reportHeaders/TransactionReport.header';
+import { orderStatus } from '@beerstore/core/utils';
+import { existsSync, mkdirSync } from 'fs';
+
 const OrderstatusText = {
   5: 'cancelled',
   10: 'completed',
@@ -136,7 +142,7 @@ export class ServerOrderService {
       ];
       let sortObjKey;
       const sortKey = Object.keys(sort)[0];
-      if(sortKey.includes('name')){
+      if (sortKey.includes('name')) {
         sortObjKey = `ServerOrderCustomerDetails.name`
       } else {
         sortObjKey = `ServerOrder.${sortKey}`
@@ -150,7 +156,7 @@ export class ServerOrderService {
         throw new BadRequestException(`Invalid sort param :- ${sortKey}`);
       }
     }
-    
+
     if (skip) {
       table.skip(skip);
     }
@@ -260,7 +266,9 @@ export class ServerOrderService {
         orderVector: vector,
       });
     }
-    return table.getMany();
+    let result = await table.getMany();
+    this.createXlsxReport(result, 'transaction');
+    return { file_url: `${this.configService.get('app_url')}/transaction.xlsx` };
   }
 
   private async generateOrderReportData(
@@ -316,20 +324,165 @@ export class ServerOrderService {
     const ids = (await serverOrderQuery.getRawMany()).map(x => x.id);
 
     const query = this.serverOrderProductDetailsRepository.createQueryBuilder("ServerOrderProductDetails")
-    
+
     if (ids.length > 0) {
       query.where("ServerOrderProductDetails.orderId IN (:...ids)", { ids })
-    }  
-    
+    }
+
     query.leftJoinAndSelect('ServerOrderProductDetails.serverOrder', 'serverOrderDetails')
       .leftJoinAndSelect('serverOrderDetails.serverOrderCustomerDetails', 'serverOrderCustomer');
-;
+
 
     if (brewer) {
       query.andWhere("ServerOrderProductDetails.brewer = :brewer", { brewer })
     }
 
-    return query.getMany();
+    let result = await query.getMany();
+    this.createXlsxReport(result, 'order');
+    return { file_url: `${this.configService.get('app_url')}/order.xlsx` };
+  }
+
+  private async createXlsxReport(data, type) {
+    let dir = './public';
+
+    if (!existsSync(dir)) {
+      mkdirSync(dir);
+    }
+    return XlsxPopulate.fromBlankAsync().then(async (workbook) => {
+      let sheet1 = workbook.sheet(0);
+      let addedSheet = this.addHeadersToSheet(sheet1, type);
+      this.addDataToSheet(addedSheet, type, data);
+      return workbook.outputAsync().then((res) => {
+        return workbook.toFileAsync(`./public/${type}.xlsx`);
+      });
+    });
+  }
+
+  private generateCharacterFromNumber(number) {
+    let baseChar = ("A").charCodeAt(0),
+      letters = "";
+    do {
+      number -= 1;
+      letters = String.fromCharCode(baseChar + (number % 26)) + letters;
+      number = (number / 26) >> 0; // quick `floor`
+    } while (number > 0);
+
+    return letters;
+  }
+
+  private addHeadersToSheet(sheetArg, type) {
+    let sheetHeader = type === 'order' ? orderHeaders : transactionReportHeader;
+    sheetHeader.forEach((header, index) => {
+      let string = this.generateCharacterFromNumber(index + 1) + '1';
+      sheetArg.cell(string).value(header.heading);
+    })
+    return sheetArg;
+  }
+
+  private addDataToSheet(sheetArg, type, data) {
+    let orderData = [];
+    if (type === 'order') {
+      data.forEach(sheetData => {
+        orderData.push({
+          id: sheetData.orderId,
+          storeNumber: sheetData?.serverOrder?.storeId,
+          orderStatusDesc: orderStatus[sheetData?.serverOrder?.orderStatus] || '',
+          submittedDateTime: moment(sheetData?.serverOrder?.submittedDateTime).format('YYYY-MM-DD h:mm:ss a'),
+          submittedDate: moment(sheetData?.serverOrder?.submittedDateTime).format('YYYY-MM-DD') || "",
+          orderVector: sheetData?.serverOrder?.orderVector,
+          orderType: sheetData?.serverOrder?.orderType,
+          lineItem: sheetData?.lineItem,
+          sku: sheetData?.itemSKU,
+          itemDesc: sheetData?.itemDescription,
+          brewer: sheetData?.brewer,
+          category: sheetData?.category,
+          quantity: sheetData?.quantity,
+          packSize: sheetData?.packSize,
+          volume: sheetData?.volume,
+          container: sheetData?.containerType,
+          itemsTotal: sheetData?.itemTotal,
+          itemHLTotal: sheetData?.itemHLTotal,
+          available: sheetData?.available ? 'Yes' : 'No',
+          customerID: sheetData?.serverOrder?.serverOrderCustomerDetails?.id,
+          customerEmail: sheetData?.serverOrder?.serverOrderCustomerDetails.email,
+          postalCode: sheetData?.serverOrder?.serverOrderCustomerDetails?.postalCode,
+          deliveryFee: sheetData?.serverOrder?.deliveryFee,
+          deliveryFeeHst: sheetData?.serverOrder?.deliveryFeeHST,
+          isRefunded: sheetData?.serverOrder?.refunded ? 'Yes' : 'No',
+          refundAmount: sheetData?.serverOrder?.refundedAmount,
+          refundReason: sheetData?.serverOrder?.refundReason,
+          utmSource: sheetData?.utmSource,
+          utmMedium: sheetData?.utmMedium,
+          utmCampaign: sheetData?.utmCampaign,
+          utmTerm: sheetData?.utmTerm,
+          utmContent: sheetData?.utmContent,
+          pickUpType: sheetData?.serverOrder?.pickUpType
+        })
+      })
+    } else {
+      data.forEach(sheetData => {
+        orderData.push({
+          id: sheetData?.orderId,
+          storeNumber: sheetData?.storeId,
+          orderStatusDesc: orderStatus[sheetData?.orderStatus] || '',
+          submittedDateTime: moment(sheetData?.submittedDateTime).format('YYYY-MM-DD h:mm:ss a'),
+          submittedDate: moment(sheetData?.submittedDateTime).format('YYYY-MM-DD'),
+          orderVector: sheetData?.orderVector,
+          orderType: sheetData?.orderType,
+          transactionAmount: sheetData?.productTotal,
+          productTotal: sheetData?.productTotal,
+          deliveryFee: sheetData?.deliveryFee,
+          deliveryFeeHST: sheetData?.deliveryFeeHST,
+          grandTotal: sheetData?.grandTotal,
+          volumeTotalHL: sheetData?.volumeTotalHL,
+          singleUnit: sheetData?.singleUnits,
+          twoSixUnits: sheetData?.packUnits2_6,
+          eightEighteenUnits: sheetData?.packUnits8_18,
+          twentyFourPlusUnits: sheetData?.packUnits_24Plus,
+          openDateTime: sheetData?.openDateTime,
+          pickupReadyDateTime: sheetData?.pickUpReadyDateTime,
+          partialOrder: sheetData?.partialOrder ? 'Yes' : 'No',
+          completedByEmpId: sheetData?.completedByEmpId,
+          completedDateTime: sheetData?.completedDateTime,
+          idChecked: sheetData?.idChecked,
+          cancelledByEmpId: sheetData?.completedByEmpId,
+          cancelledDateTime: sheetData?.completedDateTime,
+          cancelReason: sheetData?.cancellationReason,
+          cancelledByCustomer: sheetData?.cancelledByCustomer ? 'Yes' : 'No',
+          cancelledByDriver: sheetData?.cancelledByDriver ? 'Yes' : 'No',
+          requestedPickuptime: sheetData?.requestedPickUpTime,
+          ccType: sheetData?.serverOrderCustomerDetails?.ccType,
+          ccLastFourNumber: sheetData?.serverOrderCustomerDetails?.cardNumber,
+          customerName: sheetData?.serverOrderCustomerDetails?.name,
+          customerType: sheetData?.serverOrderCustomerDetails?.customerType,
+          customerEmail: sheetData?.serverOrderCustomerDetails?.email,
+          postalCode: sheetData?.serverOrderCustomerDetails?.postalCode,
+          browserVersion: sheetData?.browserVersion,
+          deliveryType: sheetData?.serverOrderDeliveryDetails?.deliveryType,
+          deliveryEta: sheetData?.serverOrderDeliveryDetails?.deliveryETA,
+          deliveryScheduledDateTime: sheetData?.serverOrderDeliveryDetails?.deliveryScheduledDateTime,
+          refunded: sheetData?.refunded ? 'Yes' : 'No',
+          refundedAmount: sheetData?.refundedAmount,
+          refundReason: sheetData?.refundReason,
+          deliverId: sheetData?.serverOrderDeliveryDetails?.deliveryId,
+          deliverName: sheetData?.serverOrderDeliveryDetails?.deliveryGuyName,
+          deliveredDate: sheetData?.serverOrderDeliveryDetails?.deliveryDate,
+          deliveryAddress: sheetData?.serverOrderDeliveryDetails?.deliveryAddress,
+          deliveryCity: sheetData?.serverOrderDeliveryDetails?.deliveryCity,
+          deliveryPostalCode: sheetData?.serverOrderDeliveryDetails?.deliveryPostalCode,
+          pickUpType: sheetData?.pickUpType,
+          customerDateOfBirth: sheetData?.serverOrderCustomerDetails?.dob,
+          customerSalutation: sheetData?.serverOrderCustomerDetails?.salutation
+        })
+      })
+    }
+    orderData.forEach((order, index) => {
+      Object.entries(order).forEach((val, orderIndex) => {
+        let string = this.generateCharacterFromNumber(orderIndex + 1) + `${index + 2}`;
+        sheetArg.cell(string).value(val[1]);
+      });
+    })
+    return sheetArg;
   }
 
   async completeDetail(orderId: number, storeId: number, tranId: string) {

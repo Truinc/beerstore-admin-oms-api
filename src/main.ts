@@ -6,6 +6,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import ValidationExceptions from '@beerstore/core/exceptions/validation.exceptions';
 
 import { OmsModule } from './oms.module';
+import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(OmsModule, {
@@ -20,6 +21,7 @@ async function bootstrap() {
         new ValidationExceptions(errors),
     }),
   );
+  app.useStaticAssets(join(__dirname, '..', '..', 'public'));
   const configService = app.get<ConfigService>(ConfigService);
   const port = configService.get('port');
 
