@@ -160,16 +160,14 @@ export class ServerOrderController {
     RolesEnum.storemanager,
   )
   @HttpCode(HttpStatus.OK)
-  @Get('/details/:id/store/:storeId/tranId/:tranId')
+  @Get('/details/:id/store/:storeId')
   async completeDetails(
     @Param('id', ParseIntPipe) id: number,
     @Param('storeId', ParseIntPipe) storeId: number,
-    @Param('tranId') tranId: string,
   ) {
     const order = await this.serverOrderService.completeDetail(
       id,
-      storeId,
-      tranId,
+      storeId
     );
     if (!order) {
       throw new NotFoundException('order not found');
@@ -285,7 +283,7 @@ export class ServerOrderController {
   @ApiOkResponse({ description: '204. Success', type: Order })
   @ApiNotFoundResponse({ description: 'order not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(JwtAccessGuard, UseGuards)
+  @UseGuards(JwtAccessGuard)
   @Roles(
     RolesEnum.superadmin,
     RolesEnum.customerservicerep,

@@ -98,11 +98,12 @@ export class ServerOrderService {
         },
       );
     } else {
+      const toDate = `${searchToDate} 23:59:59`;
       table.andWhere(
-        'ServerOrder.orderDate BETWEEN :searchFromDate AND :searchToDate',
+        'ServerOrder.orderDate BETWEEN :searchFromDate AND :toDate',
         {
           searchFromDate,
-          searchToDate,
+          toDate,
         },
       );
     }
@@ -133,6 +134,7 @@ export class ServerOrderService {
         'cancellationDate',
         'cancellationBy',
         'name',
+        'orderType',
       ];
       let sortObjKey;
       const sortKey = Object.keys(sort)[0];
@@ -332,7 +334,7 @@ export class ServerOrderService {
     return query.getMany();
   }
 
-  async completeDetail(orderId: number, storeId: number, tranId: string) {
+  async completeDetail(orderId: number, storeId: number) {
     try {
       await this.serverOrderRepository
         .createQueryBuilder()
@@ -345,6 +347,7 @@ export class ServerOrderService {
         this.ordersService.getOrderDetails(`${orderId}`),
         this.serverOrderRepository.findOne({
           where: { orderId },
+          relations: ['serverOrderCustomerDetails']
         }),
 
         this.findAllPostFeed(orderId),
@@ -353,9 +356,9 @@ export class ServerOrderService {
         }),
         this.getCustomerProof(orderId),
         this.storeService.getStore(storeId, false, null),
-        ...(tranId !== 'na'
-          ? [this.bamboraService.getPaymentInfoByTranasctionId(tranId)]
-          : []),
+        // ...(tranId !== 'na'
+        //   ? [this.bamboraService.getPaymentInfoByTranasctionId(tranId)]
+        //   : []),
       ]);
       return {
         orderDetails: resp[0],
@@ -364,13 +367,13 @@ export class ServerOrderService {
         orderHistory: resp[3]?.items || [],
         ctmProof: resp[4] || [],
         deliveryCharges: resp[5]?.deliveryFee?.fee || '11.95',
-        ...(tranId !== 'na' && {
-          cardDetails: {
-            lastFour: resp[6]?.card?.last_four || '',
-            cardType: resp[6]?.card?.card_type || '',
-            payment: resp[6]?.amount || '',
-          },
-        }),
+        // ...(tranId !== 'na' && {
+        //   cardDetails: {
+        //     lastFour: resp[6]?.card?.last_four || '',
+        //     cardType: resp[6]?.card?.card_type || '',
+        //     payment: resp[6]?.amount || '',
+        //   },
+        // }),
       };
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -672,6 +675,7 @@ export class ServerOrderService {
       );
       return response[0];
     } catch (err) {
+      console.log('err', err.message);
       throw new BadRequestException(err.message);
     }
   }
@@ -752,6 +756,9 @@ export class ServerOrderService {
       this.serverOrderDetail(id),
       ]);
 
+      if(!resp[1]){
+        throw new BadRequestException('Order not found');
+      }
       const serverOrder = resp[1];
       serverOrder.orderStatus = +orderStatus;
       serverOrder.cancellationBy = cancellationBy;
