@@ -285,6 +285,7 @@ export class ServerOrder {
   @Column({
     type: 'nvarchar',
     default: '',
+    nullable: true,
   })
   pickUpType: string;
 

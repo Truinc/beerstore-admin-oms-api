@@ -98,11 +98,12 @@ export class ServerOrderService {
         },
       );
     } else {
+      const toDate = `${searchToDate} 23:59:59`;
       table.andWhere(
-        'ServerOrder.orderDate BETWEEN :searchFromDate AND :searchToDate',
+        'ServerOrder.orderDate BETWEEN :searchFromDate AND :toDate',
         {
           searchFromDate,
-          searchToDate,
+          toDate,
         },
       );
     }
@@ -133,6 +134,7 @@ export class ServerOrderService {
         'cancellationDate',
         'cancellationBy',
         'name',
+        'orderType',
       ];
       let sortObjKey;
       const sortKey = Object.keys(sort)[0];
@@ -332,19 +334,13 @@ export class ServerOrderService {
     return query.getMany();
   }
 
-  async completeDetail(orderId: number, storeId: number, tranId: string) {
+  async completeDetail(orderId: number, storeId: number) {
     try {
-      await this.serverOrderRepository
-        .createQueryBuilder()
-        .update(ServerOrder)
-        .set({ openDateTime: new Date() })
-        .where({ orderId })
-        .execute();
-
       const resp = await Promise.all([
         this.ordersService.getOrderDetails(`${orderId}`),
         this.serverOrderRepository.findOne({
           where: { orderId },
+          relations: ['serverOrderCustomerDetails']
         }),
 
         this.findAllPostFeed(orderId),
@@ -353,10 +349,18 @@ export class ServerOrderService {
         }),
         this.getCustomerProof(orderId),
         this.storeService.getStore(storeId, false, null),
-        ...(tranId !== 'na'
-          ? [this.bamboraService.getPaymentInfoByTranasctionId(tranId)]
-          : []),
+        // ...(tranId !== 'na'
+        //   ? [this.bamboraService.getPaymentInfoByTranasctionId(tranId)]
+        //   : []),
       ]);
+      if (!resp[1].openDateTime) {
+        this.serverOrderRepository
+          .createQueryBuilder()
+          .update(ServerOrder)
+          .set({ openDateTime: moment.utc().format() })
+          .where({ orderId })
+          .execute();
+      }
       return {
         orderDetails: resp[0],
         serverOrder: resp[1] || [],
@@ -364,13 +368,13 @@ export class ServerOrderService {
         orderHistory: resp[3]?.items || [],
         ctmProof: resp[4] || [],
         deliveryCharges: resp[5]?.deliveryFee?.fee || '11.95',
-        ...(tranId !== 'na' && {
-          cardDetails: {
-            lastFour: resp[6]?.card?.last_four || '',
-            cardType: resp[6]?.card?.card_type || '',
-            payment: resp[6]?.amount || '',
-          },
-        }),
+        // ...(tranId !== 'na' && {
+        //   cardDetails: {
+        //     lastFour: resp[6]?.card?.last_four || '',
+        //     cardType: resp[6]?.card?.card_type || '',
+        //     payment: resp[6]?.amount || '',
+        //   },
+        // }),
       };
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -543,7 +547,7 @@ export class ServerOrderService {
         refunded: false,
         refundedAmount: 0,
         refundReason: "",
-        pickUpType: billingAddressFormFields.pickup_type,
+        pickUpType: billingAddressFormFields.pickup_type || '',
       };
 
       // console.log('orderCompleteDetails', {
@@ -672,6 +676,7 @@ export class ServerOrderService {
       );
       return response[0];
     } catch (err) {
+      console.log('err', err.message);
       throw new BadRequestException(err.message);
     }
   }
@@ -752,6 +757,9 @@ export class ServerOrderService {
       this.serverOrderDetail(id),
       ]);
 
+      if(!resp[1]){
+        throw new BadRequestException('Order not found');
+      }
       const serverOrder = resp[1];
       serverOrder.orderStatus = +orderStatus;
       serverOrder.cancellationBy = cancellationBy;
@@ -853,6 +861,11 @@ export class ServerOrderService {
         prevOrder = {
           ...prevOrder,
           completedDateTime: moment().toDate(),
+        }
+      } else if(+serverOrder.orderStatus === 8){
+        prevOrder = {
+          ...prevOrder,
+          pickUpReadyDateTime: moment().toDate(),
         }
       }
       await this.ordersService.updateOrder(
