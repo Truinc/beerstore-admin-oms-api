@@ -336,13 +336,6 @@ export class ServerOrderService {
 
   async completeDetail(orderId: number, storeId: number) {
     try {
-      await this.serverOrderRepository
-        .createQueryBuilder()
-        .update(ServerOrder)
-        .set({ openDateTime: new Date() })
-        .where({ orderId })
-        .execute();
-
       const resp = await Promise.all([
         this.ordersService.getOrderDetails(`${orderId}`),
         this.serverOrderRepository.findOne({
@@ -360,6 +353,14 @@ export class ServerOrderService {
         //   ? [this.bamboraService.getPaymentInfoByTranasctionId(tranId)]
         //   : []),
       ]);
+      if (!resp[1].openDateTime) {
+        this.serverOrderRepository
+          .createQueryBuilder()
+          .update(ServerOrder)
+          .set({ openDateTime: moment.utc().format() })
+          .where({ orderId })
+          .execute();
+      }
       return {
         orderDetails: resp[0],
         serverOrder: resp[1] || [],
@@ -546,7 +547,7 @@ export class ServerOrderService {
         refunded: false,
         refundedAmount: 0,
         refundReason: "",
-        pickUpType: billingAddressFormFields.pickup_type,
+        pickUpType: billingAddressFormFields.pickup_type || '',
       };
 
       // console.log('orderCompleteDetails', {
@@ -860,6 +861,11 @@ export class ServerOrderService {
         prevOrder = {
           ...prevOrder,
           completedDateTime: moment().toDate(),
+        }
+      } else if(+serverOrder.orderStatus === 8){
+        prevOrder = {
+          ...prevOrder,
+          pickUpReadyDateTime: moment().toDate(),
         }
       }
       await this.ordersService.updateOrder(
