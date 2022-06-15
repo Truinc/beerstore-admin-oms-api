@@ -26,6 +26,11 @@ export default class JwtAccessStrategy extends PassportStrategy(
       const { sub } = decodedToken;
       if (sub && sub.id) {
         const user = await this.usersService.findOne(sub.id);
+        if(user.hasOwnProperty('isActive')){
+          if(user.isActive === 0){
+            throw new NotFoundException('User account inactive');
+          }
+        }
         return user;
       }
       throw new NotFoundException('user not found');

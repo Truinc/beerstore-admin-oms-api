@@ -85,7 +85,7 @@ export default class AuthService {
   ): Promise<boolean> {
     const user = await this.usersService.findWithUsername(username);
     if (!user) {
-      throw new UnauthorizedException('Incorrect EmployeeId');
+      throw new UnauthorizedException('Incorrect EmployeeId.');
     }
     const passwordCompared = await bcrypt.compare(password, user.password);
     if (passwordCompared) {
@@ -149,7 +149,6 @@ export default class AuthService {
   public async forget(email: string) {
     const user = await this.usersService.findWithEmail(email);
     if (!user) {
-      console.log('user not found');
       throw new NotFoundException('user not found');
     }
     return this.tokenService.generateResetToken(user);
