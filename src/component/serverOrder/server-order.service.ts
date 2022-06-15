@@ -452,6 +452,7 @@ export class ServerOrderService {
 
       const customerDetails = {
         orderId: `${orderDetails.id}`,
+        customerId: `${orderDetails.customer_id}`,
         name: `${orderDetails.billing_address.first_name} ${orderDetails.billing_address.last_name}`,
         email: orderDetails.billing_address.email,
         postalCode: orderDetails.billing_address.zip,

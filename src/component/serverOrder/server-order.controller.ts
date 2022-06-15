@@ -110,7 +110,6 @@ export class ServerOrderController {
     RolesEnum.customerservicerep,
     RolesEnum.storemanager,
   )
-  @UseGuards()
   @HttpCode(HttpStatus.OK)
   @Get()
   async findAll(

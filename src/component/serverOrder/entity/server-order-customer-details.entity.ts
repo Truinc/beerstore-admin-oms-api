@@ -38,6 +38,17 @@ export class ServerOrderCustomerDetails {
   })
   name: string;
 
+  @ApiProperty({
+    type: String
+  })
+  @Column({
+    type: 'nvarchar',
+    length: 200,
+    default: null,
+    nullable: true
+  })
+  customerId: string;
+
   @ApiProperty({ type: String })
   @Column({
     type: 'nvarchar',
