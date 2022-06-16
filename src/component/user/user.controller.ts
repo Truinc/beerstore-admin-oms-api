@@ -73,7 +73,7 @@ export class UserController {
   @Roles(RolesEnum.superadmin, RolesEnum.ithelpdesk, RolesEnum.storemanager)
   @HttpCode(HttpStatus.OK)
   @Get()
-  findAll(
+  async findAll(
     @Query(PaginationInputPipe)
     paginationDto: PaginationInputDto,
     @Query('search') search: string,
@@ -85,7 +85,7 @@ export class UserController {
     } = request || { usersStores: [] };
     try {
       const { take, skip, sort } = paginationDto;
-      const users = this.userService.findAll(
+      const users = await this.userService.findAll(
         take,
         skip,
         role,
@@ -96,6 +96,7 @@ export class UserController {
       );
       return users;
     } catch (error) {
+      console.log('err', error.message);
       throw new InternalServerErrorException(error.message);
     }
   }

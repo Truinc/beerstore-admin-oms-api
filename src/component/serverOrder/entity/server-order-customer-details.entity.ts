@@ -112,6 +112,13 @@ export class ServerOrderCustomerDetails {
   })
   cardAmount: number;
 
+  @Column({
+    type: "int",
+    nullable: true,
+    default: null
+  })
+  authCode: number;
+
   @OneToOne(() => ServerOrder, (serverOrder) => serverOrder.serverOrderCustomerDetails, {
     onDelete: 'CASCADE',
   })
