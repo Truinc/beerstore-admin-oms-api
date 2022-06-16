@@ -71,7 +71,6 @@ export class UserService {
           return store.storeId;
         }) || [];
       const table = this.usersRepository.createQueryBuilder('User');
-      console.log(await table.getMany(), "HHHHYYYYYYHHHHHH")
       const value = {};
       const where = [];
       let queryString = '';
@@ -149,9 +148,8 @@ export class UserService {
       if (take) {
         table.take(take);
       }
-      console.log("WORKING ------- >>");
       const response = await table.getManyAndCount();
-      // console.log('response ------- >>', response);
+      console.log('response ------- >>', response);
       const [items, total] = response;
       return {
         total,
