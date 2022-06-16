@@ -669,12 +669,14 @@ export class ServerOrderService {
         this.serverOrderRepository.save(orderToSave),
         this.orderHistoryService.create(createOrderHistoryDto),
       ]);
-      await this.sendPushNotification(
-        this.configService.get('beerstoreApp').title,
-        `Your Order #${id} has been ${OrderstatusText[orderStatus]}.`,
-        checkoutId,
-        id.toString(),
-      );
+      if(checkoutId){
+        await this.sendPushNotification(
+          this.configService.get('beerstoreApp').title,
+          `Your Order #${id} has been ${OrderstatusText[orderStatus]}.`,
+          checkoutId,
+          id.toString(),
+        );
+      }
       return response[0];
     } catch (err) {
       console.log('err', err.message);
