@@ -114,7 +114,8 @@ export class ServerOrderCustomerDetails {
 
   @Column({
     type: "int",
-    default: 0
+    nullable: true,
+    default: null
   })
   authCode: number;
 
