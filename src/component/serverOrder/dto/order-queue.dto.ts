@@ -227,6 +227,7 @@ export interface Order {
   }
   export interface MetaOrPaymentData {
       amount: number,
+      auth_code: number,
       card: {
           card_type: string;
           last_four: string;

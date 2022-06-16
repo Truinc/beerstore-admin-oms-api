@@ -462,6 +462,7 @@ export class ServerOrderService {
         ccType: transactionDetails?.card?.card_type || null,
         cardNumber: +transactionDetails?.card?.last_four || null,
         cardAmount: +transactionDetails?.amount || 0,
+        authCode: +transactionDetails?.auth_code || null,
       }
 
       let singleUnits = 0;
