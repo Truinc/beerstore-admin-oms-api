@@ -1,0 +1,999 @@
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Beer Store
+  </title>
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,400i,500,700,900,900i" rel="stylesheet">
+  <style type="text/css">
+    .ReadMsgBody {
+      width: 100%;
+      background-color: #ffffff;
+    }
+
+    .ExternalClass {
+      width: 100%;
+      background-color: #ffffff;
+    }
+
+    body {
+      width: 100%;
+      background-color: #ffffff;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      font-family: Verdana, Geneva, sans-serif;
+    }
+
+    table {
+      border-collapse: collapse;
+      border-spacing: 0;
+    }
+
+    .lg_txt_align_right {
+      text-align: right;
+    }
+
+    span.block {
+      display: block;
+    }
+
+
+    @media only screen and (max-width: 640px) {
+
+      .deviceWidth {
+        width: 100% !important;
+        padding: 0;
+      }
+
+      .tflex {
+        display: block;
+        width: 100%;
+      }
+
+      .nav_links {
+        width: 249px !important;
+        padding: 5px 0 !important;
+      }
+
+      .center {
+        text-align: center !important;
+      }
+
+      .headline {
+        font-size: 50px;
+      }
+
+      .nav_links_container a {
+        display: block;
+      }
+
+      .footer_nav {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .m_bot_0 {
+        margin-bottom: 0 !important;
+      }
+
+      .deviceWidth.footer_social_sec table {
+        width: 130px;
+        margin: 0 auto;
+      }
+
+      .nav_links_container {
+        display: none;
+      }
+
+      .mob_radius_top_right {
+        border-radius: 5px 5px 0 0 !important;
+        -webkit-border-radius: 5px 5px 0 0 !important;
+        -moz-border-radius: 5px 5px 0 0 !important;
+      }
+
+      .mob_center_btn table {
+        margin: 0 auto;
+      }
+
+      .mob_center_btn {
+        text-align: center;
+      }
+
+      .mob_spacing_20 {
+        height: 20px;
+      }
+
+      .mob_gradient {
+        background: rgba(0, 0, 0, 0.6);
+      }
+
+      .mob_padding {
+        padding: 0 30px;
+      }
+
+      .mob_padding_15 {
+        padding: 0 15px;
+      }
+
+      .mob_hide {
+        display: none;
+      }
+
+      .lg_txt_align_right {
+        text-align: left;
+      }
+
+      .mob_mbot {
+        margin-bottom: 10px;
+      }
+
+      .mob_padtop_0 {
+        padding-top: 0 !important;
+      }
+
+      .mob_left_align {
+        text-align: left !important;
+      }
+
+      td.footer_nav_link {
+        width: 100% !important;
+        float: left !important;
+        margin-bottom: 15px !important;
+      }
+    }
+
+    @media only screen and (max-width: 479px) {
+
+      .spacer_td {
+        height: 50px !important;
+      }
+
+      .mobFontXs td {
+        font-size: 13px !important;
+      }
+
+      .magic_td {
+        position: absolute;
+      }
+
+      .img_container {
+        width: 280px !important;
+        padding: 0;
+        overflow: hidden !important;
+        max-width: 280px !important;
+        text-align: center;
+        position: relative;
+        top: -30px;
+      }
+
+      .img_container img {
+        position: relative;
+        left: -160px;
+        top: 0;
+      }
+
+      .nav_links_container {
+        width: 100% !important;
+        text-align: center;
+      }
+
+      .nav_links_container td,
+      .title td {
+        padding: 5px 0 !important;
+      }
+
+      .social_icon_container {
+        font-size: 8px !important;
+      }
+
+      .nav_links {
+        font-size: 8px !important;
+      }
+
+      .headline {
+        font-size: 40px;
+      }
+
+      .mobile_break {
+        display: block;
+      }
+
+      .mobile_inline {
+        display: inline !important;
+      }
+
+      .mob_pad_bot {
+        padding-bottom: 15px;
+      }
+
+      .cartThumb {
+        padding: 20px 10px !important;
+        padding-right: 0 !important;
+      }
+
+      .cartThumb img {
+        width: 60px !important;
+        height: auto;
+      }
+
+      .cartTitle {
+        font-size: 12px !important;
+      }
+
+      .itemDesc {
+        font-size: 11px !important;
+      }
+
+      .mobWidth45 {
+        width: 30% !important;
+      }
+
+      .mob_left_text {
+        text-align: left !important;
+      }
+
+      .mobFontSm td {
+        font-size: 12px !important;
+      }
+
+      .logo_header {
+        text-align: center !important;
+      }
+
+      .mobWidth50 {
+        width: 60% !important;
+      }
+
+      .mobWidth22 {
+        width: 70px !important;
+      }
+
+      .mobWidth28 {
+        width: 65px !important;
+        text-align: left !important;
+        padding-right: 0 !important;
+      }
+
+      .noPadRt {
+        padding-right: 0 !important;
+      }
+
+      td.noPadRt {
+        font-size: 12px !important;
+      }
+
+      .noteText {
+        font-size: 10px !important;
+      }
+
+      .space_left_right {
+        padding: 0 15px !important;
+      }
+
+      .space-top {
+        padding-top: 30px !important;
+      }
+
+      .space-bottom {
+        padding-bottom: 30px !important;
+      }
+
+
+      .mobmBot_0 {
+        margin-bottom: 0 !important;
+      }
+
+      .cartTable .top-heading td {
+        font-size: 12px !important;
+        padding: 5px !important;
+        text-align: left !important;
+        white-space: nowrap;
+      }
+
+      .cartTable .content-data td {
+        padding: 5px !important;
+        font-size: 13px !important;
+      }
+
+      .cartTable .content-data td img {
+        width: 70px !important;
+      }
+    }
+
+    @media only screen and (max-width: 374px) {
+      .mobFontXs td {
+        font-size: 12px !important;
+      }
+    }
+  </style>
+</head>
+
+<body marginwidth="0" style="font-family: Arial, Helvetica, sans-serif, Montserrat;" marginheight="0" topmargin="0"
+  leftmargin="0">
+  <table width="100%" border="0" cellpadding="0" cellspacing="0" align="center">
+    <tr>
+      <td width="100%" valign="top">
+        <table width="640" border="0" cellpadding="0" cellspacing="0" class="deviceWidth" align="center"
+          style="margin:0 auto;">
+          <tr>
+            <td class="logo" style="background: #000000; padding: 0 25px">
+              <table class="deviceWidth" style="background: #000000;" cellspacing="0" cellpadding="0" border="0"
+                align="left">
+                <tbody>
+                  <tr>
+                    <td style="height: 20px;" height="20">
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="logo_header" style="text-align: left;" width="100%" align="left">
+                      <a href="#" target="_blank">
+                        <img src="[site_url]/wp-content/uploads/2020/08/logo.png" class="img_responsive"
+                          style="border:none;" alt="logo" width="200" border="0">
+                      </a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="height: 25px;" height="25">
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background: #f4b233;">
+              <table class="deviceWidth" style="background: #f4b233;" cellspacing="0" cellpadding="0" border="0"
+                align="center">
+                <tbody>
+                  <tr>
+                    <td style="background: #f4b233;">
+                      <table class="deviceWidth" style="background: #f4b233;" cellspacing="0" cellpadding="0" border="0"
+                        align="center">
+                        <tbody>
+                          <tr>
+                            <td style="height: 25px;" height="25">
+                            </td>
+                          </tr>
+                          <tr>
+                            <td class="space_left_right"
+                              style="background: #f4b233; text-align: center; padding: 0 40px;">
+                              <h1 width="100%" class="mob_heading" style="color:#000000;margin:0;font-size:18px;">
+                                <strong>Your order is confirmed!
+                                </strong>
+                              </h1>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="background: #f4b233;">
+                      <table class="deviceWidth" style="background: #f4b233; width: 135px;" cellspacing="0"
+                        cellpadding="0" border="0" align="center">
+                        <tbody>
+                          <tr>
+                            <td style="height: 23px;" height="23">
+                            </td>
+                          </tr>
+                          <tr>
+                            <td class="logo_header" style="text-align: center;" width="100%" align="center">
+                              <a href="#" target="_blank">
+                                <img src="[site_url]/wp-content/uploads/2020/08/cart.png" class="img_responsive"
+                                  style="border:none;" alt="icon" width="100px" border="0">
+                              </a>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="height: 25px;" height="25">
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+
+                </tbody>
+              </table>
+            </td>
+          </tr>
+
+
+
+          <tr>
+            <td style="background: #f4f4f4;" bgcolor="#f4f4f4">
+              <table class="deviceWidth" width="100%" cellspacing="0" cellpadding="0" border="0" align="left">
+
+                <tr>
+                  <td class="space_left_right space-top "
+                    style="text-align: left; padding: 0 25px;font-size:24px; padding-top: 40px; padding-bottom: 20px; color: #000000; font-weight: bold;">
+                    Thank You!
+                  </td>
+                </tr>
+
+                <tr>
+                  <td class="space_left_right" style="width:100%;padding: 0 25px">
+                    <p class="para" style="color:#404040; font-size:18px; margin:0;">
+                      <strong>[heading_sub_text]
+                      </strong>
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="height: 20px;" height="20">
+                  </td>
+                </tr>
+                <tr>
+                  <td class="space_left_right space-bottom" style="width:100%;padding: 0 25px; padding-bottom: 40px;">
+                    <p class="para" style="color:#404040; font-size:18px; margin:0;">To view the status of your order
+                      please visit <a href="[thankyou_link]"
+                        style="color: #f4b233; text-decoration: none; font-weight: bold;">Your Orders</a> page on the
+                      Beer Store.</p>
+                  </td>
+                </tr>
+
+                [product_not_available]
+
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td height="40" style="height:40px;">
+            </td>
+          </tr>
+
+          <!-- <tr>
+            <td style="background: #ffffff; padding: 0 25px;" class="space_left_right space-top">
+              <table class="deviceWidth mobFontXs" style=" background: #fcf8ef; border:1px solid #dddddd; border-collapse: separate;  -moz-border-radius:10px;
+		                           -webkit-border-radius:10px;border-radius:10px;padding: 15px;" width="100%" cellspacing="0"
+                cellpadding="0" border="0">
+                <tr>
+                  <td style="font-size: 14px;   color: #404040;  font-weight: normal;  margin: 0;
+                  font-family: Arial, Helvetica, sans-serif, Montserrat;line-height: 20px;padding-bottom:0px;">
+                    As of February 8th, everyone entering our locations or waiting in line outside must wear
+                    face coverings or full-face shields.</td>
+                </tr>
+                <tr>
+                  <td
+                    style="    font-size: 14px;   color: #404040; font-weight: normal;  margin: 0;
+                  font-family: Arial, Helvetica, sans-serif, Montserrat;padding-top:15px;padding-bottom:0px;line-height: 20px;">
+                    If a face
+                    covering is not worn, service
+                    will be refused.</td>
+                </tr>
+                <tr>
+                  <td
+                    style="    font-size: 14px;   color: #404040; font-weight: normal;  margin: 0;
+                  font-family: Arial, Helvetica, sans-serif, Montserrat;padding-top:15px;padding-bottom:2px;line-height: 20px;">
+                    Customers
+                    who cannot wear a face mask
+                    or shield are asked to get in touch with our</td>
+                </tr>
+                <tr>
+                  <td style="padding-top: 0;"><a href="[site_url]/about-us/contact-tbs/"
+                      style="color: #ffaf00;     text-decoration: none;font-family: Arial, Helvetica, sans-serif, Montserrat;">Customer
+                      Contact Centre</a></td>
+                </tr>
+
+              </table>
+            </td>
+          </tr> -->
+
+
+          <!-- <tr>
+            <td height="40" style="height:40px;">
+            </td>
+          </tr> -->
+
+          <tr>
+            <td class="space_left_right"
+              style="text-align: left; padding: 0 25px; color:#000000;font-size:24px; font-weight: bold;text-transform: capitalize;">
+              Order Summary
+            </td>
+          </tr>
+
+          <tr>
+            <td class="space_left_right space-top" style="width:100%;padding: 0 25px; padding-top: 20px;">
+              <hr style="margin: 0;border: none;border-top: 2px solid #000;">
+            </td>
+          </tr>
+
+          <tr>
+            <td class="space_left_right space-top" style="padding: 0 25px; padding-top: 20px;">
+              <table class="deviceWidth mobFontXs" style="" width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tbody>
+                  <tr>
+                    <td width="196"
+                      style=" font-family: Arial, Helvetica, sans-serif, Montserrat; font-size: 16px;  color:#404040;vertical-align: top;">
+                      <table class="deviceWidth" width="100%" cellspacing="0" cellpadding="0" border="0">
+                        <tr>
+                          <td style=" display: block;">Customer Name
+                          </td>
+                        </tr>
+                        <tr>
+                          <td height="5" style="height:5px;">
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="font-weight: bold;  display: block;">[cust_name]
+                          </td>
+                        </tr>
+                        <tr>
+                          <td height="10" style="height:10px;">
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="display: block;">Payment Method
+                          </td>
+                        </tr>
+                        <tr>
+                          <td height="5" style="height:5px;">
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="font-weight: bold; display: block;">[payment_method]
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td width="196"
+                      style=" font-family: Arial, Helvetica, sans-serif, Montserrat; font-size: 16px;  color:#404040;vertical-align: top;">
+                      <table class="deviceWidth" width="100%" cellspacing="0" cellpadding="0" border="0">
+                        <tr>
+                          <td style="padding: 0px 5px; display: block;">Order Number
+                          </td>
+                        </tr>
+                        <tr>
+                          <td height="5" style="height:5px;">
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="font-weight: bold; padding: 0px 5px; display: block;">[order_id]
+                          </td>
+                        </tr>
+                        <tr>
+                          <td height="10" style="height:10px;">
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 0px 5px; display: block;">Total Cost
+                          </td>
+                        </tr>
+                        <tr>
+                          <td height="5" style="height:5px;">
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="font-weight: bold; padding: 0px 5px; display: block;">$[total_amount]
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td width="196"
+                      style=" font-family: Arial, Helvetica, sans-serif, Montserrat; font-size: 16px;  color:#404040;vertical-align: top;">
+                      <table class="deviceWidth" width="100%" cellspacing="0" cellpadding="0" border="0">
+                        <tr>
+                          <td style="display: block;">Order Date
+                          </td>
+                        </tr>
+                        <tr>
+                          <td height="5" style="height:5px;">
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="font-weight: bold; display: block;">[order_date]
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td height="20" style="height:20px;">
+            </td>
+          </tr>
+          <tr>
+            <td class="space_left_right" style="width:100%;padding: 0 25px">
+              <hr style="margin: 0;border: none;border-top: 2px solid #ddd;">
+            </td>
+          </tr>
+          <tr>
+            <td height="40" style="height:40px;">
+            </td>
+          </tr>
+          <tr>
+            <td class="space_left_right"
+              style="text-align: left; padding: 0 25px; color:#000000;font-size:24px; font-weight: bold;">
+              [order_information]
+            </td>
+          </tr>
+          <tr>
+            <td height="20" style="height:20px;">
+            </td>
+          </tr>
+          <tr>
+            <td class="space_left_right" style="width:100%;padding: 0 25px">
+              <hr style="margin: 0;border: none;border-top: 2px solid #000;">
+            </td>
+          </tr>
+          <tr>
+            <td class="space_left_right" style="padding: 0 25px;">
+              <table class="deviceWidth mobFontXs" style="" width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tbody>
+                  <tr>
+                    <td colspan="3" class="space_left_right" style="height:20px;" height="20">
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      style="width:33.33%; font-family: Arial, Helvetica, sans-serif, Montserrat; font-size: 16px;  color:#404040;vertical-align: top;">
+                      <table class="deviceWidth" width="100%" cellspacing="0" cellpadding="0" border="0">
+                        <tr>
+                          <td>Date
+                          </td>
+                        </tr>
+                        <tr>
+                          <td height="5" style="height:5px;">
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="font-weight: bold;">[order_type_date]
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td
+                      style="width:33.33%; font-family: Arial, Helvetica, sans-serif, Montserrat; font-size: 16px;  color:#404040;vertical-align: top;">
+                      <table class="deviceWidth" width="100%" cellspacing="0" cellpadding="0" border="0">
+                        <tr>
+                          <td style="padding: 0px 5px">Time
+                          </td>
+                        </tr>
+                        <tr>
+                          <td height="5" style="height:5px;">
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="font-weight: bold; padding: 0px 10px 0px 5px;">Estimated by: [order_type_time]
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td
+                      style="width:33.33%; font-family: Arial, Helvetica, sans-serif, Montserrat; font-size: 16px;  color:#404040;vertical-align: top;">
+                      <table class="deviceWidth" width="100%" cellspacing="0" cellpadding="0" border="0">
+                        <tr>
+                          <td>Location
+                          </td>
+                        </tr>
+                        <tr>
+                          <td height="5" style="height:5px;">
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="font-weight: bold;">[order_type_address]
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td height="20" style="height:20px;">
+            </td>
+          </tr>
+          <tr>
+            <td class="space_left_right" style="width:100%;padding: 0 25px">
+              <hr style="margin: 0;border: none;border-top: 2px solid #ddd;">
+            </td>
+          </tr>
+          <tr>
+            <td height="40" style="height:40px;">
+            </td>
+          </tr>
+          <tr>
+            <td class="space_left_right"
+              style="text-align: left; padding: 0 25px; color:#000000;font-size:24px; font-weight: bold;">
+              Cart Information
+            </td>
+          </tr>
+          <tr>
+            <td height="20" style="height:20px;">
+            </td>
+          </tr>
+          <tr>
+            <td class="space_left_right" style="width:100%;padding: 0 25px">
+              <hr style="margin: 0;border: none;border-top: 2px solid #000;">
+            </td>
+          </tr>
+          <tr>
+            <td height="20" style="height:20px;">
+            </td>
+          </tr>
+
+          [product_list]
+          <tr>
+            <td class="space_left_right" style="width:100%;padding: 0 25px">
+              <hr style="margin: 0;border: none;border-top: 1px solid #ddd;">
+            </td>
+          </tr>
+          <tr>
+            <td height="30" style="height:30px;">
+            </td>
+          </tr>
+          <tr>
+            <td class="space_left_right"
+              style="background: transparent; text-align: center; padding: 0 25px;font-weight: bold;color:#404040;font-size:30px;">
+              Cheers!
+            </td>
+          </tr>
+          <tr>
+            <td style="height: 15px;" height="15">
+            </td>
+          </tr>
+          <tr>
+            <td class="space_left_right"
+              style="background:transparent; text-align: center; padding: 0 25px; color:#404040; font-size:16px; font-weight: bold;">
+              The Beer Store
+            </td>
+          </tr>
+          <tr>
+            <td height="8" style="height:8px;">
+            </td>
+          </tr>
+          <tr>
+            <td class="space_left_right"
+              style="background:transparent;color:#404040; text-align: center; padding: 0 25px;font-size:16px; font-weight: normal;">
+              Please enjoy responsibly
+            </td>
+          </tr>
+          <tr>
+            <td height="10" style="height:10px;">
+            </td>
+          </tr>
+          <tr>
+            <td height="20" style="height:20px;background: #ffffff;">
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 25px; background: #ffffff;" class="space_left_right">
+              <table class="deviceWidth mobFontXs"
+                style=" background: #fcf8ef; border:1px solid #dddddd; border-collapse: separate;  -moz-border-radius:10px;
+                                                            -webkit-border-radius:10px;border-radius:10px; padding-top:20px;" width="100%" cellspacing="0"
+                cellpadding="0" border="0">
+                <tbody>
+
+                  <tr>
+                    <td
+                      style="width:10%; font-family: Arial, Helvetica, sans-serif, Montserrat; font-size: 16px; color:#000000;vertical-align: top; padding: 5px 20px">
+                      <img src="[site_url]/wp-content/uploads/2020/08/info.png" alt="">
+                    </td>
+                    <td class="imp-text"
+                      style="width:90%; font-family: Arial, Helvetica, sans-serif, Montserrat; font-size: 24px; color:#000000;vertical-align: top; font-weight: 700;padding: 0 20px 0 0; line-height: 30px;">
+                      <span
+                        style="text-transform: uppercase;font-family: Arial, Helvetica, sans-serif, Montserrat; font-size: 24px; color:#000000;font-weight: 700;">
+                        Important Information for our Beer Store Customers</span>
+                      <p class="block"
+                        style="font-size:14px; color: #404040; padding-top: 20px;font-weight: normal; margin: 0;font-family: Arial, Helvetica, sans-serif, Montserrat; line-height: 25px;">
+                        [footer_content]</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="3" class="space_left_right" style="height:10px;" height="10">
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="3" class="space_left_right" style="height:10px;" height="10">
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td class="" style="background: #ffffff;height:50px;" height="50">
+            </td>
+          </tr>
+          <!--footer start -->
+          <tr>
+            <td style="background:#000000;border:0;">
+              <table align="left" width="100%" cellspacing="0" cellpadding="0" border="0"
+                style="border:none;width: 100%;">
+                <tbody>
+
+                  <tr>
+                    <td style="background:#000000;padding:40px 25px;border:0;">
+                      <table align="left" width="120" cellspacing="0" cellpadding="0" border="0"
+                        class="deviceWidth mobmBot_0" style="border:none;">
+                        <tr>
+                          <td align="left">
+                            <a style="text-decoration:none;" href="[site_url]/">
+                              <img src="[site_url]/wp-content/uploads/2020/08/logo.png" border="0"
+                                style="font:26px/28px Arial, Helvetica, sans-serif; color:#ffffff; vertical-align:top;border:none;"
+                                alt="BEER STORE" width="200">
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="background:#000000;padding:0 25px; padding-bottom: 35px; width: 100%; ">
+
+                      <table class="deviceWidth footer_nav-main" width="100%" cellspacing="0" cellpadding="0" border="0"
+                        style="width: 100%;">
+                        <tr>
+                          <td class="footer_nav_link" style="vertical-align: top;" width="196" align="left">
+                            <table align="left" cellspacing="0" cellpadding="0" border="0" width="100%"
+                              class="deviceWidth footer_nav m_bot_0">
+                              <tbody>
+                                <tr>
+                                  <td class="ta-c"
+                                    style="padding:0 0 11px;font:bold 16px/20px Arial, Helvetica, sans-serif, Montserrat;color:#fff; ">
+                                    INFORMATION
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td class="h-u ta-c "
+                                    style="padding:0 0 8px;font:14px/16px Arial, Helvetica, sans-serif, Montserrat;color:#fff;">
+                                    <a style="text-decoration:none;color:#fff;display: block;width: 100%;"
+                                      href="[site_url]/about-us/" target="_blank">About Us
+                                    </a>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td class="h-u ta-c"
+                                    style="padding:0 0 8px;font:14px/16px Arial, Helvetica, sans-serif, Montserrat;color:#fff;">
+                                    <a style="text-decoration:none;color:#fff;display: block;width: 100%;"
+                                      href="[site_url]/about-us/contact-tbs/" target="_blank">Contact
+                                      Us
+                                    </a>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td class="h-u ta-c"
+                                    style="padding:0 0 8px;font:14px/16px Arial, Helvetica, sans-serif, Montserrat;color:#fff;">
+                                    <a style="text-decoration:none;color:#fff;display: block;width: 100%;"
+                                      href="[site_url]/businesses/" target="_blank">Business Services
+                                    </a>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                          <td class="footer_nav_link" style="vertical-align: top;" width="196" align="left">
+                            <table align="left" cellspacing="0" cellpadding="0" border="0" width="100%"
+                              class="deviceWidth footer_nav m_bot_0">
+                              <tbody>
+                                <tr>
+                                  <td class="ta-c"
+                                    style="padding:0 0 11px;font:bold 16px/20px Arial, Helvetica, sans-serif, Montserrat;color:#fff;">
+                                    LEGAL
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td class="h-u ta-c"
+                                    style="padding:0 0 8px;font:14px/16px Arial, Helvetica, sans-serif, Montserrat;color:#fff;">
+                                    <a style="text-decoration:none;color:#fff;display: block;width: 100%;"
+                                      href="[site_url]/privacy-policy/" target="_blank">Privacy Policy
+                                    </a>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td class="h-u ta-c"
+                                    style="padding:0 0 8px;font:14px/16px Arial, Helvetica, sans-serif, Montserrat;color:#fff;">
+                                    <a style="text-decoration:none;color:#fff;display: block;width: 100%;"
+                                      href="[site_url]/terms-conditions/" target="_blank">Terms &amp;
+                                      Conditions
+                                    </a>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                          <td class="footer_nav_link" style="vertical-align: top;" width="196" align="left">
+                            <table align="left" cellspacing="0" cellpadding="0" border="0" width="100%"
+                              class="deviceWidth footer_nav m_bot_0">
+                              <tbody>
+                                <tr>
+                                  <td class="ta-c"
+                                    style="padding:0 0 11px;font:bold 16px/20px Arial, Helvetica, sans-serif, Montserrat;color:#fff;">
+                                    EMPLOYMENT
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td class="h-u ta-c"
+                                    style="padding:0 0 8px;font:14px/16px Arial, Helvetica, sans-serif, Montserrat;color:#ffffff; ">
+                                    <a style="text-decoration:none;color:#fff;display: block;width: 100%;"
+                                      href="[site_url]/about-us/careers/" target="_blank">Careers
+                                    </a>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="background:#000000;padding:0 25px; padding-bottom: 35px;">
+                      <hr style="background:#2a2a2a;margin:0;padding:0;border:0;height:1px;">
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="background:#000000;">
+                      <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                        <tbody>
+                          <tr>
+                            <td class="h-u ptb-15"
+                              style="padding:0px 0px 35px;font:13px/14px Arial, Helvetica, sans-serif, Montserrat;font-weight:500;"
+                              align="center">
+                              <a style="text-decoration:none !important;color:#ffaf00;border-bottom:1px solid #ffaf00;"
+                                href="[site_url]" target="_blank">[site_url]</a>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td class="h-u ptb-15"
+                              style="padding-right: 10px;padding-left: 10px;padding-bottom:30px;font:13px/20px Arial, Helvetica, sans-serif, Montserrat;color:#fff;"
+                              align="center">
+                              <p class="footer-block"
+                                style="font-weight:900;display:block;margin:0; padding-bottom: 6px;">The Beer Store
+                              </p>
+                              <p class="footer-block" style="font-weight:400;margin:0;">12258 Coleraine Dr Bolton, ON
+                                L7E 3A9
+                              </p>
+                              <p class="footer-block" style="font-weight:400;display:block;margin:0;">If you have any
+                                questions
+                                please contact our customer service department at 1-888-948-2337.
+                              </p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="background:#000;padding:0 25px;">
+                              <hr style="background:#2a2a2a;margin:0;padding:0;border:0;height:1px;">
+                            </td>
+                          </tr>
+                          <tr>
+                            <td height="30" style="background:#000;height:30px;">
+                            </td>
+                          </tr>
+                          <tr>
+                            <td class="" style="color:#808080;font-size:14px;margin:0;" align="center">
+                              <p class="para" style="margin: 0;">© [year] The Beer Store
+                              </p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td height="30" style="background:#000;height:30px;">
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+
+</html>

@@ -14,6 +14,7 @@ import { StoreModule } from '@beerstore/core/component/store/store.module';
 import { CartModule } from './component/cart/cart.module';
 import { OrdersModule } from './component/orders/orders.module';
 import { CheckoutsModule } from './component/checkouts/checkouts.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { CheckoutsModule } from './component/checkouts/checkouts.module';
     OrdersModule,
     StoreModule,
     CheckoutsModule,
+    MailModule,
   ],
   providers: [AppService],
 })
