@@ -489,13 +489,25 @@ export class ServerOrderService {
 
         let hlTotal = ((((product.quantity * +packSize) * +volume) / 1000) / 100);
         volumeTotalHL += hlTotal;
+        let itemDescription = "";
+        const customFields = product?.product?.data?.custom_fields || [];
+        const pageTitle = product?.product?.data?.page_title || '';
+        if(pageTitle){
+          itemDescription = pageTitle.split('~')[0] || '';
+        }
+        let brewer = "";
+        let category = "";
+        if(customFields.length > 0){
+          brewer = customFields.find(field => field.name === 'Producer')?.value || '';
+          category = customFields.find(field => field.name === 'Category')?.value || '';
+        }
         return {
           orderId: `${orderDetails.id}`,
           lineItem: index + 1,
           itemSKU: product.sku,
-          itemDescription: "",
-          brewer: "",
-          category: "",
+          itemDescription,
+          brewer,
+          category,
           quantity: product.quantity,
           packSize: +packSize,
           volume: +volume,
@@ -858,7 +870,7 @@ export class ServerOrderService {
           cancellationReason: serverOrder.cancellationReason,
           cancellationNote: serverOrder.cancellationNote,
           
-        }
+        }    
       } else if(+serverOrder.orderStatus === 10){
         //completed
         console.log('completed', serverOrder.orderStatus);
