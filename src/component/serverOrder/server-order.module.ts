@@ -16,6 +16,7 @@ import { ServerOrderCustomerDetails } from './entity/server-order-customer-detai
 import { ServerOrderDeliveryDetails } from './entity/server-order-delivery-details.entity';
 import { ServerOrderProductDetails } from './entity/server-order-product-details.entity';
 import { MailModule } from 'src/mail/mail.module';
+import { BeerModule } from '@beerstore/core/component/beer/beer.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { MailModule } from 'src/mail/mail.module';
     OrderHistoryModule,
     BamboraModule,
     StoreModule,
+    BeerModule,
     TypeOrmModule.forFeature([
       ServerOrder,
       PostFeed,

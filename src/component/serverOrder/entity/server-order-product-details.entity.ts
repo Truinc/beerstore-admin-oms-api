@@ -43,6 +43,14 @@ export class ServerOrderProductDetails {
   @Column({
     type: 'int',
     nullable: false,
+    default: 0
+  })
+  variantId: number;
+
+  @ApiProperty({ type: Number })
+  @Column({
+    type: 'int',
+    nullable: false,
   })
   lineItem: number;
 

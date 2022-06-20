@@ -57,6 +57,7 @@ export class MailService {
             template: this.templateNames.ORDER_CANCELLED,
             context: {
                 orderDetails: data.orderDetails,
+                orderProductDetails: data.orderProductDetails,
                 siteBaseUrl: this.configService.get('mail').site_base_url
             }
         });
@@ -69,6 +70,7 @@ export class MailService {
             template: this.templateNames.ORDER_COMPLETED,
             context: {
                 orderDetails: data.orderDetails,
+                orderProductDetails: data.orderProductDetails,
                 siteBaseUrl: this.configService.get('mail').site_base_url
             }
         });

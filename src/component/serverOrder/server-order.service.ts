@@ -37,6 +37,7 @@ import { CustomerTypeEnum, ServerOrderCustomerDetails } from './entity/server-or
 import { ServerOrderProductDetails } from './entity/server-order-product-details.entity';
 import { MetaOrPaymentData, Order, OrderData, ProductsDataEntity } from './dto/order-queue.dto';
 import { MailService } from 'src/mail/mail.service';
+import { BeerService } from '@beerstore/core/component/beer/beer.service';
 const OrderstatusText = {
   5: 'cancelled',
   10: 'completed',
@@ -65,6 +66,7 @@ export class ServerOrderService {
     private customerProofRepository: Repository<CustomerProof>,
     @InjectRepository(PaymentDetails)
     private paymentDetailsRepository: Repository<PaymentDetails>,
+    private beerService: BeerService,
   ) { }
 
   async findAllServerOrder(
@@ -497,7 +499,7 @@ export class ServerOrderService {
         let imageUrl = product.product?.data?.custom_fields.find(x => x.name === "product_image_1")?.value
         let variantData = product.product.data.variants.find(x => x.id === product.variant_id);
         //calculating the sale price
-        if(variantData.sale_price !== variantData.price){
+        if (variantData.sale_price !== variantData.price) {
           saleSavings += (variantData.price - variantData.sale_price);
         }
         mailProductsArr.push({
@@ -515,6 +517,7 @@ export class ServerOrderService {
         return {
           orderId: `${orderDetails.id}`,
           productId: product.product_id,
+          variantId: product.variant_id,
           lineItem: index + 1,
           itemSKU: product.sku,
           itemDescription: "",
@@ -582,7 +585,7 @@ export class ServerOrderService {
         serverOrderProductDetails: productsArr,
       }));
 
-      let staffNotes  = JSON.parse(orderDetails.staff_notes);
+      let staffNotes = JSON.parse(orderDetails.staff_notes);
 
       this.mailService.orderCreated({
         to: customerDetails.email,
@@ -848,7 +851,6 @@ export class ServerOrderService {
     customerProof: CreateCustomerProofDto,
     checkoutId: string,
   ): Promise<any> {
-    console.log('checkoutId123', checkoutId, createOrderDto);
     const requests = [];
     try {
       const { amount, ...orderDetails } = serverOrder;
@@ -894,7 +896,6 @@ export class ServerOrderService {
 
       if (+serverOrder.orderStatus === 5) {
         //cancelled
-        console.log('cancelled', serverOrder.orderStatus);
         prevOrder = {
           ...prevOrder,
           cancellationDate: serverOrder.cancellationDate,
@@ -905,7 +906,6 @@ export class ServerOrderService {
         }
       } else if (+serverOrder.orderStatus === 10) {
         //completed
-        console.log('completed', serverOrder.orderStatus);
         prevOrder = {
           ...prevOrder,
           completedDateTime: moment().toDate(),
@@ -925,7 +925,6 @@ export class ServerOrderService {
       requests.push(this.serverOrderRepository.save(orderToSave));
       requests.push(this.orderHistoryService.create(createOrderHistoryDto));
       const response = await Promise.all(requests);
-      console.log('response', response);
       await this.sendPushNotification(
         this.configService.get('beerstoreApp').title,
         `Your Order #${orderId} has been ${OrderstatusText[serverOrder.orderStatus]
@@ -933,11 +932,103 @@ export class ServerOrderService {
         checkoutId,
         orderId,
       );
+
+      this.sendMailOnStatusChange(orderId, prevOrder, serverOrder.orderStatus)
+
       return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);
     }
   }
+
+  private async sendMailOnStatusChange(
+    orderId: string,
+    serverOrderDetails: ServerOrder,
+    orderStatus: number
+  ) {
+    let productIds = serverOrderDetails.serverOrderProductDetails.map(x => x.productId).join(',');
+    let result = await Promise.all([
+      this.beerService.findAll(
+        undefined,
+        undefined,
+        productIds,
+        undefined,
+        undefined,
+        'variants,custom_fields,images,primary_image',
+        undefined,
+        undefined,
+        1,
+      ),
+      this.ordersService.getOrder(orderId)
+    ]);
+
+    let { data } = result[0];
+    let orderDetailsFromBigCom = result[1];
+    let billingAddressFormFields = JSON.parse(orderDetailsFromBigCom?.billing_address?.form_fields[0]?.value);
+    let staffNotes = JSON.parse(orderDetailsFromBigCom.staff_notes);
+    let mailProductsArr = [];
+    let saleSavings = 0;
+
+    data.forEach(ele => {
+      let imageUrl = ele?.custom_fields.find(x => x.name === "product_image_1")?.value
+      let productFromdb = serverOrderDetails.serverOrderProductDetails.find(x => x.productId == ele.id);
+      let variantData = ele.variants.find(x => x.id === productFromdb.variantId);
+
+      if (variantData.sale_price !== variantData.price) {
+        saleSavings += (variantData.price - variantData.sale_price);
+      }
+
+      mailProductsArr.push({
+        imageUrl: imageUrl || "",
+        name: ele.name,
+        displayValue: variantData?.option_values[0]?.label || "",
+        quantity: +productFromdb.quantity,
+        productSubTotal: (variantData.sale_price === variantData.price) ? (variantData.price * productFromdb.quantity) : (variantData.sale_price * productFromdb.quantity),
+        price: variantData.price || 0,
+        salePrice: variantData.sale_price || 0,
+        onSale: variantData.sale_price === variantData.price ? false : true,
+      });
+    });
+
+    let mailPayload = {
+      to: serverOrderDetails.serverOrderCustomerDetails.email,
+      orderDetails: {
+        customerName: serverOrderDetails.serverOrderCustomerDetails.name,
+        orderNumber: orderId,
+        orderDate: moment(serverOrderDetails.orderDate).format('MMMM D, YYYY'),
+        paymentMethod: orderDetailsFromBigCom?.payment_method,
+        totalCost: serverOrderDetails.grandTotal,
+        deliverydate: moment(billingAddressFormFields.pick_delivery_date_text).format('MMMM D, YYYY'),
+        deliveryLocation: serverOrderDetails.serverOrderDeliveryDetails.deliveryAddress,
+        deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
+        subTotal: serverOrderDetails.productTotal || 0,
+        deliveryCharge: serverOrderDetails.deliveryFee || 0,
+        deliveryFeeHST: serverOrderDetails.deliveryFeeHST || 0,
+        grandTotal: serverOrderDetails.grandTotal || 0,
+        totalSavings: staffNotes.reduce(
+          (previousValue, currentValue) => previousValue + (+currentValue.packup_discount),
+          0
+        ),
+        saleSavings: saleSavings,
+        cancellationReason: serverOrderDetails.cancellationReason || "",
+        refundedAmt: serverOrderDetails.grandTotal || 0,
+      },
+      orderProductDetails: mailProductsArr
+    };
+
+    if (+orderStatus === 5) {
+      this.mailService.orderCancelled(mailPayload);
+    }
+
+    if (+orderStatus === 10) {
+      this.mailService.orderCompleted(mailPayload);
+    }
+
+    if (+orderStatus === 8) {
+      this.mailService.orderInTransit(mailPayload);
+    }
+  }
+
   sendPushNotification = async (
     title: string,
     subtitle: string,
