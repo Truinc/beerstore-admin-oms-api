@@ -718,9 +718,7 @@
                     <tr style="background:#f4f4f4" bgcolor="#f4f4f4">
                       <td
                         style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:15px">
-                        <img
-                          src="https://ci3.googleusercontent.com/proxy/swNsVRSPExepCugaaFyWL-1hdrCwPv35YTl3jGE-S6-BAzdJKBKwJA7V66RJYnQIouQA5ficqjR3gO1TvZqAmtiSFmD3WDU5mLuxN3XHVusTRJ2Ea_wVQT07WnqLrwwqngRxIA=s0-d-e1-ft#https://cdn.brandfolder.io/DRTYD0A2/as/qbgbe1-3vkh68-7k9fes/0512_0.png?position=1"
-                          width="100" height="auto"
+                        <img src="<%= product.imageUrl %>" width="100" height="auto"
                           style="width:100px;height:auto;border:1px solid #ddd;border-radius:4px" alt="" class="CToWUd">
                       </td>
                       <td
@@ -742,14 +740,16 @@
                                   cellspacing="0 " align="left" cellpadding="0" border="0">
                                   <tbody>
                                     <tr>
-                                      <!-- <td
-                                        style="border-radius:5px;text-align:center;background:#ad2f33;padding-top:2px;padding-bottom:2px;padding-right:4px;padding-left:4px"
-                                        width="50 " bgcolor="#ad2f33 " align="center ">
-                                        <a href="#m_-343405735075903143_m_1454673122863119151_m_-6687196424747639421_!"
-                                          style="background:#ad2f33;display:inline-block;text-decoration:none;text-align:center;font-weight:bold;font-size:9px;font-family:Arial,Helvetica,sans-serif,Montserrat;border-radius:5px;line-height:15px;color:#fff;background-image:none;background-repeat:repeat;background-position:top left;border-radius:5px;border-width:1px;border:0px;text-align:center;width:50px;padding-top:2px;padding-bottom:2px">
-                                          SALE
-                                        </a>
-                                      </td> -->
+                                      <% if(product.onSale){ %>
+                                        <td
+                                          style="border-radius:5px;text-align:center;background:#ad2f33;padding-top:2px;padding-bottom:2px;padding-right:4px;padding-left:4px"
+                                          width="50 " bgcolor="#ad2f33 " align="center ">
+                                          <a href="#m_-343405735075903143_m_1454673122863119151_m_-6687196424747639421_!"
+                                            style="background:#ad2f33;display:inline-block;text-decoration:none;text-align:center;font-weight:bold;font-size:9px;font-family:Arial,Helvetica,sans-serif,Montserrat;border-radius:5px;line-height:15px;color:#fff;background-image:none;background-repeat:repeat;background-position:top left;border-radius:5px;border-width:1px;border:0px;text-align:center;width:50px;padding-top:2px;padding-bottom:2px">
+                                            SALE
+                                          </a>
+                                        </td>
+                                        <% } %>
                                     </tr>
                                   </tbody>
                                 </table>
@@ -766,9 +766,12 @@
                       </td>
                       <td
                         style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold">
-                        <!-- <p style="margin:0"><strike>$43.50</strike></p> -->
-                        <p style="margin:0">$<%= product.price %>
-                        </p>
+                        <% if(product.onSale) { %>
+                          <p style="margin:0"><strike>$<%= product.price %></strike></p>
+                          <p style="margin:0">$<%= product.salePrice %></p>
+                        <% } else { %>
+                          <p style="margin:0">$<%= product.price %></p>
+                        <% } %>
                       </td>
                       <td
                         style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:right;vertical-align:middle;padding-right:15px;font-weight:bold">

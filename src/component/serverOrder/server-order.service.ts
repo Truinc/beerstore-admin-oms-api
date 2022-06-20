@@ -473,6 +473,7 @@ export class ServerOrderService {
       let twentyFourPlusUnits = 0;
       let volumeTotalHL = 0;
       let mailProductsArr = [];
+      let saleSavings = 0;
 
       let productsArr = products.map((product, index) => {
         let temp = (product?.product_options[0]?.display_value)?.split(" ");
@@ -492,19 +493,26 @@ export class ServerOrderService {
 
         let hlTotal = ((((product.quantity * +packSize) * +volume) / 1000) / 100);
         volumeTotalHL += hlTotal;
-
+        let imageUrl = product.product?.data?.custom_fields.find(x => x.name === "product_image_1")?.value
+        let variantData = product.product.data.variants.find(x => x.id === product.variant_id);
+        //calculating the sale price
+        if(variantData.sale_price !== variantData.price){
+          saleSavings += (variantData.price - variantData.sale_price);
+        }
         mailProductsArr.push({
-          imageUrl: "",
+          imageUrl: imageUrl || "",
           name: product.name,
           displayValue: product?.product_options[0]?.display_value,
           quantity: +product.quantity,
-          productSubTotal: Number.parseFloat(product.total_ex_tax).toFixed(2),
-          price: Number.parseFloat(product.price_ex_tax).toFixed(2),
-          afterDiscountPrice: 0
+          productSubTotal: (variantData.sale_price === variantData.price) ? (variantData.price * product.quantity) : (variantData.sale_price * product.quantity),
+          price: variantData.price || 0,
+          salePrice: variantData.sale_price || 0,
+          onSale: variantData.sale_price === variantData.price ? false : true,
         });
 
         return {
           orderId: `${orderDetails.id}`,
+          productId: product.product_id,
           lineItem: index + 1,
           itemSKU: product.sku,
           itemDescription: "",
@@ -572,6 +580,8 @@ export class ServerOrderService {
         serverOrderProductDetails: productsArr,
       }));
 
+      let staffNotes  = JSON.parse(orderDetails.staff_notes);
+
       this.mailService.orderCreated({
         to: customerDetails.email,
         orderDetails: {
@@ -583,12 +593,15 @@ export class ServerOrderService {
           deliverydate: moment(billingAddressFormFields.pick_delivery_date_text).format('MMMM D, YYYY'),
           deliveryLocation: deliveryDetails.deliveryAddress,
           deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
-          subTotal: Number.parseFloat(orderDetails.subtotal_ex_tax).toFixed(2),
-          deliveryCharge: serverOrderParsed.deliveryFee > 0 ? serverOrderParsed.deliveryFee : 0,
-          deliveryHst: serverOrderParsed.deliveryFeeHST > 0 ? serverOrderParsed.deliveryFeeHST : 0,
+          subTotal: serverOrderParsed.productTotal || 0,
+          deliveryCharge: serverOrderParsed.deliveryFee || 0,
+          deliveryHst: serverOrderParsed.deliveryFeeHST || 0,
           grandTotal: serverOrderParsed.grandTotal || 0,
-          totalSavings: 0,
-          saleSavings: 0
+          totalSavings: staffNotes.reduce(
+            (previousValue, currentValue) => previousValue + (+currentValue.packup_discount),
+            0
+          ),
+          saleSavings: saleSavings
         },
         orderProductDetails: mailProductsArr
       });
