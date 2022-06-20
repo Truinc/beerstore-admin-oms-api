@@ -474,6 +474,7 @@ export class ServerOrderService {
       let volumeTotalHL = 0;
       let mailProductsArr = [];
       let saleSavings = 0;
+      let productTotal = 0;
 
       let productsArr = products.map((product, index) => {
         let temp = (product?.product_options[0]?.display_value)?.split(" ");
@@ -510,6 +511,7 @@ export class ServerOrderService {
           onSale: variantData.sale_price === variantData.price ? false : true,
         });
 
+        productTotal += +product.total_inc_tax;
         return {
           orderId: `${orderDetails.id}`,
           productId: product.product_id,
@@ -549,10 +551,10 @@ export class ServerOrderService {
         transactionId: serverOrder.transactionId || null,
         orderVector: billingAddressFormFields.source,
         partialOrder: false,
-        productTotal: Number(parseFloat(orderDetails.total_ex_tax).toFixed(2)),
+        productTotal: productTotal,
         deliveryFee: Number(parseFloat(orderDetails.shipping_cost_ex_tax).toFixed(2)),
         deliveryFeeHST: Number(parseFloat(orderDetails.shipping_cost_tax).toFixed(2)),
-        grandTotal: Number(parseFloat(orderDetails.total_ex_tax).toFixed(2)) + Number(parseFloat(orderDetails.shipping_cost_ex_tax).toFixed(2)) + Number(parseFloat(orderDetails.shipping_cost_tax).toFixed(2)),
+        grandTotal: productTotal + Number(parseFloat(orderDetails.shipping_cost_ex_tax).toFixed(2)) + Number(parseFloat(orderDetails.shipping_cost_tax).toFixed(2)),
         volumeTotalHL,
         singleUnits: singleUnits,
         packUnits2_6: twoSixUnits,
@@ -595,7 +597,7 @@ export class ServerOrderService {
           deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
           subTotal: serverOrderParsed.productTotal || 0,
           deliveryCharge: serverOrderParsed.deliveryFee || 0,
-          deliveryHst: serverOrderParsed.deliveryFeeHST || 0,
+          deliveryFeeHST: serverOrderParsed.deliveryFeeHST || 0,
           grandTotal: serverOrderParsed.grandTotal || 0,
           totalSavings: staffNotes.reduce(
             (previousValue, currentValue) => previousValue + (+currentValue.packup_discount),
