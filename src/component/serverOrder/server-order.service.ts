@@ -503,6 +503,7 @@ export class ServerOrderService {
         }
         return {
           orderId: `${orderDetails.id}`,
+          productId: product.product_id,
           lineItem: index + 1,
           itemSKU: product.sku,
           itemDescription,

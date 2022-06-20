@@ -35,6 +35,14 @@ export class ServerOrderProductDetails {
   @Column({
     type: 'int',
     nullable: false,
+    default: 0
+  })
+  productId: number;
+
+  @ApiProperty({ type: Number })
+  @Column({
+    type: 'int',
+    nullable: false,
   })
   lineItem: number;
 
