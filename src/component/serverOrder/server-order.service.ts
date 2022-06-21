@@ -8,7 +8,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Brackets } from 'typeorm';
+import { Repository, Brackets, Between } from 'typeorm';
 import { CreateOrderHistoryDto } from '../order-history/dto/create-order-history.dto';
 import { OrderHistoryService } from '../order-history/order-history.service';
 import { OrdersService } from '../orders/orders.service';
@@ -33,14 +33,23 @@ import { BeerGuyUpdateDto } from './dto/beerguy-order-update.dto';
 import { catchError, lastValueFrom, map } from 'rxjs';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { ServerOrderDeliveryDetails } from './entity/server-order-delivery-details.entity';
-import { CustomerTypeEnum, ServerOrderCustomerDetails } from './entity/server-order-customer-details.entity';
+import {
+  CustomerTypeEnum,
+  ServerOrderCustomerDetails,
+} from './entity/server-order-customer-details.entity';
 import { ServerOrderProductDetails } from './entity/server-order-product-details.entity';
-import { MetaOrPaymentData, Order, OrderData, ProductsDataEntity } from './dto/order-queue.dto';
+import {
+  MetaOrPaymentData,
+  Order,
+  OrderData,
+  ProductsDataEntity,
+} from './dto/order-queue.dto';
 const OrderstatusText = {
   5: 'cancelled',
   10: 'completed',
   8: 'awaiting pickup',
   3: 'partial shipped',
+  // 9: 'awaiting shipment'
 };
 @Injectable()
 export class ServerOrderService {
@@ -76,8 +85,21 @@ export class ServerOrderService {
     search?: string,
     orderType?: string,
   ): Promise<object> {
-    const table = this.serverOrderRepository.createQueryBuilder('ServerOrder').leftJoinAndSelect('ServerOrder.serverOrderCustomerDetails', 'ServerOrderCustomerDetails');
-    if (status) {
+    const table = this.serverOrderRepository
+      .createQueryBuilder('ServerOrder')
+      .leftJoinAndSelect(
+        'ServerOrder.serverOrderCustomerDetails',
+        'ServerOrderCustomerDetails',
+      );
+
+    console.log(status, '--- status');
+    // console.log(status[0], '--- 1');
+    // console.log(status[2], '----  2');
+    if (status[2]) {
+      table.where({
+        orderStatus: Between('8', '9'),
+      });
+    } else {
       table.where('ServerOrder.orderStatus = :orderStatus', {
         orderStatus: status,
       });
@@ -90,13 +112,10 @@ export class ServerOrderService {
     if (searchFromDate === searchToDate) {
       const fromDate = searchFromDate;
       const toDate = `${searchFromDate} 23:59:59`;
-      table.andWhere(
-        'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-        {
-          fromDate,
-          toDate,
-        },
-      );
+      table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
+        fromDate,
+        toDate,
+      });
     } else {
       const toDate = `${searchToDate} 23:59:59`;
       table.andWhere(
@@ -138,10 +157,10 @@ export class ServerOrderService {
       ];
       let sortObjKey;
       const sortKey = Object.keys(sort)[0];
-      if(sortKey.includes('name')){
-        sortObjKey = `ServerOrderCustomerDetails.name`
+      if (sortKey.includes('name')) {
+        sortObjKey = `ServerOrderCustomerDetails.name`;
       } else {
-        sortObjKey = `ServerOrder.${sortKey}`
+        sortObjKey = `ServerOrder.${sortKey}`;
       }
       if (validSortKey.includes(sortKey)) {
         const sortObj = {
@@ -152,7 +171,7 @@ export class ServerOrderService {
         throw new BadRequestException(`Invalid sort param :- ${sortKey}`);
       }
     }
-    
+
     if (skip) {
       table.skip(skip);
     }
@@ -176,7 +195,7 @@ export class ServerOrderService {
     min_date_created: Date,
     max_date_created: Date,
     vector: string,
-    brewer: string
+    brewer: string,
   ): Promise<object> {
     if (reportType == 1) {
       return this.generateTransactionReportData(
@@ -185,7 +204,7 @@ export class ServerOrderService {
         min_date_created,
         max_date_created,
         vector,
-        brewer
+        brewer,
       );
     }
 
@@ -196,7 +215,7 @@ export class ServerOrderService {
         min_date_created,
         max_date_created,
         vector,
-        brewer
+        brewer,
       );
     }
   }
@@ -207,18 +226,33 @@ export class ServerOrderService {
     min_date_created: Date,
     max_date_created: Date,
     vector: string,
-    brewer: string
+    brewer: string,
   ): Promise<object> {
-    const table = this.serverOrderRepository.createQueryBuilder('ServerOrder').leftJoinAndSelect('ServerOrder.serverOrderCustomerDetails', 'serverOrderCustomerDetails').leftJoinAndSelect('ServerOrder.serverOrderDeliveryDetails', 'serverOrderDeliveryDetails').leftJoinAndSelect('ServerOrder.serverOrderProductDetails', 'serverOrderProductDetails');
+    const table = this.serverOrderRepository
+      .createQueryBuilder('ServerOrder')
+      .leftJoinAndSelect(
+        'ServerOrder.serverOrderCustomerDetails',
+        'serverOrderCustomerDetails',
+      )
+      .leftJoinAndSelect(
+        'ServerOrder.serverOrderDeliveryDetails',
+        'serverOrderDeliveryDetails',
+      )
+      .leftJoinAndSelect(
+        'ServerOrder.serverOrderProductDetails',
+        'serverOrderProductDetails',
+      );
 
     if (brewer) {
-      let orderIds = await this.serverOrderProductDetailsRepository.createQueryBuilder('ServerOrderProductDetails')
-        .where("ServerOrderProductDetails.brewer = :brewer", { brewer })
-        .select('DISTINCT(ServerOrderProductDetails.orderId)', 'id').getRawMany();
+      let orderIds = await this.serverOrderProductDetailsRepository
+        .createQueryBuilder('ServerOrderProductDetails')
+        .where('ServerOrderProductDetails.brewer = :brewer', { brewer })
+        .select('DISTINCT(ServerOrderProductDetails.orderId)', 'id')
+        .getRawMany();
 
       if (orderIds.length > 0) {
         table.where('ServerOrder.orderId IN (:...ids) ', {
-          ids: orderIds.map(x => x.id),
+          ids: orderIds.map((x) => x.id),
         });
       }
     }
@@ -239,21 +273,15 @@ export class ServerOrderService {
       if (moment(min_date_created).isSame(max_date_created)) {
         const fromDate = min_date_created;
         const toDate = moment(max_date_created).endOf('day').format();
-        table.andWhere(
-          'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-          {
-            fromDate,
-            toDate,
-          },
-        );
+        table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
+          fromDate,
+          toDate,
+        });
       } else {
-        table.andWhere(
-          'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-          {
-            fromDate: min_date_created,
-            toDate: max_date_created,
-          },
-        );
+        table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
+          fromDate: min_date_created,
+          toDate: max_date_created,
+        });
       }
     }
 
@@ -271,9 +299,11 @@ export class ServerOrderService {
     min_date_created: Date,
     max_date_created: Date,
     vector: string,
-    brewer: string
+    brewer: string,
   ): Promise<Object> {
-    const serverOrderQuery = this.serverOrderRepository.createQueryBuilder('ServerOrder').select('DISTINCT(ServerOrder.orderId)', 'id');
+    const serverOrderQuery = this.serverOrderRepository
+      .createQueryBuilder('ServerOrder')
+      .select('DISTINCT(ServerOrder.orderId)', 'id');
 
     if (status_id) {
       serverOrderQuery.andWhere('ServerOrder.orderStatus = :orderStatus', {
@@ -315,20 +345,27 @@ export class ServerOrderService {
       });
     }
 
-    const ids = (await serverOrderQuery.getRawMany()).map(x => x.id);
+    const ids = (await serverOrderQuery.getRawMany()).map((x) => x.id);
 
-    const query = this.serverOrderProductDetailsRepository.createQueryBuilder("ServerOrderProductDetails")
-    
+    const query = this.serverOrderProductDetailsRepository.createQueryBuilder(
+      'ServerOrderProductDetails',
+    );
+
     if (ids.length > 0) {
-      query.where("ServerOrderProductDetails.orderId IN (:...ids)", { ids })
-    }  
-    
-    query.leftJoinAndSelect('ServerOrderProductDetails.serverOrder', 'serverOrderDetails')
-      .leftJoinAndSelect('serverOrderDetails.serverOrderCustomerDetails', 'serverOrderCustomer');
-;
+      query.where('ServerOrderProductDetails.orderId IN (:...ids)', { ids });
+    }
 
+    query
+      .leftJoinAndSelect(
+        'ServerOrderProductDetails.serverOrder',
+        'serverOrderDetails',
+      )
+      .leftJoinAndSelect(
+        'serverOrderDetails.serverOrderCustomerDetails',
+        'serverOrderCustomer',
+      );
     if (brewer) {
-      query.andWhere("ServerOrderProductDetails.brewer = :brewer", { brewer })
+      query.andWhere('ServerOrderProductDetails.brewer = :brewer', { brewer });
     }
 
     return query.getMany();
@@ -340,7 +377,7 @@ export class ServerOrderService {
         this.ordersService.getOrderDetails(`${orderId}`),
         this.serverOrderRepository.findOne({
           where: { orderId },
-          relations: ['serverOrderCustomerDetails']
+          relations: ['serverOrderCustomerDetails'],
         }),
 
         this.findAllPostFeed(orderId),
@@ -415,34 +452,39 @@ export class ServerOrderService {
   }
 
   async addServerOrder(serverOrder: CreateServerOrderDto): Promise<string> {
-
     let order = await this.serverOrderRepository.findOne({
       where: {
-        orderId: serverOrder.orderId
-      }
+        orderId: serverOrder.orderId,
+      },
     });
 
     if (order !== undefined) {
-      return "Order Already exist";
+      return 'Order Already exist';
     }
-
 
     try {
       const products: ProductsDataEntity[] = serverOrder.productsData;
       const orderDetails: OrderData = serverOrder.orderData;
       const transactionDetails: MetaOrPaymentData = serverOrder.paymentData;
-      
-      const billingAddressFormFields = JSON.parse(orderDetails?.billing_address?.form_fields[0]?.value);
+
+      const billingAddressFormFields = JSON.parse(
+        orderDetails?.billing_address?.form_fields[0]?.value,
+      );
 
       const deliveryDetails = {
         orderId: `${orderDetails.id}`,
         deliveryId: null,
         deliveryGuyName: null,
         deliveryDate: null,
-        deliveryAddress: `${orderDetails.billing_address.street_1}, ${orderDetails.billing_address.street_2} ${orderDetails.billing_address.street_2 ? ',' : ''}${orderDetails.billing_address.city
-          }${orderDetails.billing_address.city ? ',' : ''}${orderDetails.billing_address.state
-          }${orderDetails.billing_address.state ? ',' : ''}${orderDetails.billing_address.zip
-          }`,
+        deliveryAddress: `${orderDetails.billing_address.street_1}, ${
+          orderDetails.billing_address.street_2
+        } ${orderDetails.billing_address.street_2 ? ',' : ''}${
+          orderDetails.billing_address.city
+        }${orderDetails.billing_address.city ? ',' : ''}${
+          orderDetails.billing_address.state
+        }${orderDetails.billing_address.state ? ',' : ''}${
+          orderDetails.billing_address.zip
+        }`,
         deliveryCity: orderDetails.billing_address.city,
         deliveryPostalCode: orderDetails.billing_address.zip,
         deliveryType: null,
@@ -456,14 +498,16 @@ export class ServerOrderService {
         name: `${orderDetails.billing_address.first_name} ${orderDetails.billing_address.last_name}`,
         email: orderDetails.billing_address.email,
         postalCode: orderDetails.billing_address.zip,
-        dob: moment(billingAddressFormFields.dob, "DD-MM-YYYY").format("YYYY-MM-DD"),
+        dob: moment(billingAddressFormFields.dob, 'DD-MM-YYYY').format(
+          'YYYY-MM-DD',
+        ),
         salutation: billingAddressFormFields.salutation,
         customerType: CustomerTypeEnum.Email,
         ccType: transactionDetails?.card?.card_type || null,
         cardNumber: +transactionDetails?.card?.last_four || null,
         cardAmount: +transactionDetails?.amount || 0,
         authCode: +transactionDetails?.auth_code || null,
-      }
+      };
 
       let singleUnits = 0;
       let twoSixUnits = 0;
@@ -472,10 +516,10 @@ export class ServerOrderService {
       let volumeTotalHL = 0;
 
       let productsArr = products.map((product, index) => {
-        let temp = (product?.product_options[0]?.display_value)?.split(" ");
+        let temp = product?.product_options[0]?.display_value?.split(' ');
         let packSize = temp[0] || 0;
         let volume = temp[3] || 0;
-        let containerType = temp[2] || "";
+        let containerType = temp[2] || '';
 
         if (packSize == 1) {
           singleUnits += product?.quantity || 0;
@@ -487,15 +531,15 @@ export class ServerOrderService {
           twentyFourPlusUnits += product?.quantity || 0;
         }
 
-        let hlTotal = ((((product.quantity * +packSize) * +volume) / 1000) / 100);
+        let hlTotal = (product.quantity * +packSize * +volume) / 1000 / 100;
         volumeTotalHL += hlTotal;
         return {
           orderId: `${orderDetails.id}`,
           lineItem: index + 1,
           itemSKU: product.sku,
-          itemDescription: "",
-          brewer: "",
-          category: "",
+          itemDescription: '',
+          brewer: '',
+          category: '',
           quantity: product.quantity,
           packSize: +packSize,
           volume: +volume,
@@ -508,19 +552,29 @@ export class ServerOrderService {
           utmCampaign: null,
           utmTerm: null,
           utmContent: null,
-        }
+        };
       });
-      const timeSplit = billingAddressFormFields.pick_delivery_time.split('-') || '';
-      const orderDeliveryDate = billingAddressFormFields.pick_delivery_date_text;
+      const timeSplit =
+        billingAddressFormFields.pick_delivery_time.split('-') || '';
+      const orderDeliveryDate =
+        billingAddressFormFields.pick_delivery_date_text;
       const orderDate = orderDetails.date_created;
-      const fulfillmentDate = moment(`${orderDeliveryDate} ${timeSplit[0]}`, "YYYY-MM-DD HH:mm A").format("YYYY-MM-DD HH:mm:ss");
+      const fulfillmentDate = moment(
+        `${orderDeliveryDate} ${timeSplit[0]}`,
+        'YYYY-MM-DD HH:mm A',
+      ).format('YYYY-MM-DD HH:mm:ss');
       const serverOrderParsed = {
         orderId: `${orderDetails.id}`,
         storeId: `${billingAddressFormFields.store_id}`,
-        orderType: billingAddressFormFields.order_type === 'pickup' ? billingAddressFormFields.pickup_type : billingAddressFormFields.order_type,
+        orderType:
+          billingAddressFormFields.order_type === 'pickup'
+            ? billingAddressFormFields.pickup_type
+            : billingAddressFormFields.order_type,
         orderStatus: orderDetails.status_id,
         fulfillmentDate,
-        orderDate: moment.utc(orderDetails.date_created).format('YYYY-MM-DD hh:mm:ss'),
+        orderDate: moment
+          .utc(orderDetails.date_created)
+          .format('YYYY-MM-DD hh:mm:ss'),
         cancellationDate: null,
         cancellationBy: null,
         cancellationReason: null,
@@ -529,26 +583,35 @@ export class ServerOrderService {
         orderVector: billingAddressFormFields.source,
         partialOrder: false,
         productTotal: Number(parseFloat(orderDetails.total_ex_tax).toFixed(2)),
-        deliveryFee: Number(parseFloat(orderDetails.shipping_cost_ex_tax).toFixed(2)),
-        deliveryFeeHST: Number(parseFloat(orderDetails.shipping_cost_tax).toFixed(2)),
-        grandTotal: Number(parseFloat(orderDetails.total_ex_tax).toFixed(2)) + Number(parseFloat(orderDetails.shipping_cost_ex_tax).toFixed(2)) + Number(parseFloat(orderDetails.shipping_cost_tax).toFixed(2)),
+        deliveryFee: Number(
+          parseFloat(orderDetails.shipping_cost_ex_tax).toFixed(2),
+        ),
+        deliveryFeeHST: Number(
+          parseFloat(orderDetails.shipping_cost_tax).toFixed(2),
+        ),
+        grandTotal:
+          Number(parseFloat(orderDetails.total_ex_tax).toFixed(2)) +
+          Number(parseFloat(orderDetails.shipping_cost_ex_tax).toFixed(2)) +
+          Number(parseFloat(orderDetails.shipping_cost_tax).toFixed(2)),
         volumeTotalHL,
         singleUnits: singleUnits,
         packUnits2_6: twoSixUnits,
         packUnits8_18: eightEighteenUnits,
         packUnits_24Plus: twentyFourPlusUnits,
-        submittedDateTime: moment.utc(orderDetails.date_created).format('YYYY-MM-DD hh:mm:ss'),
+        submittedDateTime: moment
+          .utc(orderDetails.date_created)
+          .format('YYYY-MM-DD hh:mm:ss'),
         openDateTime: null,
         pickUpReadyDateTime: null,
         completedByEmpId: null,
         completedDateTime: null,
-        idChecked: "",
+        idChecked: '',
         // requestedPickUpTime: `${orderDeliveryDate} ${orderDeliveryDate}`,
         requestedPickUpTime: fulfillmentDate,
-        browserVersion: "",
+        browserVersion: '',
         refunded: false,
         refundedAmount: 0,
-        refundReason: "",
+        refundReason: '',
         pickUpType: billingAddressFormFields.pickup_type || '',
       };
 
@@ -558,12 +621,14 @@ export class ServerOrderService {
       //     serverOrderDeliveryDetails: deliveryDetails,
       //     serverOrderProductDetails: productsArr,
       //   });
-      await this.serverOrderRepository.save(this.serverOrderRepository.create({
-        ...serverOrderParsed,
-        serverOrderCustomerDetails: customerDetails,
-        serverOrderDeliveryDetails: deliveryDetails,
-        serverOrderProductDetails: productsArr,
-      }));
+      await this.serverOrderRepository.save(
+        this.serverOrderRepository.create({
+          ...serverOrderParsed,
+          serverOrderCustomerDetails: customerDetails,
+          serverOrderDeliveryDetails: deliveryDetails,
+          serverOrderProductDetails: productsArr,
+        }),
+      );
       return 'Order placed';
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -613,12 +678,18 @@ export class ServerOrderService {
   //   return this.findOne(id);
   // }
 
-
   async serverOrderDetail(orderId: number): Promise<ServerOrder> {
-    const serverOrder = await this.serverOrderRepository.findOne({
-      orderId: `${orderId}`
-    },
-      { relations: ['serverOrderProductDetails', 'serverOrderDeliveryDetails', 'serverOrderCustomerDetails'] },
+    const serverOrder = await this.serverOrderRepository.findOne(
+      {
+        orderId: `${orderId}`,
+      },
+      {
+        relations: [
+          'serverOrderProductDetails',
+          'serverOrderDeliveryDetails',
+          'serverOrderCustomerDetails',
+        ],
+      },
     );
     return serverOrder;
   }
@@ -641,27 +712,34 @@ export class ServerOrderService {
     checkoutId?: string,
   ): Promise<any> {
     try {
-      console.log('checkoutId', checkoutId, createOrderHistoryDto,
-      orderStatus,
-      createOrderDto,
-      partial,
-      checkoutId);
+      console.log(
+        'checkoutId',
+        checkoutId,
+        createOrderHistoryDto,
+        orderStatus,
+        createOrderDto,
+        partial,
+        checkoutId,
+      );
       const serverOrder = await this.serverOrderDetail(id);
       serverOrder.orderStatus = orderStatus;
       serverOrder.partialOrder = partial !== '0';
-      if(+serverOrder.orderStatus === +8 ){
-        serverOrder.pickUpReadyDateTime = moment().toDate()
+      if (+serverOrder.orderStatus === +8) {
+        serverOrder.pickUpReadyDateTime = moment().toDate();
       }
-      
+
       console.log('decrease', serverOrder?.serverOrderProductDetails);
 
-      if(serverOrder?.serverOrderProductDetails){
+      if (serverOrder?.serverOrderProductDetails) {
         createOrderDto.products.forEach((product, _idx) => {
-          const updatedProduct = serverOrder.serverOrderProductDetails.find(prod => product.sku === prod.itemSKU);
-          if(updatedProduct?.id){
-            serverOrder.serverOrderProductDetails[_idx].quantity =  updatedProduct.quantity;
+          const updatedProduct = serverOrder.serverOrderProductDetails.find(
+            (prod) => product.sku === prod.itemSKU,
+          );
+          if (updatedProduct?.id) {
+            serverOrder.serverOrderProductDetails[_idx].quantity =
+              updatedProduct.quantity;
           }
-        })
+        });
       }
 
       await this.ordersService.updateOrder(`${id}`, createOrderDto);
@@ -670,7 +748,7 @@ export class ServerOrderService {
         this.serverOrderRepository.save(orderToSave),
         this.orderHistoryService.create(createOrderHistoryDto),
       ]);
-      if(checkoutId){
+      if (checkoutId) {
         await this.sendPushNotification(
           this.configService.get('beerstoreApp').title,
           `Your Order #${id} has been ${OrderstatusText[orderStatus]}.`,
@@ -755,13 +833,14 @@ export class ServerOrderService {
       } else if (orderType === 'delivery') {
         await this.cancelBeerGuyOrder(`${id}`, cancellationReason);
       }
-      const resp = await Promise.all([this.ordersService.updateOrder(`${id}`, {
-        status_id: +orderStatus,
-      }),
-      this.serverOrderDetail(id),
+      const resp = await Promise.all([
+        this.ordersService.updateOrder(`${id}`, {
+          status_id: +orderStatus,
+        }),
+        this.serverOrderDetail(id),
       ]);
 
-      if(!resp[1]){
+      if (!resp[1]) {
         throw new BadRequestException('Order not found');
       }
       const serverOrder = resp[1];
@@ -769,8 +848,9 @@ export class ServerOrderService {
       serverOrder.cancellationBy = cancellationBy;
       serverOrder.cancellationDate = cancellationDate;
       serverOrder.cancellationReason = cancellationReason;
-      serverOrder.cancellationNote = cancellationNote || ''; 
-      serverOrder.cancelledByCustomer = cancellationBy.toLowerCase() === 'customer';
+      serverOrder.cancellationNote = cancellationNote || '';
+      serverOrder.cancelledByCustomer =
+        cancellationBy.toLowerCase() === 'customer';
       const orderToSave = await this.serverOrderRepository.preload(serverOrder);
 
       const response = await Promise.all([
@@ -824,14 +904,17 @@ export class ServerOrderService {
         // update beer guy
       }
       let prevOrder = await this.serverOrderDetail(+orderId);
-      
-      if(prevOrder?.serverOrderProductDetails){
+
+      if (prevOrder?.serverOrderProductDetails) {
         createOrderDto.products.forEach((product, _idx) => {
-          const updatedProduct = prevOrder.serverOrderProductDetails.find(prod => product.sku === prod.itemSKU);
-          if(updatedProduct?.id){
-            prevOrder.serverOrderProductDetails[_idx].quantity =  updatedProduct.quantity;
+          const updatedProduct = prevOrder.serverOrderProductDetails.find(
+            (prod) => product.sku === prod.itemSKU,
+          );
+          if (updatedProduct?.id) {
+            prevOrder.serverOrderProductDetails[_idx].quantity =
+              updatedProduct.quantity;
           }
-        })
+        });
       }
 
       prevOrder = {
@@ -844,43 +927,39 @@ export class ServerOrderService {
         packUnits2_6: serverOrder.packUnits2_6,
         packUnits8_18: serverOrder.packUnits8_18,
         packUnits_24Plus: serverOrder.packUnits_24Plus,
-        underInfluence: customerProof.underInfluence === 1, 
-        dobBefore: customerProof.dobBefore === 1, 
-      }
+        underInfluence: customerProof.underInfluence === 1,
+        dobBefore: customerProof.dobBefore === 1,
+      };
 
-      if(+serverOrder.orderStatus === 5){
+      if (+serverOrder.orderStatus === 5) {
         //cancelled
         console.log('cancelled', serverOrder.orderStatus);
         prevOrder = {
           ...prevOrder,
           cancellationDate: serverOrder.cancellationDate,
-          cancellationBy : serverOrder.cancellationBy,
+          cancellationBy: serverOrder.cancellationBy,
           cancellationReason: serverOrder.cancellationReason,
           cancellationNote: serverOrder.cancellationNote,
-          
-        }
-      } else if(+serverOrder.orderStatus === 10){
+        };
+      } else if (+serverOrder.orderStatus === 10) {
         //completed
         console.log('completed', serverOrder.orderStatus);
         prevOrder = {
           ...prevOrder,
           completedDateTime: moment().toDate(),
-        }
-      } else if(+serverOrder.orderStatus === 8){
+        };
+      } else if (+serverOrder.orderStatus === 8) {
         prevOrder = {
           ...prevOrder,
           pickUpReadyDateTime: moment().toDate(),
-        }
+        };
       }
-      await this.ordersService.updateOrder(
-        orderId,
-        createOrderDto,
-        );
-        const orderToSave = await this.serverOrderRepository.preload(prevOrder);
-        // requests.push(this.updateServerOrder(+orderId, orderDetails));
-        requests.push(this.serverOrderRepository.save(orderToSave));
-        requests.push(this.orderHistoryService.create(createOrderHistoryDto));
-        const response = await Promise.all(requests);
+      await this.ordersService.updateOrder(orderId, createOrderDto);
+      const orderToSave = await this.serverOrderRepository.preload(prevOrder);
+      // requests.push(this.updateServerOrder(+orderId, orderDetails));
+      requests.push(this.serverOrderRepository.save(orderToSave));
+      requests.push(this.orderHistoryService.create(createOrderHistoryDto));
+      const response = await Promise.all(requests);
       console.log('response', response);
       await this.sendPushNotification(
         this.configService.get('beerstoreApp').title,
