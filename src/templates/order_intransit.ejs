@@ -339,7 +339,7 @@
                   <tr>
                     <td class="logo_header" style="text-align: left;" width="100%" align="left">
                       <a href="#" target="_blank">
-                        <img src="[site_url]/wp-content/uploads/2020/08/logo.png" class="img_responsive"
+                        <img src="<%= siteBaseUrl %>/wp-content/uploads/2020/08/logo.png" class="img_responsive"
                           style="border:none;" alt="logo" width="200" border="0">
                       </a>
                     </td>
@@ -388,8 +388,8 @@
                           <tr>
                             <td class="logo_header" style="text-align: center;" width="100%" align="center">
                               <a href="#" target="_blank">
-                                <img src="[site_url]/wp-content/uploads/2020/08/carticon.png" class="img_responsive"
-                                  style="border:none;" alt="icon" width="100px" border="0">
+                                <img src="<%= siteBaseUrl %>/wp-content/uploads/2020/08/carticon.png"
+                                  class="img_responsive" style="border:none;" alt="icon" width="100px" border="0">
                               </a>
                             </td>
                           </tr>
@@ -487,7 +487,8 @@
                           </td>
                         </tr>
                         <tr>
-                          <td style="font-weight: bold;display: block;">[cust_name]
+                          <td style="font-weight: bold;display: block;">
+                            <%= orderDetails?.customerName %>
                           </td>
                         </tr>
                         <tr>
@@ -503,7 +504,8 @@
                           </td>
                         </tr>
                         <tr>
-                          <td style="font-weight: bold;display: block;">[payment_method]
+                          <td style="font-weight: bold;display: block;">
+                            <%= orderDetails?.paymentMethod %>
                           </td>
                         </tr>
                       </table>
@@ -520,7 +522,8 @@
                           </td>
                         </tr>
                         <tr>
-                          <td style="font-weight: bold;display: block; padding: 0px 5px;">[order_id]
+                          <td style="font-weight: bold;display: block; padding: 0px 5px;">
+                            <%= orderDetails?.orderNumber %>
                           </td>
                         </tr>
                         <tr>
@@ -536,7 +539,8 @@
                           </td>
                         </tr>
                         <tr>
-                          <td style="font-weight: bold;display: block; padding: 0px 5px;">$[total_amount]
+                          <td style="font-weight: bold;display: block; padding: 0px 5px;">$<%= orderDetails?.totalCost
+                              %>
                           </td>
                         </tr>
                       </table>
@@ -553,7 +557,8 @@
                           </td>
                         </tr>
                         <tr>
-                          <td style="font-weight: bold;display: block;">[order_date]
+                          <td style="font-weight: bold;display: block;">
+                            <%= orderDetails?.orderDate %>
                           </td>
                         </tr>
                       </table>
@@ -576,7 +581,7 @@
           <tr>
             <td class="space_left_right space-top"
               style="text-align: left; padding: 0 25px; padding-top: 40px; color:#000000;font-size:24px; font-weight: bold;">
-              [order_information]
+              Delivery Information
             </td>
           </tr>
           <tr>
@@ -609,7 +614,8 @@
                           </td>
                         </tr>
                         <tr>
-                          <td style="font-weight: bold;">[order_type_date]
+                          <td style="font-weight: bold;">
+                            <%= orderDetails?.deliverydate %>
                           </td>
                         </tr>
                       </table>
@@ -626,7 +632,8 @@
                           </td>
                         </tr>
                         <tr>
-                          <td style="font-weight: bold; padding: 0px 10px 0px 5px;">Estimated by: [order_type_time]
+                          <td style="font-weight: bold; padding: 0px 10px 0px 5px;">Estimated by: <%=
+                              orderDetails?.deliveryEstimatedTime %>
                           </td>
                         </tr>
                       </table>
@@ -643,7 +650,8 @@
                           </td>
                         </tr>
                         <tr>
-                          <td style="font-weight: bold;">[order_type_address]
+                          <td style="font-weight: bold;">
+                            <%= orderDetails?.deliveryLocation %>
                           </td>
                         </tr>
                       </table>
@@ -685,9 +693,219 @@
             <td height="20" style="height:20px;">
             </td>
           </tr>
-          [product_list]
+          <tr>
+            <td style="width:100%;padding:0 25px">
+              <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tbody>
+                  <tr>
+                    <td colspan="2"
+                      style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;width:56%">
+                      Items</td>
+                    <td
+                      style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;text-align:center;width:10%">
+                      Qty</td>
+                    <td
+                      style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;text-align:left;width:14%;padding-left:15px">
+                      Price</td>
+                    <td
+                      style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;text-align:right;width:20%;padding-right:15px">
+                      Sub Total</td>
+                  </tr>
+                  <tr>
+                    <td colspan="5" height="10" style="height:10px">
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="5" style="width:100%">
+                      <hr style="margin:0;border:none;border-top:1px solid #ddd">
+                    </td>
+                  </tr>
+                  <% orderProductDetails.forEach((product)=> { %>
+                    <tr style="background:#f4f4f4" bgcolor="#f4f4f4">
+                      <td
+                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:15px">
+                        <img src="<%= product.imageUrl %>" width="100" height="auto"
+                          style="width:100px;height:auto;border:1px solid #ddd;border-radius:4px" alt="" class="CToWUd">
+                      </td>
+                      <td
+                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:0 10px;width:38%">
+                        <h2
+                          style="margin:0;font-size:16px;font-weight:bold;color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                          <%= product.name %>
+                        </h2>
+                        <p
+                          style="margin:0;font-size:13px;color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                          <%= product.displayValue %>
+                        </p>
+                        <table style="width:120px" width="120px" cellspacing="0" cellpadding="0" border="0">
+                          <tbody>
+                            <tr>
+                              <td width="auto" style="width:auto;padding-top:10px">
+                                <table
+                                  style="margin-top:0;margin-bottom:0;margin-right:auto;margin-left:auto;border-spacing:0;width:50px"
+                                  cellspacing="0 " align="left" cellpadding="0" border="0">
+                                  <tbody>
+                                    <tr>
+                                      <% if(product.onSale){ %>
+                                        <td
+                                          style="border-radius:5px;text-align:center;background:#ad2f33;padding-top:2px;padding-bottom:2px;padding-right:4px;padding-left:4px"
+                                          width="50 " bgcolor="#ad2f33 " align="center ">
+                                          <a href="#m_-343405735075903143_m_1454673122863119151_m_-6687196424747639421_!"
+                                            style="background:#ad2f33;display:inline-block;text-decoration:none;text-align:center;font-weight:bold;font-size:9px;font-family:Arial,Helvetica,sans-serif,Montserrat;border-radius:5px;line-height:15px;color:#fff;background-image:none;background-repeat:repeat;background-position:top left;border-radius:5px;border-width:1px;border:0px;text-align:center;width:50px;padding-top:2px;padding-bottom:2px">
+                                            SALE
+                                          </a>
+                                        </td>
+                                        <% } %>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </td>
+                      <td
+                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold">
+                        <div style="display:block;background-color:transparent">
+                          <%= product.quantity %>
+                        </div>
+                      </td>
+                      <td
+                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold">
+                        <% if(product.onSale) { %>
+                          <p style="margin:0"><strike>$<%= product.price %></strike></p>
+                          <p style="margin:0">$<%= product.salePrice %>
+                          </p>
+                          <% } else { %>
+                            <p style="margin:0">$<%= product.price %>
+                            </p>
+                            <% } %>
+                      </td>
+                      <td
+                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:right;vertical-align:middle;padding-right:15px;font-weight:bold">
+                        <p style="margin:0">$<%= product.productSubTotal %>
+                        </p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colspan="5" style="width:100%">
+                        <hr style="margin:0;border:none;border-top:1px solid #ddd">
+                      </td>
+                    </tr>
+                    <% }); %>
+                </tbody>
+              </table>
+            </td>
+          </tr>
           <tr>
             <td height="20" style="height:20px;">
+            </td>
+          </tr>
+          <tr>
+            <td style="width:100%;padding:0 25px">
+              <table style="font-size:14px" width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tbody>
+                  <tr>
+                    <td
+                      style="font-weight:700;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;vertical-align:top;color:#404040;width:50%">
+                    </td>
+                    <td style="padding-right:15px">
+                      <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                        <tbody>
+                          <tr>
+                            <td
+                              style="font-family:Arial,Helvetica,sans-serif,Montserrat;color:#404040;font-size:16px;font-weight:bold">
+                              Sub Total
+                            </td>
+                            <td
+                              style="text-align:right;font-family:Arial,Helvetica,sans-serif,Montserrat;color:#404040;font-size:16px;font-weight:bold">
+                              $<%= orderDetails?.subTotal || 0 %>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td colspan="2" style="height:5px" height="5">
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="font-family:Arial,Helvetica,sans-serif,Montserrat;color:#404040;font-size:16px">
+                              Delivery Charge
+                            </td>
+                            <td
+                              style="text-align:right;font-family:Arial,Helvetica,sans-serif,Montserrat;color:#404040;font-size:16px">
+                              $<%= orderDetails?.deliveryCharge || 0 %>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td colspan="2" style="height:5px" height="5">
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                              Delivery HST
+                            </td>
+                            <td
+                              style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                              $<%= orderDetails?.deliveryFeeHST || 0 %>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td colspan="2" style="height:5px" height="5">
+                            </td>
+                          </tr>
+                          <tr>
+                            <td
+                              style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
+                              Total
+                            </td>
+                            <td
+                              style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
+                              $<%= orderDetails?.grandTotal || 0 %>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td colspan="2" style="height:15px" height="15">
+                            </td>
+                          </tr>
+                          <tr>
+                            <td colspan="2" style="width:100%">
+                              <hr style="margin:0;border:none;border-top:1px solid #ddd">
+                            </td>
+                          </tr>
+                          <tr>
+                            <td colspan="2" style="height:15px" height="15">
+                            </td>
+                          </tr>
+                          <tr>
+                            <td
+                              style="color:#f4b233;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
+                              Total Savings</td>
+                            <td
+                              style="text-align:right;color:#f4b233;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
+                              $<%= orderDetails?.totalSavings || 0 %>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td colspan="2" style="height:5px" height="5">
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                              Sale Savings</td>
+                            <td
+                              style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
+                              $<%= orderDetails?.saleSavings || 0 %>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td colspan="2" style="height:15px" height="15">
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </td>
           </tr>
           <tr>
@@ -750,7 +968,7 @@
                   <tr>
                     <td
                       style="width:10%; font-family: Arial, Helvetica, sans-serif, Montserrat; font-size: 16px; color:#000000;vertical-align: top; padding: 5px 20px">
-                      <img src="[site_url]/wp-content/uploads/2020/08/info.png" alt="">
+                      <img src="<%= siteBaseUrl %>/wp-content/uploads/2020/08/info.png" alt="">
                     </td>
                     <td class="imp-text"
                       style="width:90%; font-family: Arial, Helvetica, sans-serif, Montserrat; font-size: 24px; color:#000000;vertical-align: top; font-weight: 700;padding: 0 20px 0 0; line-height: 30px;">
@@ -759,7 +977,7 @@
                         Important Information for our Beer Store Customers</span>
                       <p class="block"
                         style="font-size:14px; color: #404040; padding-top: 20px;font-weight: normal; margin: 0;font-family: Arial, Helvetica, sans-serif, Montserrat; line-height: 20px;">
-                        [footer_content]</p>
+                        The order must be delivered to the person that placed the order. Please have valid government-issued photo identification ready (such as driver’s licence, passport, or photo card). Please pay driver on delivery.</p>
                     </td>
                   </tr>
                   <tr>
@@ -793,8 +1011,8 @@
                         class="deviceWidth mobmBot_0" style="border:none;">
                         <tr>
                           <td align="left">
-                            <a style="text-decoration:none;" href="[site_url]/">
-                              <img src="[site_url]/wp-content/uploads/2020/08/logo.png" border="0"
+                            <a style="text-decoration:none;" href="<%= siteBaseUrl %>/">
+                              <img src="<%= siteBaseUrl %>/wp-content/uploads/2020/08/logo.png" border="0"
                                 style="font:26px/28px Arial, Helvetica, sans-serif; color:#ffffff; vertical-align:top;border:none;"
                                 alt="BEER STORE" width="200">
                             </a>
@@ -824,7 +1042,7 @@
                                   <td class="h-u ta-c "
                                     style="padding:0 0 8px;font:14px/16px Arial, Helvetica, sans-serif, Montserrat;color:#fff;">
                                     <a style="text-decoration:none;color:#fff;display: block;width: 100%;"
-                                      href="[site_url]/about-us/" target="_blank">About Us
+                                      href="<%= siteBaseUrl %>/about-us/" target="_blank">About Us
                                     </a>
                                   </td>
                                 </tr>
@@ -832,7 +1050,7 @@
                                   <td class="h-u ta-c"
                                     style="padding:0 0 8px;font:14px/16px Arial, Helvetica, sans-serif, Montserrat;color:#fff;">
                                     <a style="text-decoration:none;color:#fff;display: block;width: 100%;"
-                                      href="[site_url]/about-us/contact-tbs/" target="_blank">Contact
+                                      href="<%= siteBaseUrl %>/about-us/contact-tbs/" target="_blank">Contact
                                       Us
                                     </a>
                                   </td>
@@ -841,7 +1059,7 @@
                                   <td class="h-u ta-c"
                                     style="padding:0 0 8px;font:14px/16px Arial, Helvetica, sans-serif, Montserrat;color:#fff;">
                                     <a style="text-decoration:none;color:#fff;display: block;width: 100%;"
-                                      href="[site_url]/businesses/" target="_blank">Business Services
+                                      href="<%= siteBaseUrl %>/businesses/" target="_blank">Business Services
                                     </a>
                                   </td>
                                 </tr>
@@ -862,7 +1080,7 @@
                                   <td class="h-u ta-c"
                                     style="padding:0 0 8px;font:14px/16px Arial, Helvetica, sans-serif, Montserrat;color:#fff;">
                                     <a style="text-decoration:none;color:#fff;display: block;width: 100%;"
-                                      href="[site_url]/privacy-policy/" target="_blank">Privacy Policy
+                                      href="<%= siteBaseUrl %>/privacy-policy/" target="_blank">Privacy Policy
                                     </a>
                                   </td>
                                 </tr>
@@ -870,7 +1088,7 @@
                                   <td class="h-u ta-c"
                                     style="padding:0 0 8px;font:14px/16px Arial, Helvetica, sans-serif, Montserrat;color:#fff;">
                                     <a style="text-decoration:none;color:#fff;display: block;width: 100%;"
-                                      href="[site_url]/terms-conditions/" target="_blank">Terms &amp;
+                                      href="<%= siteBaseUrl %>/terms-conditions/" target="_blank">Terms &amp;
                                       Conditions
                                     </a>
                                   </td>
@@ -892,7 +1110,7 @@
                                   <td class="h-u ta-c"
                                     style="padding:0 0 8px;font:14px/16px Arial, Helvetica, sans-serif, Montserrat;color:#ffffff; ">
                                     <a style="text-decoration:none;color:#fff;display: block;width: 100%;"
-                                      href="[site_url]/about-us/careers/" target="_blank">Careers
+                                      href="<%= siteBaseUrl %>/about-us/careers/" target="_blank">Careers
                                     </a>
                                   </td>
                                 </tr>
@@ -918,7 +1136,8 @@
                               style="padding:0px 0px 35px;font:13px/14px Arial, Helvetica, sans-serif, Montserrat;font-weight:500;"
                               align="center">
                               <a style="text-decoration:none !important;color:#ffaf00;border-bottom:1px solid #ffaf00;"
-                                href="[site_url]" target="_blank">[site_url]
+                                href="<%= siteBaseUrl %>" target="_blank">
+                                <%= siteBaseUrl %>
                               </a>
                             </td>
                           </tr>

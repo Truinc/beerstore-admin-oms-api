@@ -45,6 +45,7 @@ export class MailService {
             template: this.templateNames.ORDER_CONFIRMED,
             context: {
                 orderDetails: data.orderDetails,
+                orderProductDetails: data.orderProductDetails,
                 siteBaseUrl: this.configService.get('mail').site_base_url
             }
         });
@@ -83,6 +84,7 @@ export class MailService {
             template: this.templateNames.ORDER_INTRANSIT,
             context: {
                 orderDetails: data.orderDetails,
+                orderProductDetails: data.orderProductDetails,
                 siteBaseUrl: this.configService.get('mail').site_base_url
             }
         });

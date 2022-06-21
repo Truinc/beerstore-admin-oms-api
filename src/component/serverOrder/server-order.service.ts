@@ -837,6 +837,7 @@ export class ServerOrderService {
         checkoutId,
         id.toString(),
       );
+      this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus);
       return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -1024,8 +1025,12 @@ export class ServerOrderService {
       this.mailService.orderCompleted(mailPayload);
     }
 
-    if (+orderStatus === 8) {
+    if (+orderStatus === 3) {
       this.mailService.orderInTransit(mailPayload);
+    }
+
+    if (+orderStatus === 8) {
+      this.mailService.orderConfirmed(mailPayload);
     }
   }
 
