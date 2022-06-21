@@ -438,9 +438,112 @@
                       Beer Store.</p>
                   </td>
                 </tr>
-
-                [product_not_available]
-
+                <% if(orderDetails?.refunded) { %>
+                <tr>
+                  <td style="padding:0 25px;background:#f4f4f4" bgcolor="#f4f4f4">
+                    <table style="background:#fff;border:1px solid #dddddd;border-collapse:separate;border-radius:10px"
+                      width="100%" cellspacing="0" cellpadding="0" border="0">
+                      <tbody>
+                        <tr>
+                          <td colspan="3" style="height:10px" height="10">
+                          </td>
+                        </tr>
+                        <tr>
+                          <td colspan="3" style="height:10px" height="10">
+                          </td>
+                        </tr>
+                        <tr>
+                          <td
+                            style="width:10%;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;color:#404040;vertical-align:top;padding:0px 20px">
+                            <img
+                              src="https://ci3.googleusercontent.com/proxy/IGTb25zf-xgz3jo7wT0eSYyuHvxgktcZmMbMfIkaV9RvMTd8cowED9-Nlrtc8ioIuUs9K_8CGd0RaBI4BkmkZFZs9GG6zX7-ZPMiMCrqeD4oLy8B=s0-d-e1-ft#https://tbsecoms.wpengine.com/wp-content/uploads/2020/08/info.png"
+                              alt="" class="CToWUd">
+                          </td>
+                          <td
+                            style="width:90%;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;color:#404040;vertical-align:top;padding:0 20px 0 0">
+                            The following items have been partially or fully removed from your order due to insufficient
+                            inventory. Your Cart items and prices have been updated accordingly.
+                          </td>
+                        </tr>
+                        <tr>
+                          <td colspan="3" style="height:30px" height="30">
+                          </td>
+                        </tr>
+                        <tr>
+                          <td colspan="3" style="padding:0 15px">
+                            <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                              <tbody>
+                                <tr>
+                                  <td colspan="2"
+                                    style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;width:60%">
+                                    Items
+                                  </td>
+                                  <td
+                                    style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;text-align:center;width:10%">
+                                    Qty
+                                  </td>
+                                  <td
+                                    style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;text-align:left;width:14%;padding-left:15px">
+                                    Price
+                                  </td>
+                                  <td
+                                    style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;text-align:right;width:20%;padding-right:15px">
+                                    Sub Total
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td colspan="5" height="5" style="height:5px">
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td colspan="5" style="width:100%">
+                                    <hr style="margin:0;border:none;border-top:1px solid #ddd">
+                                  </td>
+                                </tr>
+                                <% orderProductDetails.forEach((product)=> { %>
+                                  <% if(product.isRefunded) { %>
+                                  <tr>
+                                    <td
+                                      style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:15px;padding-left:0">
+                                      <img
+                                        src="<%= product.imageUrl %>"
+                                        width="100" height="auto" style="width:100px;height:auto" alt="" class="CToWUd">
+                                    </td>
+                                    <td
+                                      style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:0 10px;width:38%">
+                                      <h2
+                                        style="margin:0;font-size:16px;font-weight:bold;color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                                        <%= product.name %>
+                                      </h2>
+                                      <p
+                                        style="margin:0;font-size:13px;color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                                        <%= product.displayValue %>
+                                      </p>
+                                    </td>
+                                    <td
+                                      style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#ef2753;text-align:center;vertical-align:middle;font-weight:bold">
+                                      -<%= product.refundedQty %>
+                                    </td>
+                                    <td
+                                      style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#ef2753;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold">
+                                      -$<%= product.price %>
+                                    </td>
+                                    <td
+                                      style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#ef2753;text-align:right;vertical-align:middle;padding-right:15px;font-weight:bold">
+                                      -$<%= product.refundedAmt %>
+                                    </td>
+                                  </tr>
+                                  <%}%>
+                                <%});%>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+                <%}%>
               </table>
             </td>
           </tr>
@@ -731,7 +834,7 @@
             <td height="20" style="height:20px;">
             </td>
           </tr>
-
+          <tr><td height="20" style="height:20px"></td></tr>
           <tr>
             <td style="width:100%;padding:0 25px">
               <table width="100%" cellspacing="0" cellpadding="0" border="0">
@@ -760,6 +863,7 @@
                     </td>
                   </tr>
                   <% orderProductDetails.forEach((product)=> { %>
+                    <% if(!product.isRefunded) { %>
                     <tr style="background:#f4f4f4" bgcolor="#f4f4f4">
                       <td
                         style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:15px">
@@ -831,7 +935,8 @@
                         <hr style="margin:0;border:none;border-top:1px solid #ddd">
                       </td>
                     </tr>
-                    <% }); %>
+                    <%}%>
+                  <% }); %>
                 </tbody>
               </table>
             </td>
@@ -900,6 +1005,16 @@
                             <td
                               style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
                               $<%= orderDetails?.grandTotal || 0 %>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td
+                              style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
+                              Refunded Amount
+                            </td>
+                            <td
+                              style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
+                              $<%= orderDetails?.refundedAmt || 0 %>
                             </td>
                           </tr>
                           <tr>

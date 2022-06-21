@@ -688,19 +688,12 @@ export class ServerOrderService {
     checkoutId?: string,
   ): Promise<any> {
     try {
-      console.log('checkoutId', checkoutId, createOrderHistoryDto,
-        orderStatus,
-        createOrderDto,
-        partial,
-        checkoutId);
       const serverOrder = await this.serverOrderDetail(id);
       serverOrder.orderStatus = orderStatus;
       serverOrder.partialOrder = partial !== '0';
       if (+serverOrder.orderStatus === +8) {
         serverOrder.pickUpReadyDateTime = moment().toDate()
       }
-
-      console.log('decrease', serverOrder?.serverOrderProductDetails);
 
       if (serverOrder?.serverOrderProductDetails) {
         createOrderDto.products.forEach((product, _idx) => {
@@ -717,6 +710,7 @@ export class ServerOrderService {
         this.serverOrderRepository.save(orderToSave),
         this.orderHistoryService.create(createOrderHistoryDto),
       ]);
+      
       if (checkoutId) {
         await this.sendPushNotification(
           this.configService.get('beerstoreApp').title,
@@ -725,9 +719,11 @@ export class ServerOrderService {
           id.toString(),
         );
       }
+
+      this.sendMailOnStatusChange(id?.toString(), serverOrder, orderStatus);
+
       return response[0];
     } catch (err) {
-      console.log('err', err.message);
       throw new BadRequestException(err.message);
     }
   }
@@ -959,35 +955,45 @@ export class ServerOrderService {
         undefined,
         undefined,
         1,
-      ),
-      this.ordersService.getOrder(orderId)
+        ),
+        this.ordersService.getOrder(orderId),
+        this.ordersService.getOrderProducts(orderId),
     ]);
-
     let { data } = result[0];
     let orderDetailsFromBigCom = result[1];
+    let orderProductDetails = result[2];
     let billingAddressFormFields = JSON.parse(orderDetailsFromBigCom?.billing_address?.form_fields[0]?.value);
     let staffNotes = JSON.parse(orderDetailsFromBigCom.staff_notes);
     let mailProductsArr = [];
     let saleSavings = 0;
+    let totalRefundedAmount = 0;
 
     data.forEach(ele => {
       let imageUrl = ele?.custom_fields.find(x => x.name === "product_image_1")?.value
       let productFromdb = serverOrderDetails.serverOrderProductDetails.find(x => x.productId == ele.id);
       let variantData = ele.variants.find(x => x.id === productFromdb.variantId);
+      let productDetail = orderProductDetails.find(x => x.product_id === ele.id);
 
-      if (variantData.sale_price !== variantData.price) {
-        saleSavings += (variantData.price - variantData.sale_price);
+      if (variantData?.sale_price !== variantData?.price) {
+        saleSavings += (variantData?.price - variantData?.sale_price);
+      }
+
+      if(productDetail.is_refunded){
+        totalRefundedAmount += productDetail.refund_amount
       }
 
       mailProductsArr.push({
         imageUrl: imageUrl || "",
         name: ele.name,
-        displayValue: variantData?.option_values[0]?.label || "",
+        displayValue: productDetail?.product_options[0]?.display_value || "",
         quantity: +productFromdb.quantity,
-        productSubTotal: (variantData.sale_price === variantData.price) ? (variantData.price * productFromdb.quantity) : (variantData.sale_price * productFromdb.quantity),
+        productSubTotal: (variantData?.sale_price === variantData?.price) ? (variantData?.price * productFromdb.quantity) : (variantData?.sale_price * productFromdb.quantity),
         price: variantData.price || 0,
-        salePrice: variantData.sale_price || 0,
-        onSale: variantData.sale_price === variantData.price ? false : true,
+        salePrice: variantData?.sale_price || 0,
+        onSale: variantData?.sale_price === variantData.price ? false : true,
+        isRefunded: productDetail.is_refunded,
+        refundedQty: productDetail?.quantity_refunded || 0,
+        refundedAmt: productDetail?.refund_amount || 0,
       });
     });
 
@@ -1012,7 +1018,8 @@ export class ServerOrderService {
         ),
         saleSavings: saleSavings,
         cancellationReason: serverOrderDetails.cancellationReason || "",
-        refundedAmt: serverOrderDetails.grandTotal || 0,
+        refundedAmt: totalRefundedAmount || 0,
+        refunded: mailProductsArr.find(x => x.isRefunded === true) ? true: false
       },
       orderProductDetails: mailProductsArr
     };
