@@ -114,7 +114,7 @@ export class User {
   @Column({
     type: 'nvarchar',
     length: 150,
-    select: false,
+    // select: false,
     default: null,
   })
   employeeId: string;
