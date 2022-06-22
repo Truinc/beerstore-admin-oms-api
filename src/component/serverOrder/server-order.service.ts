@@ -91,10 +91,6 @@ export class ServerOrderService {
         'ServerOrder.serverOrderCustomerDetails',
         'ServerOrderCustomerDetails',
       );
-
-    console.log(status, '--- status');
-    // console.log(status[0], '--- 1');
-    // console.log(status[2], '----  2');
     if (status[2]) {
       table.where({
         orderStatus: Between('8', '9'),
