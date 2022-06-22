@@ -73,6 +73,75 @@ export class OrdersService {
     return orderProducts;
   }
 
+  async setRefundQuotes(orderId: number, payload: {
+    "items": {
+      "item_id": number,
+      "item_type": string,
+      "quantity": number
+    }[],
+    "tax_adjustment_amount": number
+  }): Promise<any> {
+    const uri = `v3/orders`;
+    console.log('values', payload);
+    const refundResponse = await lastValueFrom(
+      this.httpService
+        .post(
+          `${this.configService.get('bigcom').url}/stores/${this.configService.get('bigcom').store
+          }/${uri}/${orderId}/payment_actions/refund_quotes`,
+          payload,
+          {
+            headers: {
+              'x-auth-token': this.configService.get('bigcom').access_token,
+            },
+          },
+        )
+        .pipe(
+          map((response) => response.data),
+          catchError((err) => {
+            console.log('err', err.message);
+            throw new BadGatewayException(err);
+          }),
+        ),
+    );
+    return refundResponse;
+  }
+
+  async refundHandler(orderId: number, payload: {
+    "items": {
+      "item_id": number,
+      "item_type": string,
+      "quantity": number,
+    }[],
+    "tax_adjustment_amount": number,
+    "payments": {
+      "provider_id": string,
+      "amount": number,
+      "offline": boolean
+    }[]
+  }): Promise<any> {
+    const uri = `v3/orders`;
+    const refundResponse = await lastValueFrom(
+      this.httpService
+        .post(
+          `${this.configService.get('bigcom').url}/stores/${this.configService.get('bigcom').store
+          }/${uri}/${orderId}/payment_actions/refunds`,
+          payload,
+          {
+            headers: {
+              'x-auth-token': this.configService.get('bigcom').access_token,
+            },
+          },
+        )
+        .pipe(
+          map((response) => response.data),
+          catchError((err) => {
+            throw new BadGatewayException(err);
+          }),
+        ),
+    );
+    return refundResponse;
+  }
+
   async getShippingAddresses(orderId: string): Promise<any> {
     const uri = `v2/orders`;
     const addresses = await lastValueFrom(
@@ -233,7 +302,8 @@ export class OrdersService {
       params.min_date_created,
       params.max_date_created,
       params.vector,
-      params.brewer
+      params.brewer,
+      params.cancelledby
     );
   }
 

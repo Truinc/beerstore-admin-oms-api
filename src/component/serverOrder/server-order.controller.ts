@@ -50,6 +50,7 @@ import RolesGuard from 'src/guards/role.guard';
 import { Roles } from 'src/decorators/roles.decorator';
 import { RolesEnum } from '../user/entity/user.entity';
 import { BeerGuyUpdateDto } from './dto/beerguy-order-update.dto';
+import { RefundOrderDto } from '../orders/dto/refundOrder.dto';
 
 @ApiTags('server-order')
 @ApiBearerAuth()
@@ -297,6 +298,7 @@ export class ServerOrderController {
       orderStatus: number;
       orderHistory: CreateOrderHistoryDto;
       orderDetails: CreateOrderDto;
+      // refundOrder: RefundOrderDto;
       serverOrder: UpdateOrderDto;
       partial?: string;
       checkoutId?: string;
@@ -309,6 +311,7 @@ export class ServerOrderController {
       orderHistory,
       orderStatus,
       orderDetails,
+      // refundOrder,
       // serverOrder,
       partial,
       checkoutId,

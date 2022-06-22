@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   IsNumber,
   IsOptional,
+  IsString,
   MaxLength,
   MinLength,
   ValidateNested,

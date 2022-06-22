@@ -36,6 +36,7 @@ import { ServerOrderDeliveryDetails } from './entity/server-order-delivery-detai
 import { CustomerTypeEnum, ServerOrderCustomerDetails } from './entity/server-order-customer-details.entity';
 import { ServerOrderProductDetails } from './entity/server-order-product-details.entity';
 import { MetaOrPaymentData, Order, OrderData, ProductsDataEntity } from './dto/order-queue.dto';
+import { RefundOrderDto } from '../orders/dto/refundOrder.dto';
 const OrderstatusText = {
   5: 'cancelled',
   10: 'completed',
@@ -176,7 +177,8 @@ export class ServerOrderService {
     min_date_created: Date,
     max_date_created: Date,
     vector: string,
-    brewer: string
+    brewer: string,
+    cancelledby: string,
   ): Promise<object> {
     if (reportType == 1) {
       return this.generateTransactionReportData(
@@ -185,7 +187,8 @@ export class ServerOrderService {
         min_date_created,
         max_date_created,
         vector,
-        brewer
+        brewer,
+        cancelledby
       );
     }
 
@@ -196,7 +199,8 @@ export class ServerOrderService {
         min_date_created,
         max_date_created,
         vector,
-        brewer
+        brewer,
+        cancelledby
       );
     }
   }
@@ -207,7 +211,8 @@ export class ServerOrderService {
     min_date_created: Date,
     max_date_created: Date,
     vector: string,
-    brewer: string
+    brewer: string,
+    cancelledby: string,
   ): Promise<object> {
     const table = this.serverOrderRepository.createQueryBuilder('ServerOrder').leftJoinAndSelect('ServerOrder.serverOrderCustomerDetails', 'serverOrderCustomerDetails').leftJoinAndSelect('ServerOrder.serverOrderDeliveryDetails', 'serverOrderDeliveryDetails').leftJoinAndSelect('ServerOrder.serverOrderProductDetails', 'serverOrderProductDetails');
 
@@ -227,6 +232,18 @@ export class ServerOrderService {
       table.andWhere('ServerOrder.orderStatus = :orderStatus', {
         orderStatus: status_id,
       });
+      if(cancelledby === 'customer'){
+        table.andWhere('ServerOrder.cancelledByCustomer = :cancelStatus', {
+          cancelStatus: 1,
+        }); 
+      } else if(cancelledby === 'store'){
+        table.andWhere('ServerOrder.cancelledByDriver = :driverStatus', {
+          driverStatus: 0,
+        }); 
+        table.andWhere('ServerOrder.cancelledByCustomer = :customerStatus', {
+          customerStatus: 0,
+        });
+      }
     }
 
     if (store_id) {
@@ -271,7 +288,8 @@ export class ServerOrderService {
     min_date_created: Date,
     max_date_created: Date,
     vector: string,
-    brewer: string
+    brewer: string,
+    cancelledby: string,
   ): Promise<Object> {
     const serverOrderQuery = this.serverOrderRepository.createQueryBuilder('ServerOrder').select('DISTINCT(ServerOrder.orderId)', 'id');
 
@@ -649,6 +667,7 @@ export class ServerOrderService {
     createOrderHistoryDto: CreateOrderHistoryDto,
     orderStatus: number,
     createOrderDto: CreateOrderDto,
+    // refundOrder: RefundOrderDto,
     // serverOrder: UpdateOrderDto,
     partial?: string,
     checkoutId?: string,
@@ -662,7 +681,11 @@ export class ServerOrderService {
       const serverOrder = await this.serverOrderDetail(id);
       serverOrder.orderStatus = orderStatus;
       serverOrder.partialOrder = partial !== '0';
-      if(+serverOrder.orderStatus === +8 ){
+      // const refundQuote = {
+      //     "items": [],
+      //     "tax_adjustment_amount": 0
+      // }
+      if(+serverOrder.orderStatus === +8 || +serverOrder.orderStatus === +9 ){
         serverOrder.pickUpReadyDateTime = moment().toDate()
       }
       
@@ -673,10 +696,37 @@ export class ServerOrderService {
           const updatedProduct = serverOrder.serverOrderProductDetails.find(prod => product.sku === prod.itemSKU);
           if(updatedProduct?.id){
             serverOrder.serverOrderProductDetails[_idx].quantity =  updatedProduct.quantity;
+            // serverOrder.serverOrderProductDetails[_idx].quantity =  +product.originalQty - +product.refundQty;
+            // if(+product.refundQty > 0){
+            //   refundQuote.items.push({
+            //     "item_id": product.id,
+            //     "item_type": "PRODUCT",
+            //     "quantity": product.refundQty, 
+            //   })
+            // }
           }
         })
       }
 
+      // if(refundQuote.items.length > 0){
+      //   const paymentRefund = {
+      //     ...refundQuote,
+      //     "payments": [
+      //         {
+      //         "provider_id": "storecredit",
+      //         "amount": -1,
+      //         "offline": false
+      //         }
+      //     ]
+      //     }
+      //     const quotesRes = await this.ordersService.setRefundQuotes(id, refundQuote);
+      //     console.log('quotesRes', quotesRes);
+      //     paymentRefund.payments[0].amount = quotesRes.data.total_refund_amount;
+      //     console.log('paymentTesting', paymentRefund);
+      //     const refundedOrder = await this.ordersService.refundHandler(id, paymentRefund);
+      //     console.log('refundedAmount', refundedOrder);
+      //     console.log('serverOrder', serverOrder);
+      // }
       await this.ordersService.updateOrder(`${id}`, createOrderDto);
       const orderToSave = await this.serverOrderRepository.preload(serverOrder);
       const response = await Promise.all([
@@ -689,6 +739,7 @@ export class ServerOrderService {
           `Your Order #${id} has been ${OrderstatusText[orderStatus]}.`,
           checkoutId,
           id.toString(),
+          orderStatus
         );
       }
       return response[0];
@@ -802,6 +853,7 @@ export class ServerOrderService {
         `Your Order #${id} has been cancelled.`,
         checkoutId,
         id.toString(),
+        serverOrder.orderStatus
       );
       return response[0];
     } catch (err) {
@@ -902,6 +954,7 @@ export class ServerOrderService {
         }.`,
         checkoutId,
         orderId,
+        serverOrder.orderStatus
       );
       return response[0];
     } catch (err) {
@@ -913,12 +966,14 @@ export class ServerOrderService {
     subtitle: string,
     checkoutId: string,
     order_id: string,
+    orderStatus: number,
   ) => {
     const payload = {
       title,
       subtitle,
       checkoutId,
       order_id,
+      orderStatus
     };
     const sendpush = await lastValueFrom(
       this.httpService
