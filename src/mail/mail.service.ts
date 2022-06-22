@@ -1,6 +1,7 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { MailDto } from './dto/mail.dto';
 
 @Injectable()
 export class MailService {
@@ -25,7 +26,7 @@ export class MailService {
         private configService: ConfigService
     ) { }
 
-    async orderCreated(data) {
+    async orderCreated(data: MailDto) {
         return this.mailerService.sendMail({
             to: data.to,
             subject: this.mailSubjects.ORDER_CREATED,
@@ -38,7 +39,7 @@ export class MailService {
         });
     }
 
-    async orderConfirmed(data) {
+    async orderConfirmed(data: MailDto) {
         return this.mailerService.sendMail({
             to: data.to,
             subject: this.mailSubjects.ORDER_CONFIRMED,
@@ -51,7 +52,7 @@ export class MailService {
         });
     }
 
-    async orderCancelled(data) {
+    async orderCancelled(data: MailDto) {
         return this.mailerService.sendMail({
             to: data.to,
             subject: this.mailSubjects.ORDER_CANCELLED,
@@ -64,7 +65,7 @@ export class MailService {
         });
     }
 
-    async orderCompleted(data) {
+    async orderCompleted(data: MailDto) {
         return this.mailerService.sendMail({
             to: data.to,
             subject: this.mailSubjects.ORDER_COMPLETED,
@@ -77,7 +78,7 @@ export class MailService {
         });
     }
 
-    async orderInTransit(data) {
+    async orderInTransit(data: MailDto) {
         return this.mailerService.sendMail({
             to: data.to,
             subject: this.mailSubjects.ORDER_INTRANSIT,

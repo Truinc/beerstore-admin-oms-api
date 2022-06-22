@@ -591,7 +591,7 @@ export class ServerOrderService {
         to: customerDetails.email,
         orderDetails: {
           customerName: customerDetails.name,
-          orderNumber: serverOrder.orderId,
+          orderNumber: +serverOrder.orderId,
           orderDate: moment(serverOrderParsed.orderDate).format('MMMM D, YYYY'),
           paymentMethod: orderDetails.payment_method,
           totalCost: serverOrderParsed.grandTotal,
@@ -1001,7 +1001,7 @@ export class ServerOrderService {
       to: serverOrderDetails.serverOrderCustomerDetails.email,
       orderDetails: {
         customerName: serverOrderDetails.serverOrderCustomerDetails.name,
-        orderNumber: orderId,
+        orderNumber: +orderId,
         orderDate: moment(serverOrderDetails.orderDate).format('MMMM D, YYYY'),
         paymentMethod: orderDetailsFromBigCom?.payment_method,
         totalCost: serverOrderDetails.grandTotal,
