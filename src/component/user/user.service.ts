@@ -122,8 +122,8 @@ export class UserService {
           'email',
           'role',
           'manager',
-          'role',
           'isActive',
+          'employeeId',
         ];
         const sortKey = Object.keys(sort)[0];
         if (validSortKey.includes(sortKey)) {

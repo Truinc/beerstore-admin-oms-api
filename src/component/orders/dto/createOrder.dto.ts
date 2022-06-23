@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   IsNumber,
   IsOptional,
+  IsString,
   MaxLength,
   MinLength,
   ValidateNested,
@@ -57,9 +58,15 @@ export class CreateOrderDto {
   @IsOptional()
   @IsNumber()
   refunded_amount?: number;
+  
+  // @ApiProperty({ type: String })
+  // @IsOptional()
+  // @IsString()
+  // staff_notes?: string;
 
   @Type(() => Products)
   @IsOptional()
   @ValidateNested()
   readonly products?: Products[];
+
 }

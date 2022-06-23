@@ -38,6 +38,17 @@ export class ServerOrderCustomerDetails {
   })
   name: string;
 
+  @ApiProperty({
+    type: String
+  })
+  @Column({
+    type: 'nvarchar',
+    length: 200,
+    default: null,
+    nullable: true
+  })
+  customerId: string;
+
   @ApiProperty({ type: String })
   @Column({
     type: 'nvarchar',
@@ -100,6 +111,13 @@ export class ServerOrderCustomerDetails {
     default: 0
   })
   cardAmount: number;
+
+  @Column({
+    type: "int",
+    nullable: true,
+    default: null
+  })
+  authCode: number;
 
   @OneToOne(() => ServerOrder, (serverOrder) => serverOrder.serverOrderCustomerDetails, {
     onDelete: 'CASCADE',

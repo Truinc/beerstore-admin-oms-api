@@ -50,6 +50,7 @@ import RolesGuard from 'src/guards/role.guard';
 import { Roles } from 'src/decorators/roles.decorator';
 import { RolesEnum } from '../user/entity/user.entity';
 import { BeerGuyUpdateDto } from './dto/beerguy-order-update.dto';
+import { RefundOrderDto } from '../orders/dto/refundOrder.dto';
 
 @ApiTags('server-order')
 @ApiBearerAuth()
@@ -110,7 +111,6 @@ export class ServerOrderController {
     RolesEnum.customerservicerep,
     RolesEnum.storemanager,
   )
-  @UseGuards()
   @HttpCode(HttpStatus.OK)
   @Get()
   async findAll(
@@ -298,18 +298,20 @@ export class ServerOrderController {
       orderStatus: number;
       orderHistory: CreateOrderHistoryDto;
       orderDetails: CreateOrderDto;
+      refundOrder: RefundOrderDto;
       serverOrder: UpdateOrderDto;
       partial?: string;
       checkoutId?: string;
     },
   ): Promise<any> {
-    const { orderHistory, orderStatus, orderDetails, partial, checkoutId, serverOrder } =
+    const { orderHistory, orderStatus, orderDetails,refundOrder , partial, checkoutId, serverOrder } =
       data;
     const response = await this.serverOrderService.updateOrderDetails(
       serverOrderId,
       orderHistory,
       orderStatus,
       orderDetails,
+      refundOrder,
       // serverOrder,
       partial,
       checkoutId,
