@@ -667,7 +667,7 @@ export class ServerOrderService {
     createOrderHistoryDto: CreateOrderHistoryDto,
     orderStatus: number,
     createOrderDto: CreateOrderDto,
-    // refundOrder: RefundOrderDto,
+    refundOrder: RefundOrderDto,
     // serverOrder: UpdateOrderDto,
     partial?: string,
     checkoutId?: string,
@@ -720,11 +720,11 @@ export class ServerOrderService {
       //     ]
       //     }
       //     const quotesRes = await this.ordersService.setRefundQuotes(id, refundQuote);
-      //     console.log('quotesRes', quotesRes);
+      //     console.log('quotesRes', JSON.stringify(quotesRes));
       //     paymentRefund.payments[0].amount = quotesRes.data.total_refund_amount;
       //     console.log('paymentTesting', paymentRefund);
       //     const refundedOrder = await this.ordersService.refundHandler(id, paymentRefund);
-      //     console.log('refundedAmount', refundedOrder);
+      //     console.log('refundedAmount', JSON.stringify(refundedOrder));
       //     console.log('serverOrder', serverOrder);
       // }
       await this.ordersService.updateOrder(`${id}`, createOrderDto);
@@ -890,14 +890,14 @@ export class ServerOrderService {
       }
       let prevOrder = await this.serverOrderDetail(+orderId);
       
-      if(prevOrder?.serverOrderProductDetails){
-        createOrderDto.products.forEach((product, _idx) => {
-          const updatedProduct = prevOrder.serverOrderProductDetails.find(prod => product.sku === prod.itemSKU);
-          if(updatedProduct?.id){
-            prevOrder.serverOrderProductDetails[_idx].quantity =  updatedProduct.quantity;
-          }
-        })
-      }
+      // if(prevOrder?.serverOrderProductDetails){
+      //   createOrderDto.products.forEach((product, _idx) => {
+      //     const updatedProduct = prevOrder.serverOrderProductDetails.find(prod => product.sku === prod.itemSKU);
+      //     if(updatedProduct?.id){
+      //       prevOrder.serverOrderProductDetails[_idx].quantity =  updatedProduct.quantity;
+      //     }
+      //   })
+      // }
 
       prevOrder = {
         ...prevOrder,

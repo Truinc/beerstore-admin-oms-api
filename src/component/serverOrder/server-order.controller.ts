@@ -298,20 +298,20 @@ export class ServerOrderController {
       orderStatus: number;
       orderHistory: CreateOrderHistoryDto;
       orderDetails: CreateOrderDto;
-      // refundOrder: RefundOrderDto;
+      refundOrder: RefundOrderDto;
       serverOrder: UpdateOrderDto;
       partial?: string;
       checkoutId?: string;
     },
   ): Promise<any> {
-    const { orderHistory, orderStatus, orderDetails, partial, checkoutId, serverOrder } =
+    const { orderHistory, orderStatus, orderDetails,refundOrder , partial, checkoutId, serverOrder } =
       data;
     const response = await this.serverOrderService.updateOrderDetails(
       serverOrderId,
       orderHistory,
       orderStatus,
       orderDetails,
-      // refundOrder,
+      refundOrder,
       // serverOrder,
       partial,
       checkoutId,
