@@ -739,7 +739,8 @@ export class ServerOrderService {
           `Your Order #${id} has been ${OrderstatusText[orderStatus]}.`,
           checkoutId,
           id.toString(),
-          orderStatus
+          +orderStatus,
+          serverOrder.orderType,
         );
       }
       return response[0];
@@ -853,7 +854,8 @@ export class ServerOrderService {
         `Your Order #${id} has been cancelled.`,
         checkoutId,
         id.toString(),
-        serverOrder.orderStatus
+        +serverOrder.orderStatus,
+        serverOrder.orderType,
       );
       return response[0];
     } catch (err) {
@@ -954,7 +956,8 @@ export class ServerOrderService {
         }.`,
         checkoutId,
         orderId,
-        serverOrder.orderStatus
+        +serverOrder.orderStatus,
+        serverOrder.orderType,
       );
       return response[0];
     } catch (err) {
@@ -967,13 +970,15 @@ export class ServerOrderService {
     checkoutId: string,
     order_id: string,
     orderStatus: number,
+    orderType: string,
   ) => {
     const payload = {
       title,
       subtitle,
       checkoutId,
       order_id,
-      orderStatus
+      orderStatus,
+      orderType,
     };
     const sendpush = await lastValueFrom(
       this.httpService
