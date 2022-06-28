@@ -149,7 +149,7 @@ export class UserService {
         table.take(take);
       }
       const response = await table.getManyAndCount();
-      console.log('response ------- >>', response);
+      // console.log('response ------- >>', response);
       const [items, total] = response;
       return {
         total,
@@ -158,7 +158,7 @@ export class UserService {
         items,
       };
     } catch (err) {
-      console.log(err, "ERRRRR")
+      console.log(err, 'ERRRRR');
       throw new BadRequestException(err.message);
     }
   }
@@ -361,6 +361,17 @@ export class UserService {
   }
 
   async getUserMeta(id: number): Promise<any> {
+    const user = await this.usersRepository.findOne(
+      {
+        id,
+      },
+      { relations: ['usersStores'] },
+    );
+
+    if (!user) {
+      throw new NotFoundException('user not found');
+    }
+
     let baseStoreId = -1;
     const storeIds = [];
     const userMetaReq = [];
@@ -392,10 +403,14 @@ export class UserService {
         }
       });
     }
+
     return {
-      signInLogs: response[0] || [],
-      baseStore: baseStore,
-      otherAssignedStores,
+      user,
+      userMeta: {
+        signInLogs: response[0] || [],
+        baseStore: baseStore,
+        otherAssignedStores,
+      },
     };
   }
 
