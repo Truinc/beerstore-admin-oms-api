@@ -9,31 +9,40 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-export class Products {
+// export class Products {
   
-  @ApiProperty({ type: Number })
-  @IsOptional()
-  @IsNumber()
-  id: number;
+//   @ApiProperty({ type: Number })
+//   @IsOptional()
+//   @IsNumber()
+//   id: number;
 
-  @ApiProperty({ type: String })
-  @IsOptional()
-  @MinLength(1)
-  @MaxLength(99)
-  name: string;
+//   @ApiProperty({ type: String })
+//   @IsOptional()
+//   @MinLength(1)
+//   @MaxLength(99)
+//   name: string;
 
-  @ApiProperty({ type: Number })
-  @IsOptional()
-  @IsNumber()
-  quantity: number;
+//   @ApiProperty({ type: Number })
+//   @IsOptional()
+//   @IsNumber()
+//   refundQty: number;
 
-  @ApiProperty({ type: String })
-  @IsOptional()
-  @MinLength(1)
-  @MaxLength(99)
-  sku: string;
+//   @ApiProperty({ type: Number })
+//   @IsOptional()
+//   @IsNumber()
+//   originalQty: number;
 
-}
+//   @ApiProperty({ type: String })
+//   @IsOptional()
+//   @MinLength(1)
+//   @MaxLength(99)
+//   sku: string;
+
+//   @ApiProperty({ type: Number })
+//   @IsOptional()
+//   @IsNumber()
+//   productId: number;
+// }
 export class CreateOrderDto {
   @ApiProperty({ type: Number })
   @IsOptional()
@@ -59,14 +68,8 @@ export class CreateOrderDto {
   @IsNumber()
   refunded_amount?: number;
   
-  // @ApiProperty({ type: String })
-  // @IsOptional()
-  // @IsString()
-  // staff_notes?: string;
-
-  @Type(() => Products)
+  @ApiProperty({ type: String })
   @IsOptional()
-  @ValidateNested()
-  readonly products?: Products[];
-
+  @IsString()
+  staff_notes?: string;
 }

@@ -681,52 +681,53 @@ export class ServerOrderService {
       const serverOrder = await this.serverOrderDetail(id);
       serverOrder.orderStatus = orderStatus;
       serverOrder.partialOrder = partial !== '0';
-      // const refundQuote = {
-      //     "items": [],
-      //     "tax_adjustment_amount": 0
-      // }
+      const refundQuote = {
+          "items": [],
+          "tax_adjustment_amount": 0
+      }
       if(+serverOrder.orderStatus === +8 || +serverOrder.orderStatus === +9 ){
-        serverOrder.pickUpReadyDateTime = moment().toDate()
+        serverOrder.pickUpReadyDateTime = moment().toDate();
       }
       
       console.log('decrease', serverOrder?.serverOrderProductDetails);
 
       if(serverOrder?.serverOrderProductDetails){
-        createOrderDto.products.forEach((product, _idx) => {
+        refundOrder.products.forEach((product, _idx) => {
           const updatedProduct = serverOrder.serverOrderProductDetails.find(prod => product.sku === prod.itemSKU);
-          if(updatedProduct?.id){
-            serverOrder.serverOrderProductDetails[_idx].quantity =  updatedProduct.quantity;
-            // serverOrder.serverOrderProductDetails[_idx].quantity =  +product.originalQty - +product.refundQty;
-            // if(+product.refundQty > 0){
-            //   refundQuote.items.push({
-            //     "item_id": product.id,
-            //     "item_type": "PRODUCT",
-            //     "quantity": product.refundQty, 
-            //   })
-            // }
+          if(updatedProduct){
+            // serverOrder.serverOrderProductDetails[_idx].quantity =  updatedProduct.quantity;
+            serverOrder.serverOrderProductDetails[_idx].quantity =  +product.originalQty - +product.refundQty;
+            if(+product.refundQty > 0){
+              refundQuote.items.push({
+                "item_id": product.id,
+                "item_type": "PRODUCT",
+                "quantity": product.refundQty, 
+              })
+            }
           }
         })
       }
 
-      // if(refundQuote.items.length > 0){
-      //   const paymentRefund = {
-      //     ...refundQuote,
-      //     "payments": [
-      //         {
-      //         "provider_id": "storecredit",
-      //         "amount": -1,
-      //         "offline": false
-      //         }
-      //     ]
-      //     }
-      //     const quotesRes = await this.ordersService.setRefundQuotes(id, refundQuote);
-      //     console.log('quotesRes', JSON.stringify(quotesRes));
-      //     paymentRefund.payments[0].amount = quotesRes.data.total_refund_amount;
-      //     console.log('paymentTesting', paymentRefund);
-      //     const refundedOrder = await this.ordersService.refundHandler(id, paymentRefund);
-      //     console.log('refundedAmount', JSON.stringify(refundedOrder));
-      //     console.log('serverOrder', serverOrder);
-      // }
+      if(refundQuote.items.length > 0){
+        const paymentRefund = {
+          ...refundQuote,
+          "payments": [
+              {
+              "provider_id": "storecredit",
+              "amount": -1,
+              "offline": false
+              }
+          ]
+          }
+          const quotesRes = await this.ordersService.setRefundQuotes(id, refundQuote);
+          console.log('quotesRes', JSON.stringify(quotesRes));
+          paymentRefund.payments[0].amount = quotesRes.data.total_refund_amount;
+          console.log('paymentTesting', paymentRefund);
+          const refundedOrder = await this.ordersService.refundHandler(id, paymentRefund);
+          console.log('refundedAmount', JSON.stringify(refundedOrder));
+          console.log('serverOrder', serverOrder);
+      }
+      console.log('createOrderDto1234567', createOrderDto);
       await this.ordersService.updateOrder(`${id}`, createOrderDto);
       const orderToSave = await this.serverOrderRepository.preload(serverOrder);
       const response = await Promise.all([
