@@ -15,15 +15,19 @@ import { StoreModule } from '@beerstore/core/component/store/store.module';
 import { ServerOrderCustomerDetails } from './entity/server-order-customer-details.entity';
 import { ServerOrderDeliveryDetails } from './entity/server-order-delivery-details.entity';
 import { ServerOrderProductDetails } from './entity/server-order-product-details.entity';
+import { MailModule } from 'src/mail/mail.module';
+import { BeerModule } from '@beerstore/core/component/beer/beer.module';
 
 @Module({
   imports: [
     AuthModule,
     HttpModule,
+    MailModule,
     forwardRef(() => OrdersModule),
     OrderHistoryModule,
     BamboraModule,
     StoreModule,
+    BeerModule,
     TypeOrmModule.forFeature([
       ServerOrder,
       PostFeed,

@@ -89,4 +89,14 @@ export default () => ({
     token: process.env.BEERSTORE_APP_TOKEN,
     title: process.env.BEERSTORE_APP_PUSH_Title,
   },
+  mail: {
+    from_email_id: process.env.MAIL_FROM_EMAIL_ID,
+    from_name: process.env.MAIL_FROM_NAME,
+    host: process.env.MAIL_HOST,
+    encryption: process.env.MAIL_ENCRYPTION,
+    port: process.env.MAIL_PORT,
+    username: process.env.MAIL_USERNAME,
+    password: process.env.MAIL_PASSWORD,
+    site_base_url: process.env.SITE_BASE_URL
+  }
 });

@@ -33,10 +33,20 @@ import { BeerGuyUpdateDto } from './dto/beerguy-order-update.dto';
 import { catchError, lastValueFrom, map } from 'rxjs';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { ServerOrderDeliveryDetails } from './entity/server-order-delivery-details.entity';
-import { CustomerTypeEnum, ServerOrderCustomerDetails } from './entity/server-order-customer-details.entity';
+import {
+  CustomerTypeEnum,
+  ServerOrderCustomerDetails,
+} from './entity/server-order-customer-details.entity';
 import { ServerOrderProductDetails } from './entity/server-order-product-details.entity';
-import { MetaOrPaymentData, Order, OrderData, ProductsDataEntity } from './dto/order-queue.dto';
 import { RefundOrderDto } from '../orders/dto/refundOrder.dto';
+import {
+  MetaOrPaymentData,
+  Order,
+  OrderData,
+  ProductsDataEntity,
+} from './dto/order-queue.dto';
+import { MailService } from 'src/mail/mail.service';
+import { BeerService } from '@beerstore/core/component/beer/beer.service';
 const OrderstatusText = {
   5: 'cancelled',
   10: 'completed',
@@ -49,6 +59,7 @@ export class ServerOrderService {
     private authService: AuthService,
     private httpService: HttpService,
     private configService: ConfigService,
+    private mailService: MailService,
     @Inject(forwardRef(() => OrdersService))
     private ordersService: OrdersService,
     private bamboraService: BamboraService,
@@ -64,6 +75,7 @@ export class ServerOrderService {
     private customerProofRepository: Repository<CustomerProof>,
     @InjectRepository(PaymentDetails)
     private paymentDetailsRepository: Repository<PaymentDetails>,
+    private beerService: BeerService,
   ) {}
 
   async findAllServerOrder(
@@ -77,7 +89,12 @@ export class ServerOrderService {
     search?: string,
     orderType?: string,
   ): Promise<object> {
-    const table = this.serverOrderRepository.createQueryBuilder('ServerOrder').leftJoinAndSelect('ServerOrder.serverOrderCustomerDetails', 'ServerOrderCustomerDetails');
+    const table = this.serverOrderRepository
+      .createQueryBuilder('ServerOrder')
+      .leftJoinAndSelect(
+        'ServerOrder.serverOrderCustomerDetails',
+        'ServerOrderCustomerDetails',
+      );
     if (status) {
       table.where('ServerOrder.orderStatus = :orderStatus', {
         orderStatus: status,
@@ -91,13 +108,10 @@ export class ServerOrderService {
     if (searchFromDate === searchToDate) {
       const fromDate = searchFromDate;
       const toDate = `${searchFromDate} 23:59:59`;
-      table.andWhere(
-        'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-        {
-          fromDate,
-          toDate,
-        },
-      );
+      table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
+        fromDate,
+        toDate,
+      });
     } else {
       const toDate = `${searchToDate} 23:59:59`;
       table.andWhere(
@@ -139,10 +153,10 @@ export class ServerOrderService {
       ];
       let sortObjKey;
       const sortKey = Object.keys(sort)[0];
-      if(sortKey.includes('name')){
-        sortObjKey = `ServerOrderCustomerDetails.name`
+      if (sortKey.includes('name')) {
+        sortObjKey = `ServerOrderCustomerDetails.name`;
       } else {
-        sortObjKey = `ServerOrder.${sortKey}`
+        sortObjKey = `ServerOrder.${sortKey}`;
       }
       if (validSortKey.includes(sortKey)) {
         const sortObj = {
@@ -153,7 +167,7 @@ export class ServerOrderService {
         throw new BadRequestException(`Invalid sort param :- ${sortKey}`);
       }
     }
-    
+
     if (skip) {
       table.skip(skip);
     }
@@ -214,16 +228,31 @@ export class ServerOrderService {
     brewer: string,
     cancelledby: string,
   ): Promise<object> {
-    const table = this.serverOrderRepository.createQueryBuilder('ServerOrder').leftJoinAndSelect('ServerOrder.serverOrderCustomerDetails', 'serverOrderCustomerDetails').leftJoinAndSelect('ServerOrder.serverOrderDeliveryDetails', 'serverOrderDeliveryDetails').leftJoinAndSelect('ServerOrder.serverOrderProductDetails', 'serverOrderProductDetails');
+    const table = this.serverOrderRepository
+      .createQueryBuilder('ServerOrder')
+      .leftJoinAndSelect(
+        'ServerOrder.serverOrderCustomerDetails',
+        'serverOrderCustomerDetails',
+      )
+      .leftJoinAndSelect(
+        'ServerOrder.serverOrderDeliveryDetails',
+        'serverOrderDeliveryDetails',
+      )
+      .leftJoinAndSelect(
+        'ServerOrder.serverOrderProductDetails',
+        'serverOrderProductDetails',
+      );
 
     if (brewer) {
-      let orderIds = await this.serverOrderProductDetailsRepository.createQueryBuilder('ServerOrderProductDetails')
-        .where("ServerOrderProductDetails.brewer = :brewer", { brewer })
-        .select('DISTINCT(ServerOrderProductDetails.orderId)', 'id').getRawMany();
+      let orderIds = await this.serverOrderProductDetailsRepository
+        .createQueryBuilder('ServerOrderProductDetails')
+        .where('ServerOrderProductDetails.brewer = :brewer', { brewer })
+        .select('DISTINCT(ServerOrderProductDetails.orderId)', 'id')
+        .getRawMany();
 
       if (orderIds.length > 0) {
         table.where('ServerOrder.orderId IN (:...ids) ', {
-          ids: orderIds.map(x => x.id),
+          ids: orderIds.map((x) => x.id),
         });
       }
     }
@@ -256,21 +285,15 @@ export class ServerOrderService {
       if (moment(min_date_created).isSame(max_date_created)) {
         const fromDate = min_date_created;
         const toDate = moment(max_date_created).endOf('day').format();
-        table.andWhere(
-          'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-          {
-            fromDate,
-            toDate,
-          },
-        );
+        table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
+          fromDate,
+          toDate,
+        });
       } else {
-        table.andWhere(
-          'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-          {
-            fromDate: min_date_created,
-            toDate: max_date_created,
-          },
-        );
+        table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
+          fromDate: min_date_created,
+          toDate: max_date_created,
+        });
       }
     }
 
@@ -291,7 +314,9 @@ export class ServerOrderService {
     brewer: string,
     cancelledby: string,
   ): Promise<Object> {
-    const serverOrderQuery = this.serverOrderRepository.createQueryBuilder('ServerOrder').select('DISTINCT(ServerOrder.orderId)', 'id');
+    const serverOrderQuery = this.serverOrderRepository
+      .createQueryBuilder('ServerOrder')
+      .select('DISTINCT(ServerOrder.orderId)', 'id');
 
     if (status_id) {
       serverOrderQuery.andWhere('ServerOrder.orderStatus = :orderStatus', {
@@ -333,20 +358,27 @@ export class ServerOrderService {
       });
     }
 
-    const ids = (await serverOrderQuery.getRawMany()).map(x => x.id);
+    const ids = (await serverOrderQuery.getRawMany()).map((x) => x.id);
 
-    const query = this.serverOrderProductDetailsRepository.createQueryBuilder("ServerOrderProductDetails")
-    
+    const query = this.serverOrderProductDetailsRepository.createQueryBuilder(
+      'ServerOrderProductDetails',
+    );
+
     if (ids.length > 0) {
-      query.where("ServerOrderProductDetails.orderId IN (:...ids)", { ids })
-    }  
-    
-    query.leftJoinAndSelect('ServerOrderProductDetails.serverOrder', 'serverOrderDetails')
-      .leftJoinAndSelect('serverOrderDetails.serverOrderCustomerDetails', 'serverOrderCustomer');
-;
+      query.where('ServerOrderProductDetails.orderId IN (:...ids)', { ids });
+    }
 
+    query
+      .leftJoinAndSelect(
+        'ServerOrderProductDetails.serverOrder',
+        'serverOrderDetails',
+      )
+      .leftJoinAndSelect(
+        'serverOrderDetails.serverOrderCustomerDetails',
+        'serverOrderCustomer',
+      );
     if (brewer) {
-      query.andWhere("ServerOrderProductDetails.brewer = :brewer", { brewer })
+      query.andWhere('ServerOrderProductDetails.brewer = :brewer', { brewer });
     }
 
     return query.getMany();
@@ -358,7 +390,7 @@ export class ServerOrderService {
         this.ordersService.getOrderDetails(`${orderId}`),
         this.serverOrderRepository.findOne({
           where: { orderId },
-          relations: ['serverOrderCustomerDetails']
+          relations: ['serverOrderCustomerDetails'],
         }),
 
         this.findAllPostFeed(orderId),
@@ -433,34 +465,39 @@ export class ServerOrderService {
   }
 
   async addServerOrder(serverOrder: CreateServerOrderDto): Promise<string> {
-
     let order = await this.serverOrderRepository.findOne({
       where: {
-        orderId: serverOrder.orderId
-      }
+        orderId: serverOrder.orderId,
+      },
     });
 
     if (order !== undefined) {
-      return "Order Already exist";
+      return 'Order Already exist';
     }
-
 
     try {
       const products: ProductsDataEntity[] = serverOrder.productsData;
       const orderDetails: OrderData = serverOrder.orderData;
       const transactionDetails: MetaOrPaymentData = serverOrder.paymentData;
-      
-      const billingAddressFormFields = JSON.parse(orderDetails?.billing_address?.form_fields[0]?.value);
+
+      const billingAddressFormFields = JSON.parse(
+        orderDetails?.billing_address?.form_fields[0]?.value,
+      );
 
       const deliveryDetails = {
         orderId: `${orderDetails.id}`,
         deliveryId: null,
         deliveryGuyName: null,
         deliveryDate: null,
-        deliveryAddress: `${orderDetails.billing_address.street_1}, ${orderDetails.billing_address.street_2} ${orderDetails.billing_address.street_2 ? ',' : ''}${orderDetails.billing_address.city
-          }${orderDetails.billing_address.city ? ',' : ''}${orderDetails.billing_address.state
-          }${orderDetails.billing_address.state ? ',' : ''}${orderDetails.billing_address.zip
-          }`,
+        deliveryAddress: `${orderDetails.billing_address.street_1}, ${
+          orderDetails.billing_address.street_2
+        } ${orderDetails.billing_address.street_2 ? ',' : ''}${
+          orderDetails.billing_address.city
+        }${orderDetails.billing_address.city ? ',' : ''}${
+          orderDetails.billing_address.state
+        }${orderDetails.billing_address.state ? ',' : ''}${
+          orderDetails.billing_address.zip
+        }`,
         deliveryCity: orderDetails.billing_address.city,
         deliveryPostalCode: orderDetails.billing_address.zip,
         deliveryType: null,
@@ -474,26 +511,31 @@ export class ServerOrderService {
         name: `${orderDetails.billing_address.first_name} ${orderDetails.billing_address.last_name}`,
         email: orderDetails.billing_address.email,
         postalCode: orderDetails.billing_address.zip,
-        dob: moment(billingAddressFormFields.dob, "DD-MM-YYYY").format("YYYY-MM-DD"),
+        dob: moment(billingAddressFormFields.dob, 'DD-MM-YYYY').format(
+          'YYYY-MM-DD',
+        ),
         salutation: billingAddressFormFields.salutation,
         customerType: CustomerTypeEnum.Email,
         ccType: transactionDetails?.card?.card_type || null,
         cardNumber: +transactionDetails?.card?.last_four || null,
         cardAmount: +transactionDetails?.amount || 0,
         authCode: +transactionDetails?.auth_code || null,
-      }
+      };
 
       let singleUnits = 0;
       let twoSixUnits = 0;
       let eightEighteenUnits = 0;
       let twentyFourPlusUnits = 0;
       let volumeTotalHL = 0;
+      let mailProductsArr = [];
+      let saleSavings = 0;
+      let productTotal = 0;
 
       let productsArr = products.map((product, index) => {
-        let temp = (product?.product_options[0]?.display_value)?.split(" ");
+        let temp = product?.product_options[0]?.display_value?.split(' ');
         let packSize = temp[0] || 0;
         let volume = temp[3] || 0;
-        let containerType = temp[2] || "";
+        let containerType = temp[2] || '';
 
         if (packSize == 1) {
           singleUnits += product?.quantity || 0;
@@ -505,8 +547,9 @@ export class ServerOrderService {
           twentyFourPlusUnits += product?.quantity || 0;
         }
 
-        let hlTotal = ((((product.quantity * +packSize) * +volume) / 1000) / 100);
+        let hlTotal = (product.quantity * +packSize * +volume) / 1000 / 100;
         volumeTotalHL += hlTotal;
+        
         let itemDescription = "";
         const customFields = product?.product?.data?.custom_fields || [];
         const pageTitle = product?.product?.data?.page_title || '';
@@ -519,14 +562,41 @@ export class ServerOrderService {
           brewer = customFields.find(field => field.name === 'Producer')?.value || '';
           category = customFields.find(field => field.name === 'Category')?.value || '';
         }
+
+        let imageUrl = product.product?.data?.custom_fields.find(
+          (x) => x.name === 'product_image_1',
+        )?.value;
+        let variantData = product.product.data.variants.find(
+          (x) => x.id === product.variant_id,
+        );
+        //calculating the sale price
+        if (variantData.sale_price !== variantData.price) {
+          saleSavings += variantData.price - variantData.sale_price;
+        }
+        mailProductsArr.push({
+          imageUrl: imageUrl || '',
+          name: product.name,
+          displayValue: product?.product_options[0]?.display_value,
+          quantity: +product.quantity,
+          productSubTotal:
+            variantData.sale_price === variantData.price
+              ? variantData.price * product.quantity
+              : variantData.sale_price * product.quantity,
+          price: variantData.price || 0,
+          salePrice: variantData.sale_price || 0,
+          onSale: variantData.sale_price === variantData.price ? false : true,
+        });
+
+        productTotal += +product.total_inc_tax;
         return {
           orderId: `${orderDetails.id}`,
           productId: product.product_id,
+          variantId: product.variant_id,
           lineItem: index + 1,
           itemSKU: product.sku,
-          itemDescription,
-          brewer,
-          category,
+          itemDescription: '',
+          brewer: '',
+          category: '',
           quantity: product.quantity,
           packSize: +packSize,
           volume: +volume,
@@ -539,19 +609,28 @@ export class ServerOrderService {
           utmCampaign: null,
           utmTerm: null,
           utmContent: null,
-        }
+        };
       });
-      const timeSplit = billingAddressFormFields.pick_delivery_time.split('-') || '';
-      const orderDeliveryDate = billingAddressFormFields.pick_delivery_date_text;
-      const orderDate = orderDetails.date_created;
-      const fulfillmentDate = moment(`${orderDeliveryDate} ${timeSplit[0]}`, "YYYY-MM-DD HH:mm A").format("YYYY-MM-DD HH:mm:ss");
+      const timeSplit =
+        billingAddressFormFields.pick_delivery_time.split('-') || '';
+      const orderDeliveryDate =
+        billingAddressFormFields.pick_delivery_date_text;
+      const fulfillmentDate = moment(
+        `${orderDeliveryDate} ${timeSplit[0]}`,
+        'YYYY-MM-DD HH:mm A',
+      ).format('YYYY-MM-DD HH:mm:ss');
       const serverOrderParsed = {
         orderId: `${orderDetails.id}`,
         storeId: `${billingAddressFormFields.store_id}`,
-        orderType: billingAddressFormFields.order_type === 'pickup' ? billingAddressFormFields.pickup_type : billingAddressFormFields.order_type,
+        orderType:
+          billingAddressFormFields.order_type === 'pickup'
+            ? billingAddressFormFields.pickup_type
+            : billingAddressFormFields.order_type,
         orderStatus: orderDetails.status_id,
         fulfillmentDate,
-        orderDate: moment.utc(orderDetails.date_created).format('YYYY-MM-DD hh:mm:ss'),
+        orderDate: moment
+          .utc(orderDetails.date_created)
+          .format('YYYY-MM-DD hh:mm:ss'),
         cancellationDate: null,
         cancellationBy: null,
         cancellationReason: null,
@@ -559,42 +638,77 @@ export class ServerOrderService {
         transactionId: serverOrder.transactionId || null,
         orderVector: billingAddressFormFields.source,
         partialOrder: false,
-        productTotal: Number(parseFloat(orderDetails.total_ex_tax).toFixed(2)),
-        deliveryFee: Number(parseFloat(orderDetails.shipping_cost_ex_tax).toFixed(2)),
-        deliveryFeeHST: Number(parseFloat(orderDetails.shipping_cost_tax).toFixed(2)),
-        grandTotal: Number(parseFloat(orderDetails.total_ex_tax).toFixed(2)) + Number(parseFloat(orderDetails.shipping_cost_ex_tax).toFixed(2)) + Number(parseFloat(orderDetails.shipping_cost_tax).toFixed(2)),
+        productTotal: productTotal,
+        deliveryFee: Number(
+          parseFloat(orderDetails.shipping_cost_ex_tax).toFixed(2),
+        ),
+        deliveryFeeHST: Number(
+          parseFloat(orderDetails.shipping_cost_tax).toFixed(2),
+        ),
+        grandTotal:
+          productTotal +
+          Number(parseFloat(orderDetails.shipping_cost_ex_tax).toFixed(2)) +
+          Number(parseFloat(orderDetails.shipping_cost_tax).toFixed(2)),
         volumeTotalHL,
         singleUnits: singleUnits,
         packUnits2_6: twoSixUnits,
         packUnits8_18: eightEighteenUnits,
         packUnits_24Plus: twentyFourPlusUnits,
-        submittedDateTime: moment.utc(orderDetails.date_created).format('YYYY-MM-DD hh:mm:ss'),
+        submittedDateTime: moment
+          .utc(orderDetails.date_created)
+          .format('YYYY-MM-DD hh:mm:ss'),
         openDateTime: null,
         pickUpReadyDateTime: null,
         completedByEmpId: null,
         completedDateTime: null,
-        idChecked: "",
+        idChecked: '',
         // requestedPickUpTime: `${orderDeliveryDate} ${orderDeliveryDate}`,
         requestedPickUpTime: fulfillmentDate,
-        browserVersion: "",
+        browserVersion: '',
         refunded: false,
         refundedAmount: 0,
-        refundReason: "",
+        refundReason: '',
         pickUpType: billingAddressFormFields.pickup_type || '',
       };
 
-      // console.log('orderCompleteDetails', {
-      //     ...serverOrderParsed,
-      //     serverOrderCustomerDetails: customerDetails,
-      //     serverOrderDeliveryDetails: deliveryDetails,
-      //     serverOrderProductDetails: productsArr,
-      //   });
-      await this.serverOrderRepository.save(this.serverOrderRepository.create({
-        ...serverOrderParsed,
-        serverOrderCustomerDetails: customerDetails,
-        serverOrderDeliveryDetails: deliveryDetails,
-        serverOrderProductDetails: productsArr,
-      }));
+      await this.serverOrderRepository.save(
+        this.serverOrderRepository.create({
+          ...serverOrderParsed,
+          serverOrderCustomerDetails: customerDetails,
+          serverOrderDeliveryDetails: deliveryDetails,
+          serverOrderProductDetails: productsArr,
+        }),
+      );
+
+      let staffNotes = JSON.parse(orderDetails.staff_notes);
+
+      this.mailService.orderCreated({
+        to: customerDetails.email,
+        orderDetails: {
+          customerName: customerDetails.name,
+          orderNumber: +serverOrder.orderId,
+          orderDate: moment(serverOrderParsed.orderDate).format('MMMM D, YYYY'),
+          paymentMethod: orderDetails.payment_method,
+          totalCost: serverOrderParsed.grandTotal,
+          deliverydate: moment(
+            billingAddressFormFields.pick_delivery_date_text,
+          ).format('MMMM D, YYYY'),
+          deliveryLocation: deliveryDetails.deliveryAddress,
+          deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
+          subTotal: serverOrderParsed.productTotal || 0,
+          deliveryCharge: serverOrderParsed.deliveryFee || 0,
+          deliveryFeeHST: serverOrderParsed.deliveryFeeHST || 0,
+          grandTotal: serverOrderParsed.grandTotal || 0,
+          totalSavings: staffNotes.reduce(
+            (previousValue, currentValue) =>
+              previousValue + +currentValue.packup_discount,
+            0,
+          ),
+          saleSavings: saleSavings,
+        },
+        orderProductDetails: mailProductsArr,
+      });
+
       return 'Order placed';
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -644,12 +758,18 @@ export class ServerOrderService {
   //   return this.findOne(id);
   // }
 
-
   async serverOrderDetail(orderId: number): Promise<ServerOrder> {
-    const serverOrder = await this.serverOrderRepository.findOne({
-      orderId: `${orderId}`
-    },
-      { relations: ['serverOrderProductDetails', 'serverOrderDeliveryDetails', 'serverOrderCustomerDetails'] },
+    const serverOrder = await this.serverOrderRepository.findOne(
+      {
+        orderId: `${orderId}`,
+      },
+      {
+        relations: [
+          'serverOrderProductDetails',
+          'serverOrderDeliveryDetails',
+          'serverOrderCustomerDetails',
+        ],
+      },
     );
     return serverOrder;
   }
@@ -673,11 +793,6 @@ export class ServerOrderService {
     checkoutId?: string,
   ): Promise<any> {
     try {
-      console.log('checkoutId', checkoutId, createOrderHistoryDto,
-      orderStatus,
-      createOrderDto,
-      partial,
-      checkoutId);
       const serverOrder = await this.serverOrderDetail(id);
       serverOrder.orderStatus = orderStatus;
       serverOrder.partialOrder = partial !== '0';
@@ -688,8 +803,6 @@ export class ServerOrderService {
       if(+serverOrder.orderStatus === +8 || +serverOrder.orderStatus === +9 ){
         serverOrder.pickUpReadyDateTime = moment().toDate();
       }
-      
-      console.log('decrease', serverOrder?.serverOrderProductDetails);
 
       if(serverOrder?.serverOrderProductDetails){
         refundOrder.products.forEach((product, _idx) => {
@@ -705,7 +818,7 @@ export class ServerOrderService {
               })
             }
           }
-        })
+        });
       }
 
       if(refundQuote.items.length > 0){
@@ -734,7 +847,8 @@ export class ServerOrderService {
         this.serverOrderRepository.save(orderToSave),
         this.orderHistoryService.create(createOrderHistoryDto),
       ]);
-      if(checkoutId){
+
+      if (checkoutId) {
         await this.sendPushNotification(
           this.configService.get('beerstoreApp').title,
           `Your Order #${id} has been ${OrderstatusText[orderStatus]}.`,
@@ -744,9 +858,11 @@ export class ServerOrderService {
           serverOrder.orderType,
         );
       }
+
+      this.sendMailOnStatusChange(id?.toString(), serverOrder, orderStatus);
+
       return response[0];
     } catch (err) {
-      console.log('err', err.message);
       throw new BadRequestException(err.message);
     }
   }
@@ -821,13 +937,14 @@ export class ServerOrderService {
       } else if (orderType === 'delivery') {
         await this.cancelBeerGuyOrder(`${id}`, cancellationReason);
       }
-      const resp = await Promise.all([this.ordersService.updateOrder(`${id}`, {
-        status_id: +orderStatus,
-      }),
-      this.serverOrderDetail(id),
+      const resp = await Promise.all([
+        this.ordersService.updateOrder(`${id}`, {
+          status_id: +orderStatus,
+        }),
+        this.serverOrderDetail(id),
       ]);
 
-      if(!resp[1]){
+      if (!resp[1]) {
         throw new BadRequestException('Order not found');
       }
       const serverOrder = resp[1];
@@ -835,8 +952,9 @@ export class ServerOrderService {
       serverOrder.cancellationBy = cancellationBy;
       serverOrder.cancellationDate = cancellationDate;
       serverOrder.cancellationReason = cancellationReason;
-      serverOrder.cancellationNote = cancellationNote || ''; 
-      serverOrder.cancelledByCustomer = cancellationBy.toLowerCase() === 'customer';
+      serverOrder.cancellationNote = cancellationNote || '';
+      serverOrder.cancelledByCustomer =
+        cancellationBy.toLowerCase() === 'customer';
       const orderToSave = await this.serverOrderRepository.preload(serverOrder);
 
       const response = await Promise.all([
@@ -858,6 +976,7 @@ export class ServerOrderService {
         +serverOrder.orderStatus,
         serverOrder.orderType,
       );
+      this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus);
       return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -872,7 +991,6 @@ export class ServerOrderService {
     customerProof: CreateCustomerProofDto,
     checkoutId: string,
   ): Promise<any> {
-    console.log('checkoutId123', checkoutId, createOrderDto);
     const requests = [];
     try {
       const { amount, ...orderDetails } = serverOrder;
@@ -912,44 +1030,38 @@ export class ServerOrderService {
         packUnits2_6: serverOrder.packUnits2_6,
         packUnits8_18: serverOrder.packUnits8_18,
         packUnits_24Plus: serverOrder.packUnits_24Plus,
-        underInfluence: customerProof.underInfluence === 1, 
-        dobBefore: customerProof.dobBefore === 1, 
-      }
+        underInfluence: customerProof.underInfluence === 1,
+        dobBefore: customerProof.dobBefore === 1,
+      };
 
-      if(+serverOrder.orderStatus === 5){
+      if (+serverOrder.orderStatus === 5) {
         //cancelled
-        console.log('cancelled', serverOrder.orderStatus);
         prevOrder = {
           ...prevOrder,
           cancellationDate: serverOrder.cancellationDate,
-          cancellationBy : serverOrder.cancellationBy,
+          cancellationBy: serverOrder.cancellationBy,
           cancellationReason: serverOrder.cancellationReason,
           cancellationNote: serverOrder.cancellationNote,
           
         }    
       } else if(+serverOrder.orderStatus === 10){
         //completed
-        console.log('completed', serverOrder.orderStatus);
         prevOrder = {
           ...prevOrder,
           completedDateTime: moment().toDate(),
-        }
-      } else if(+serverOrder.orderStatus === 8){
+        };
+      } else if (+serverOrder.orderStatus === 8) {
         prevOrder = {
           ...prevOrder,
           pickUpReadyDateTime: moment().toDate(),
-        }
+        };
       }
-      await this.ordersService.updateOrder(
-        orderId,
-        createOrderDto,
-        );
-        const orderToSave = await this.serverOrderRepository.preload(prevOrder);
-        // requests.push(this.updateServerOrder(+orderId, orderDetails));
-        requests.push(this.serverOrderRepository.save(orderToSave));
-        requests.push(this.orderHistoryService.create(createOrderHistoryDto));
-        const response = await Promise.all(requests);
-      console.log('response', response);
+      await this.ordersService.updateOrder(orderId, createOrderDto);
+      const orderToSave = await this.serverOrderRepository.preload(prevOrder);
+      // requests.push(this.updateServerOrder(+orderId, orderDetails));
+      requests.push(this.serverOrderRepository.save(orderToSave));
+      requests.push(this.orderHistoryService.create(createOrderHistoryDto));
+      const response = await Promise.all(requests);
       await this.sendPushNotification(
         this.configService.get('beerstoreApp').title,
         `Your Order #${orderId} has been ${
@@ -960,11 +1072,155 @@ export class ServerOrderService {
         +serverOrder.orderStatus,
         serverOrder.orderType,
       );
+
+      this.sendMailOnStatusChange(orderId, prevOrder, serverOrder.orderStatus);
+
       return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);
     }
   }
+
+  private async sendMailOnStatusChange(
+    orderId: string,
+    serverOrderDetails: ServerOrder,
+    orderStatus: number,
+  ) {
+    try {
+      let productIds = serverOrderDetails.serverOrderProductDetails
+        .map((x) => `${x.productId}`)
+        .join(',');
+      let result = await Promise.all([
+        this.beerService.findAll(
+          undefined,
+          undefined,
+          productIds,
+          undefined,
+          undefined,
+          'variants,custom_fields,images,primary_image',
+          undefined,
+          undefined,
+          1,
+        ),
+        this.ordersService.getOrder(orderId),
+        this.ordersService.getOrderProducts(orderId),
+      ]);
+      let { data } = result[0];
+      let orderDetailsFromBigCom = result[1];
+      let orderProductDetails = result[2];
+      let billingAddressFormFields = JSON.parse(
+        orderDetailsFromBigCom?.billing_address?.form_fields[0]?.value,
+      );
+      let staffNotes = JSON.parse(orderDetailsFromBigCom.staff_notes);
+      let mailProductsArr = [];
+      let saleSavings = 0;
+      let totalRefundedAmount = 0;
+      let productFromdb;
+      let productDetail;
+      data.forEach((ele) => {
+        let imageUrl = ele?.custom_fields.find(
+          (x) => x.name === 'product_image_1',
+        )?.value;
+        productFromdb = serverOrderDetails.serverOrderProductDetails.find(
+          (x) => x.productId == ele.id,
+        );
+        productDetail = orderProductDetails.find(
+          (x) => x.product_id === ele.id,
+        );
+        let variantData = ele.variants.find((x) => {
+          return x.id === productDetail.variant_id;
+          // return x.id === productFromdb.variantId;
+        });
+        if (variantData?.sale_price !== variantData?.price) {
+          saleSavings += variantData?.price - variantData?.sale_price;
+        }
+        if (productDetail.is_refunded) {
+          totalRefundedAmount += productDetail.refund_amount;
+        }
+        mailProductsArr.push({
+          imageUrl: imageUrl || '',
+          name: ele.name,
+          displayValue: productDetail?.product_options[0]?.display_value || '',
+          quantity: +productFromdb.quantity,
+          productSubTotal:
+            variantData?.sale_price === variantData?.price
+              ? variantData?.price * productFromdb.quantity
+              : variantData?.sale_price * productFromdb.quantity,
+          price: variantData.price || 0,
+          salePrice: variantData?.sale_price || 0,
+          onSale: variantData?.sale_price === variantData.price ? false : true,
+          isRefunded: productDetail.is_refunded,
+          refundedQty: productDetail?.quantity_refunded || 0,
+          refundedAmt: productDetail?.refund_amount || 0,
+        });
+      });
+
+      const totalSavings = staffNotes.reduce(
+        (previousValue, currentValue) =>
+          previousValue + +currentValue.packup_discount,
+        0,
+      );
+
+      let mailPayload = {
+        to: serverOrderDetails.serverOrderCustomerDetails.email,
+        orderDetails: {
+          customerName: serverOrderDetails.serverOrderCustomerDetails.name,
+          orderNumber: +orderId,
+          orderDate: moment(serverOrderDetails.orderDate).format(
+            'MMMM D, YYYY',
+          ),
+          paymentMethod: orderDetailsFromBigCom?.payment_method,
+          totalCost: serverOrderDetails.grandTotal,
+          deliverydate: moment(
+            billingAddressFormFields.pick_delivery_date_text,
+          ).format('MMMM D, YYYY'),
+          deliveryLocation:
+            serverOrderDetails.serverOrderDeliveryDetails.deliveryAddress,
+          deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
+          // subTotal: serverOrderDetails.productTotal || 0,
+          subTotal: productFromdb.itemTotal || 0,
+          deliveryCharge: serverOrderDetails.deliveryFee || 0,
+          deliveryFeeHST: serverOrderDetails.deliveryFeeHST || 0,
+          // subTotal: serverOrderDetails.productTotal || 0,
+          // deliveryCharge: serverOrderDetails.deliveryFee || 0,
+          // deliveryFeeHST: serverOrderDetails.deliveryFeeHST || 0,
+          // grandTotal: serverOrderDetails.grandTotal || 0,
+          grandTotal:
+            productFromdb.itemTotal -
+              totalSavings +
+              serverOrderDetails.deliveryFee +
+              serverOrderDetails.deliveryFeeHST || 0,
+          totalSavings,
+          saleSavings: saleSavings,
+          cancellationReason: serverOrderDetails.cancellationReason || '',
+          refundedAmt: totalRefundedAmount || 0,
+          refunded: mailProductsArr.find((x) => x.isRefunded === true)
+            ? true
+            : false,
+        },
+        orderProductDetails: mailProductsArr,
+      };
+
+      if (+orderStatus === 5) {
+        this.mailService.orderCancelled(mailPayload);
+      }
+
+      if (+orderStatus === 10) {
+        this.mailService.orderCompleted(mailPayload);
+      }
+
+      if (+orderStatus === 3) {
+        this.mailService.orderInTransit(mailPayload);
+      }
+
+      if (+orderStatus === 8) {
+        this.mailService.orderConfirmed(mailPayload);
+      }
+    } catch (error) {
+      console.log(error, 'MAIL ERR');
+    }
+  }
+
   sendPushNotification = async (
     title: string,
     subtitle: string,
