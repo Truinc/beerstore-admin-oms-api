@@ -5,18 +5,18 @@ interface OrderDetails {
     orderNumber: number,
     orderDate: string;
     paymentMethod: string;
-    totalCost: number;
+    totalCost: string;
     deliverydate: string;
     deliveryLocation: string;
     deliveryEstimatedTime: string;
-    subTotal: number;
-    deliveryCharge: number;
-    deliveryFeeHST: number;
-    grandTotal: number;
-    totalSavings: number;
-    saleSavings: number;
+    subTotal: string;
+    deliveryCharge: string;
+    deliveryFeeHST: string;
+    grandTotal: string;
+    totalSavings: string;
+    saleSavings: string;
     cancellationReason?: string;
-    refundedAmt?: number;
+    refundedAmt?: string;
     refunded?: boolean;
 }
 

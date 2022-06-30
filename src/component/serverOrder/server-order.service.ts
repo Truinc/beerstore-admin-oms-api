@@ -580,10 +580,10 @@ export class ServerOrderService {
           quantity: +product.quantity,
           productSubTotal:
             variantData.sale_price === variantData.price
-              ? variantData.price * product.quantity
-              : variantData.sale_price * product.quantity,
-          price: variantData.price || 0,
-          salePrice: variantData.sale_price || 0,
+              ? (variantData.price * product.quantity).toFixed(2)
+              : (variantData.sale_price * product.quantity).toFixed(2),
+          price: (variantData.price).toFixed(2) || 0,
+          salePrice: (variantData.sale_price).toFixed(2) || 0,
           onSale: variantData.sale_price === variantData.price ? false : true,
         });
 
@@ -689,22 +689,22 @@ export class ServerOrderService {
           orderNumber: +serverOrder.orderId,
           orderDate: moment(serverOrderParsed.orderDate).format('MMMM D, YYYY'),
           paymentMethod: orderDetails.payment_method,
-          totalCost: serverOrderParsed.grandTotal,
+          totalCost: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
           deliverydate: moment(
             billingAddressFormFields.pick_delivery_date_text,
           ).format('MMMM D, YYYY'),
           deliveryLocation: deliveryDetails.deliveryAddress,
           deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
-          subTotal: serverOrderParsed.productTotal || 0,
-          deliveryCharge: serverOrderParsed.deliveryFee || 0,
-          deliveryFeeHST: serverOrderParsed.deliveryFeeHST || 0,
-          grandTotal: serverOrderParsed.grandTotal || 0,
+          subTotal: `${serverOrderParsed.productTotal}` || "0.00",
+          deliveryCharge: (serverOrderParsed.deliveryFee).toFixed(2) || "0.00",
+          deliveryFeeHST: (serverOrderParsed.deliveryFeeHST).toFixed(2) || "0.00",
+          grandTotal: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
           totalSavings: staffNotes.reduce(
             (previousValue, currentValue) =>
               previousValue + +currentValue.packup_discount,
             0,
           ),
-          saleSavings: saleSavings,
+          saleSavings: (saleSavings).toFixed(2),
         },
         orderProductDetails: mailProductsArr,
       });
@@ -793,6 +793,7 @@ export class ServerOrderService {
     checkoutId?: string,
   ): Promise<any> {
     try {
+      console.log('testing32423', createOrderDto, refundOrder);
       const serverOrder = await this.serverOrderDetail(id);
       serverOrder.orderStatus = orderStatus;
       serverOrder.partialOrder = partial !== '0';
@@ -804,44 +805,53 @@ export class ServerOrderService {
         serverOrder.pickUpReadyDateTime = moment().toDate();
       }
 
-      if(serverOrder?.serverOrderProductDetails){
-        refundOrder.products.forEach((product, _idx) => {
-          const updatedProduct = serverOrder.serverOrderProductDetails.find(prod => product.sku === prod.itemSKU);
-          if(updatedProduct){
-            // serverOrder.serverOrderProductDetails[_idx].quantity =  updatedProduct.quantity;
-            serverOrder.serverOrderProductDetails[_idx].quantity =  +product.originalQty - +product.refundQty;
-            if(+product.refundQty > 0){
-              refundQuote.items.push({
-                "item_id": product.id,
-                "item_type": "PRODUCT",
-                "quantity": product.refundQty, 
-              })
+      if(serverOrder?.orderStatus !== 3){
+        if(serverOrder?.serverOrderProductDetails){
+          refundOrder.products.forEach((product, _idx) => {
+            const updatedProduct = serverOrder.serverOrderProductDetails.find(prod => product.sku === prod.itemSKU);
+            if(updatedProduct){
+              // serverOrder.serverOrderProductDetails[_idx].quantity =  updatedProduct.quantity;
+              serverOrder.serverOrderProductDetails[_idx].quantity =  +product.originalQty - +product.refundQty;
+              if(+product.refundQty > 0){
+                refundQuote.items.push({
+                  "item_id": product.id,
+                  "item_type": "PRODUCT",
+                  "quantity": product.refundQty, 
+                })
+              }
             }
-          }
+          });
+        }
+  
+        if(refundQuote.items.length > 0){
+          const paymentRefund = {
+            ...refundQuote,
+            "payments": [
+                {
+                "provider_id": "storecredit",
+                "amount": -1,
+                "offline": false
+                }
+            ]
+            }
+            const quotesRes = await this.ordersService.setRefundQuotes(id, refundQuote);
+            console.log('quotesRes', JSON.stringify(quotesRes));
+            paymentRefund.payments[0].amount = quotesRes.data.total_refund_amount;
+            console.log('paymentTesting', paymentRefund);
+            const refundedOrder = await this.ordersService.refundHandler(id, paymentRefund);
+            console.log('refundedAmount', JSON.stringify(refundedOrder));
+            console.log('serverOrder', serverOrder);
+            // serverOrder.grandTotal = 
+            // serverOrder.productTotal = 
+        }
+        console.log('createOrderDto1234567', createOrderDto);
+        await this.ordersService.updateOrder(`${id}`, createOrderDto); 
+      } else if (serverOrder?.orderStatus === 3){
+        await this.ordersService.updateOrder(`${id}`, {
+          status_id: 3,
         });
       }
-
-      if(refundQuote.items.length > 0){
-        const paymentRefund = {
-          ...refundQuote,
-          "payments": [
-              {
-              "provider_id": "storecredit",
-              "amount": -1,
-              "offline": false
-              }
-          ]
-          }
-          const quotesRes = await this.ordersService.setRefundQuotes(id, refundQuote);
-          console.log('quotesRes', JSON.stringify(quotesRes));
-          paymentRefund.payments[0].amount = quotesRes.data.total_refund_amount;
-          console.log('paymentTesting', paymentRefund);
-          const refundedOrder = await this.ordersService.refundHandler(id, paymentRefund);
-          console.log('refundedAmount', JSON.stringify(refundedOrder));
-          console.log('serverOrder', serverOrder);
-      }
-      console.log('createOrderDto1234567', createOrderDto);
-      await this.ordersService.updateOrder(`${id}`, createOrderDto);
+     
       const orderToSave = await this.serverOrderRepository.preload(serverOrder);
       const response = await Promise.all([
         this.serverOrderRepository.save(orderToSave),
@@ -927,7 +937,7 @@ export class ServerOrderService {
       } = data;
       if (orderType === 'pickup' || orderType === 'curbside') {
         if (transactionId) {
-          const test = await this.bamboraService.UpdatePaymentStatus(
+          await this.bamboraService.UpdatePaymentStatus(
             transactionId,
             {
               amount: 0,
@@ -957,6 +967,10 @@ export class ServerOrderService {
         cancellationBy.toLowerCase() === 'customer';
       const orderToSave = await this.serverOrderRepository.preload(serverOrder);
 
+      let productIds = serverOrder.serverOrderProductDetails
+      .map((x) => `${x.productId}`)
+      .join(',');
+
       const response = await Promise.all([
         this.serverOrderRepository.save(orderToSave),
         this.orderHistoryService.create({
@@ -966,9 +980,21 @@ export class ServerOrderService {
           identifier:
             cancellationBy.toLowerCase() === 'customer' ? '' : identifier,
         }),
+        this.beerService.findAll(
+          undefined,
+          undefined,
+          productIds,
+          undefined,
+          undefined,
+          'variants,custom_fields,images,primary_image',
+          undefined,
+          undefined,
+          1,
+        )
       ]);
       // console.log('res', resp);
-      await this.sendPushNotification(
+      this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus, response[2]);
+      this.sendPushNotification(
         this.configService.get('beerstoreApp').title,
         `Your Order #${id} has been cancelled.`,
         checkoutId,
@@ -976,7 +1002,6 @@ export class ServerOrderService {
         +serverOrder.orderStatus,
         serverOrder.orderType,
       );
-      this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus);
       return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -1055,14 +1080,21 @@ export class ServerOrderService {
           ...prevOrder,
           pickUpReadyDateTime: moment().toDate(),
         };
+      } 
+      if (+serverOrder.orderStatus === 3){
+        await this.ordersService.updateOrder(orderId, {
+          status_id: 3,
+        });
+      } else {
+        await this.ordersService.updateOrder(orderId, createOrderDto);
       }
-      await this.ordersService.updateOrder(orderId, createOrderDto);
       const orderToSave = await this.serverOrderRepository.preload(prevOrder);
       // requests.push(this.updateServerOrder(+orderId, orderDetails));
       requests.push(this.serverOrderRepository.save(orderToSave));
       requests.push(this.orderHistoryService.create(createOrderHistoryDto));
       const response = await Promise.all(requests);
-      await this.sendPushNotification(
+      this.sendMailOnStatusChange(orderId, prevOrder, serverOrder.orderStatus);
+      this.sendPushNotification(
         this.configService.get('beerstoreApp').title,
         `Your Order #${orderId} has been ${
           OrderstatusText[serverOrder.orderStatus]
@@ -1073,7 +1105,6 @@ export class ServerOrderService {
         serverOrder.orderType,
       );
 
-      this.sendMailOnStatusChange(orderId, prevOrder, serverOrder.orderStatus);
 
       return response[0];
     } catch (err) {
@@ -1085,48 +1116,62 @@ export class ServerOrderService {
     orderId: string,
     serverOrderDetails: ServerOrder,
     orderStatus: number,
+    productItemsDetail?: any,
   ) {
     try {
+      const requests = [];
       let productIds = serverOrderDetails.serverOrderProductDetails
         .map((x) => `${x.productId}`)
         .join(',');
-      let result = await Promise.all([
-        this.beerService.findAll(
-          undefined,
-          undefined,
-          productIds,
-          undefined,
-          undefined,
-          'variants,custom_fields,images,primary_image',
-          undefined,
-          undefined,
-          1,
-        ),
-        this.ordersService.getOrder(orderId),
-        this.ordersService.getOrderProducts(orderId),
-      ]);
-      let { data } = result[0];
-      let orderDetailsFromBigCom = result[1];
-      let orderProductDetails = result[2];
+       requests.push(this.ordersService.getOrder(orderId)); 
+       requests.push(this.ordersService.getOrderProducts(orderId)); 
+      if(!productItemsDetail){
+        requests.push(
+          this.beerService.findAll(
+            undefined,
+            undefined,
+            productIds,
+            undefined,
+            undefined,
+            'variants,custom_fields,images,primary_image',
+            undefined,
+            undefined,
+            1,
+          )
+        )
+      }
+      let result = await Promise.all(requests);
+      console.log('beerservice', result);
+      let data;
+      if(productItemsDetail){
+        data = productItemsDetail.data;
+      } else {
+        data = result[2].data;
+      }
+      let orderDetailsFromBigCom = result[0];
+      let orderProductDetails = result[1];
+      console.log('orderData',  orderDetailsFromBigCom, orderProductDetails, data);
       let billingAddressFormFields = JSON.parse(
         orderDetailsFromBigCom?.billing_address?.form_fields[0]?.value,
       );
       let staffNotes = JSON.parse(orderDetailsFromBigCom.staff_notes);
+      console.log('staffNotes', staffNotes);
       let mailProductsArr = [];
       let saleSavings = 0;
-      let totalRefundedAmount = 0;
-      let productFromdb;
+      // let totalRefundedAmount = 0;
+      // let productFromdb;
       let productDetail;
       data.forEach((ele) => {
         let imageUrl = ele?.custom_fields.find(
           (x) => x.name === 'product_image_1',
         )?.value;
-        productFromdb = serverOrderDetails.serverOrderProductDetails.find(
-          (x) => x.productId == ele.id,
-        );
+        // productFromdb = serverOrderDetails.serverOrderProductDetails.find(
+        //   (x) => x.productId == ele.id,
+        // );
         productDetail = orderProductDetails.find(
           (x) => x.product_id === ele.id,
         );
+        console.log('productDetail', productDetail);
         let variantData = ele.variants.find((x) => {
           return x.id === productDetail.variant_id;
           // return x.id === productFromdb.variantId;
@@ -1134,33 +1179,51 @@ export class ServerOrderService {
         if (variantData?.sale_price !== variantData?.price) {
           saleSavings += variantData?.price - variantData?.sale_price;
         }
-        if (productDetail.is_refunded) {
-          totalRefundedAmount += productDetail.refund_amount;
-        }
+        // if (productDetail.is_refunded) {
+        //   totalRefundedAmount += productDetail.refund_amount;
+        // }
+        const actualQuantity = +productDetail.quantity - +productDetail.quantity_refunded
+        console.log('mailProductsArr', {
+          imageUrl: imageUrl || '',
+          name: ele.name,
+          displayValue: productDetail?.product_options[0]?.display_value || '',
+          quantity: actualQuantity,
+          productSubTotal:
+            variantData?.sale_price === variantData?.price
+              ? (variantData?.price * actualQuantity).toFixed(2)
+              : (variantData?.sale_price * actualQuantity).toFixed(2) || 0.00,
+          price: (variantData.price).toFixed(2) || 0.00,
+          salePrice: variantData?.sale_price || 0.00,
+          onSale: variantData?.sale_price === variantData.price ? false : true,
+          // isRefunded: productDetail.is_refunded,
+          // refundedQty: (productDetail?.quantity_refunded).toFixed(2)  || 0.00,
+          // refundedAmt: (productDetail?.refund_amount).toFixed(2) || 0.00,
+        })
         mailProductsArr.push({
           imageUrl: imageUrl || '',
           name: ele.name,
           displayValue: productDetail?.product_options[0]?.display_value || '',
-          quantity: +productFromdb.quantity,
+          quantity: actualQuantity,
           productSubTotal:
             variantData?.sale_price === variantData?.price
-              ? variantData?.price * productFromdb.quantity
-              : variantData?.sale_price * productFromdb.quantity,
-          price: variantData.price || 0,
-          salePrice: variantData?.sale_price || 0,
+              ? (variantData?.price * actualQuantity).toFixed(2)
+              : (variantData?.sale_price * actualQuantity).toFixed(2) || 0.00,
+          price: (variantData.price).toFixed(2) || 0.00,
+          salePrice: variantData?.sale_price || 0.00,
           onSale: variantData?.sale_price === variantData.price ? false : true,
-          isRefunded: productDetail.is_refunded,
-          refundedQty: productDetail?.quantity_refunded || 0,
-          refundedAmt: productDetail?.refund_amount || 0,
+          // isRefunded: productDetail.is_refunded,
+          // refundedQty: (productDetail?.quantity_refunded).toFixed(2)  || 0.00,
+          // refundedAmt: (productDetail?.refund_amount).toFixed(2) || 0.00,
         });
       });
 
-      const totalSavings = staffNotes.reduce(
+      console.log('mailProductsArr', mailProductsArr);
+      const totalPackupSaving = staffNotes.reduce(
         (previousValue, currentValue) =>
           previousValue + +currentValue.packup_discount,
         0,
       );
-
+      const grandTotal =  (parseFloat(orderDetailsFromBigCom.total_inc_tax)).toFixed(2) || "0.00";
       let mailPayload = {
         to: serverOrderDetails.serverOrderCustomerDetails.email,
         orderDetails: {
@@ -1170,7 +1233,7 @@ export class ServerOrderService {
             'MMMM D, YYYY',
           ),
           paymentMethod: orderDetailsFromBigCom?.payment_method,
-          totalCost: serverOrderDetails.grandTotal,
+          totalCost: grandTotal,
           deliverydate: moment(
             billingAddressFormFields.pick_delivery_date_text,
           ).format('MMMM D, YYYY'),
@@ -1178,22 +1241,18 @@ export class ServerOrderService {
             serverOrderDetails.serverOrderDeliveryDetails.deliveryAddress,
           deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
           // subTotal: serverOrderDetails.productTotal || 0,
-          subTotal: productFromdb.itemTotal || 0,
-          deliveryCharge: serverOrderDetails.deliveryFee || 0,
-          deliveryFeeHST: serverOrderDetails.deliveryFeeHST || 0,
+          subTotal: (parseFloat(orderDetailsFromBigCom.subtotal_inc_tax)).toFixed(2)|| "0.00",
+          deliveryCharge: (parseFloat(orderDetailsFromBigCom.shipping_cost_ex_tax)).toFixed(2) || "0.00",
+          deliveryFeeHST: (parseFloat(orderDetailsFromBigCom.shipping_cost_tax)).toFixed(2) || "0.00",
           // subTotal: serverOrderDetails.productTotal || 0,
           // deliveryCharge: serverOrderDetails.deliveryFee || 0,
           // deliveryFeeHST: serverOrderDetails.deliveryFeeHST || 0,
           // grandTotal: serverOrderDetails.grandTotal || 0,
-          grandTotal:
-            productFromdb.itemTotal -
-              totalSavings +
-              serverOrderDetails.deliveryFee +
-              serverOrderDetails.deliveryFeeHST || 0,
-          totalSavings,
-          saleSavings: saleSavings,
+          grandTotal,
+          totalSavings: (saleSavings + +totalPackupSaving).toFixed(2),
+          saleSavings: (saleSavings).toFixed(2),
           cancellationReason: serverOrderDetails.cancellationReason || '',
-          refundedAmt: totalRefundedAmount || 0,
+          refundedAmt: (parseFloat(orderDetailsFromBigCom.refunded_amount)).toFixed(2) || "0.00",
           refunded: mailProductsArr.find((x) => x.isRefunded === true)
             ? true
             : false,
@@ -1202,7 +1261,13 @@ export class ServerOrderService {
       };
 
       if (+orderStatus === 5) {
-        this.mailService.orderCancelled(mailPayload);
+        this.mailService.orderCancelled({
+          ...mailPayload,
+          orderDetails: {
+            ...mailPayload.orderDetails,
+            refundedAmt: grandTotal,
+          }
+        });
       }
 
       if (+orderStatus === 10) {

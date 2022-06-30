@@ -53,6 +53,7 @@ export class MailService {
     }
 
     async orderCancelled(data: MailDto) {
+        console.log('orderCancel', data);
         return this.mailerService.sendMail({
             to: data.to,
             subject: this.mailSubjects.ORDER_CANCELLED,
