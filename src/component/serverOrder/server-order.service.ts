@@ -858,19 +858,20 @@ export class ServerOrderService {
         this.orderHistoryService.create(createOrderHistoryDto),
       ]);
 
-      if (checkoutId) {
-        await this.sendPushNotification(
-          this.configService.get('beerstoreApp').title,
-          `Your Order #${id} has been ${OrderstatusText[orderStatus]}.`,
-          checkoutId,
-          id.toString(),
-          +orderStatus,
-          serverOrder.orderType,
-        );
+      try {
+        if (checkoutId) {
+          await this.sendPushNotification(
+            this.configService.get('beerstoreApp').title,
+            `Your Order #${id} has been ${OrderstatusText[orderStatus]}.`,
+            checkoutId,
+            id.toString(),
+            +orderStatus,
+            serverOrder.orderType,
+          );
+        } 
+      } catch (err) {
       }
-
       this.sendMailOnStatusChange(id?.toString(), serverOrder, orderStatus);
-
       return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -993,15 +994,19 @@ export class ServerOrderService {
         )
       ]);
       // console.log('res', resp);
-      this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus, response[2]);
-      this.sendPushNotification(
-        this.configService.get('beerstoreApp').title,
-        `Your Order #${id} has been cancelled.`,
-        checkoutId,
-        id.toString(),
-        +serverOrder.orderStatus,
-        serverOrder.orderType,
-      );
+      try {
+       this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus, response[2]);
+       this.sendPushNotification(
+         this.configService.get('beerstoreApp').title,
+         `Your Order #${id} has been cancelled.`,
+         checkoutId,
+         id.toString(),
+         +serverOrder.orderStatus,
+         serverOrder.orderType,
+       );
+    } catch (err) {
+
+    }
       return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -1093,17 +1098,21 @@ export class ServerOrderService {
       requests.push(this.serverOrderRepository.save(orderToSave));
       requests.push(this.orderHistoryService.create(createOrderHistoryDto));
       const response = await Promise.all(requests);
-      this.sendMailOnStatusChange(orderId, prevOrder, serverOrder.orderStatus);
-      this.sendPushNotification(
-        this.configService.get('beerstoreApp').title,
-        `Your Order #${orderId} has been ${
-          OrderstatusText[serverOrder.orderStatus]
-        }.`,
-        checkoutId,
-        orderId,
-        +serverOrder.orderStatus,
-        serverOrder.orderType,
-      );
+      try {
+        this.sendMailOnStatusChange(orderId, prevOrder, serverOrder.orderStatus);
+        this.sendPushNotification(
+          this.configService.get('beerstoreApp').title,
+          `Your Order #${orderId} has been ${
+            OrderstatusText[serverOrder.orderStatus]
+          }.`,
+          checkoutId,
+          orderId,
+          +serverOrder.orderStatus,
+          serverOrder.orderType,
+        ); 
+      } catch (err) {
+        
+      }
 
 
       return response[0];
@@ -1327,7 +1336,6 @@ export class ServerOrderService {
             ) {
               throw new NotFoundException(err.message);
             }
-
             throw new BadRequestException(err.message);
           }),
         ),
