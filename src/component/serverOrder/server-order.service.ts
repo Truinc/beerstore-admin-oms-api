@@ -695,7 +695,7 @@ export class ServerOrderService {
           ).format('MMMM D, YYYY'),
           deliveryLocation: deliveryDetails.deliveryAddress,
           deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
-          subTotal: `${serverOrderParsed.productTotal}` || "0.00",
+          subTotal: `${(serverOrderParsed.productTotal).toFixed(2)}` || "0.00",
           deliveryCharge: (serverOrderParsed.deliveryFee).toFixed(2) || "0.00",
           deliveryFeeHST: (serverOrderParsed.deliveryFeeHST).toFixed(2) || "0.00",
           grandTotal: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
