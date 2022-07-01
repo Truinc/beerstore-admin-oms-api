@@ -1132,9 +1132,10 @@ export class ServerOrderService {
       let productIds = serverOrderDetails.serverOrderProductDetails
         .map((x) => `${x.productId}`)
         .join(',');
+
+        console.log('productIds', productIds);
        requests.push(this.ordersService.getOrder(orderId)); 
        requests.push(this.ordersService.getOrderProducts(orderId)); 
-      if(!productItemsDetail){
         requests.push(
           this.beerService.findAll(
             undefined,
@@ -1148,15 +1149,14 @@ export class ServerOrderService {
             1,
           )
         )
-      }
       let result = await Promise.all(requests);
       console.log('beerservice', result);
-      let data;
-      if(productItemsDetail){
-        data = productItemsDetail.data;
-      } else {
-        data = result[2].data;
-      }
+      // let data;
+      // if(productItemsDetail){
+      //   data = productItemsDetail.data;
+      // } else {
+        let { data } = result[2];
+      // }
       let orderDetailsFromBigCom = result[0];
       let orderProductDetails = result[1];
       console.log('orderData',  orderDetailsFromBigCom, orderProductDetails, data);
@@ -1191,7 +1191,8 @@ export class ServerOrderService {
         // if (productDetail.is_refunded) {
         //   totalRefundedAmount += productDetail.refund_amount;
         // }
-        const actualQuantity = +productDetail.quantity - +productDetail.quantity_refunded
+        const actualQuantity = +productDetail.quantity - +productDetail.quantity_refunded;
+        const refundedPrice = +productDetail.quantity * +variantData.price;
         console.log('mailProductsArr', {
           imageUrl: imageUrl || '',
           name: ele.name,
@@ -1204,9 +1205,9 @@ export class ServerOrderService {
           price: (variantData.price).toFixed(2) || 0.00,
           salePrice: variantData?.sale_price || 0.00,
           onSale: variantData?.sale_price === variantData.price ? false : true,
-          // isRefunded: productDetail.is_refunded,
-          // refundedQty: (productDetail?.quantity_refunded).toFixed(2)  || 0.00,
-          // refundedAmt: (productDetail?.refund_amount).toFixed(2) || 0.00,
+          isRefunded: (productDetail.quantity - +productDetail?.quantity_refunded) === 0,
+          refundedQty: (productDetail?.quantity_refunded).toFixed(2)  || 0.00,
+          refundedAmt: (refundedPrice).toFixed(2) || 0.00,
         })
         mailProductsArr.push({
           imageUrl: imageUrl || '',
@@ -1220,9 +1221,9 @@ export class ServerOrderService {
           price: (variantData.price).toFixed(2) || 0.00,
           salePrice: variantData?.sale_price || 0.00,
           onSale: variantData?.sale_price === variantData.price ? false : true,
-          // isRefunded: productDetail.is_refunded,
-          // refundedQty: (productDetail?.quantity_refunded).toFixed(2)  || 0.00,
-          // refundedAmt: (productDetail?.refund_amount).toFixed(2) || 0.00,
+          isRefunded: (productDetail.quantity - +productDetail?.quantity_refunded) === 0,
+          refundedQty: (productDetail?.quantity_refunded).toFixed(2)  || 0.00,
+          refundedAmt: (refundedPrice).toFixed(2) || 0.00,
         });
       });
 

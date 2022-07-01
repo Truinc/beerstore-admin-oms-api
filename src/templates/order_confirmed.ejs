@@ -501,7 +501,7 @@
                                   </td>
                                 </tr>
                                 <% orderProductDetails.forEach((product)=> { %>
-                                  <% if(product.isRefunded) { %>
+                                  <% if(product.refundedQty > 0 ) { %>
                                   <tr>
                                     <td
                                       style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:15px;padding-left:0">
@@ -863,7 +863,7 @@
                     </td>
                   </tr>
                   <% orderProductDetails.forEach((product)=> { %>
-                    <% if(!product.isRefunded) { %>
+                    <% if(product.quantity - product.refundedQty > 0) { %>
                     <tr style="background:#f4f4f4" bgcolor="#f4f4f4">
                       <td
                         style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:15px">
@@ -910,7 +910,7 @@
                       <td
                         style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold">
                         <div style="display:block;background-color:transparent">
-                          <%= product.quantity %>
+                          <%= product.quantity - product.refundedQty %>
                         </div>
                       </td>
                       <td
