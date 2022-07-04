@@ -968,10 +968,6 @@ export class ServerOrderService {
         cancellationBy.toLowerCase() === 'customer';
       const orderToSave = await this.serverOrderRepository.preload(serverOrder);
 
-      let productIds = serverOrder.serverOrderProductDetails
-      .map((x) => `${x.productId}`)
-      .join(',');
-
       const response = await Promise.all([
         this.serverOrderRepository.save(orderToSave),
         this.orderHistoryService.create({
@@ -980,30 +976,21 @@ export class ServerOrderService {
           name: cancellationBy,
           identifier:
             cancellationBy.toLowerCase() === 'customer' ? '' : identifier,
-        }),
-        this.beerService.findAll(
-          undefined,
-          undefined,
-          productIds,
-          undefined,
-          undefined,
-          'variants,custom_fields,images,primary_image',
-          undefined,
-          undefined,
-          1,
-        )
+        })
       ]);
-      // console.log('res', resp);
+      console.log('res', resp);
+      this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus);
       try {
-       this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus, response[2]);
-       this.sendPushNotification(
-         this.configService.get('beerstoreApp').title,
-         `Your Order #${id} has been cancelled.`,
-         checkoutId,
-         id.toString(),
-         +serverOrder.orderStatus,
-         serverOrder.orderType,
-       );
+        if (checkoutId) {
+          this.sendPushNotification(
+            this.configService.get('beerstoreApp').title,
+            `Your Order #${id} has been cancelled.`,
+            checkoutId,
+            id.toString(),
+            +serverOrder.orderStatus,
+            orderType,
+          );
+        } 
     } catch (err) {
 
     }
@@ -1024,9 +1011,11 @@ export class ServerOrderService {
     const requests = [];
     try {
       const { amount, ...orderDetails } = serverOrder;
+      let prevOrder = await this.serverOrderDetail(+orderId);
+      console.log('prevOrder', prevOrder)
       if (
-        serverOrder.orderType === 'pickup' ||
-        serverOrder.orderType === 'curbside'
+        prevOrder.orderType === 'pickup' ||
+        prevOrder.orderType === 'curbside'
       ) {
         if (serverOrder?.transactionId) {
           await this.bamboraService.UpdatePaymentStatus(
@@ -1036,10 +1025,10 @@ export class ServerOrderService {
             },
           );
         }
-      } else if (serverOrder.orderType === 'delivery') {
+      } else if (prevOrder.orderType === 'delivery') {
         // update beer guy
       }
-      let prevOrder = await this.serverOrderDetail(+orderId);
+      
       
       // if(prevOrder?.serverOrderProductDetails){
       //   createOrderDto.products.forEach((product, _idx) => {
@@ -1098,23 +1087,23 @@ export class ServerOrderService {
       requests.push(this.serverOrderRepository.save(orderToSave));
       requests.push(this.orderHistoryService.create(createOrderHistoryDto));
       const response = await Promise.all(requests);
+      this.sendMailOnStatusChange(orderId, prevOrder, serverOrder.orderStatus);
       try {
-        this.sendMailOnStatusChange(orderId, prevOrder, serverOrder.orderStatus);
-        this.sendPushNotification(
-          this.configService.get('beerstoreApp').title,
-          `Your Order #${orderId} has been ${
-            OrderstatusText[serverOrder.orderStatus]
-          }.`,
-          checkoutId,
-          orderId,
-          +serverOrder.orderStatus,
-          serverOrder.orderType,
-        ); 
+        if (checkoutId) {
+          this.sendPushNotification(
+            this.configService.get('beerstoreApp').title,
+            `Your Order #${orderId} has been ${
+              OrderstatusText[serverOrder.orderStatus]
+            }.`,
+            checkoutId,
+            orderId,
+            +serverOrder.orderStatus,
+            prevOrder.orderType,
+          ); 
+        }
       } catch (err) {
         
       }
-
-
       return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -1125,15 +1114,12 @@ export class ServerOrderService {
     orderId: string,
     serverOrderDetails: ServerOrder,
     orderStatus: number,
-    productItemsDetail?: any,
   ) {
     try {
       const requests = [];
       let productIds = serverOrderDetails.serverOrderProductDetails
         .map((x) => `${x.productId}`)
         .join(',');
-
-        console.log('productIds', productIds);
        requests.push(this.ordersService.getOrder(orderId)); 
        requests.push(this.ordersService.getOrderProducts(orderId)); 
         requests.push(
@@ -1146,7 +1132,7 @@ export class ServerOrderService {
             'variants,custom_fields,images,primary_image',
             undefined,
             undefined,
-            1,
+            null,
           )
         )
       let result = await Promise.all(requests);
@@ -1170,6 +1156,7 @@ export class ServerOrderService {
       // let totalRefundedAmount = 0;
       // let productFromdb;
       let productDetail;
+      let subTotal = 0.0;
       data.forEach((ele) => {
         let imageUrl = ele?.custom_fields.find(
           (x) => x.name === 'product_image_1',
@@ -1193,15 +1180,15 @@ export class ServerOrderService {
         // }
         const actualQuantity = +productDetail.quantity - +productDetail.quantity_refunded;
         const refundedPrice = +productDetail.quantity * +variantData.price;
+        const productSubTotal = variantData?.sale_price === variantData?.price
+        ? (variantData?.price * actualQuantity).toFixed(2)
+        : (variantData?.sale_price * actualQuantity).toFixed(2) || 0.00;
         console.log('mailProductsArr', {
           imageUrl: imageUrl || '',
           name: ele.name,
           displayValue: productDetail?.product_options[0]?.display_value || '',
           quantity: actualQuantity,
-          productSubTotal:
-            variantData?.sale_price === variantData?.price
-              ? (variantData?.price * actualQuantity).toFixed(2)
-              : (variantData?.sale_price * actualQuantity).toFixed(2) || 0.00,
+          productSubTotal,
           price: (variantData.price).toFixed(2) || 0.00,
           salePrice: variantData?.sale_price || 0.00,
           onSale: variantData?.sale_price === variantData.price ? false : true,
@@ -1209,15 +1196,13 @@ export class ServerOrderService {
           refundedQty: (productDetail?.quantity_refunded).toFixed(2)  || 0.00,
           refundedAmt: (refundedPrice).toFixed(2) || 0.00,
         })
+        subTotal = subTotal + +productSubTotal;
         mailProductsArr.push({
           imageUrl: imageUrl || '',
           name: ele.name,
           displayValue: productDetail?.product_options[0]?.display_value || '',
           quantity: actualQuantity,
-          productSubTotal:
-            variantData?.sale_price === variantData?.price
-              ? (variantData?.price * actualQuantity).toFixed(2)
-              : (variantData?.sale_price * actualQuantity).toFixed(2) || 0.00,
+          productSubTotal,
           price: (variantData.price).toFixed(2) || 0.00,
           salePrice: variantData?.sale_price || 0.00,
           onSale: variantData?.sale_price === variantData.price ? false : true,
@@ -1233,7 +1218,7 @@ export class ServerOrderService {
           previousValue + +currentValue.packup_discount,
         0,
       );
-      const grandTotal =  (parseFloat(orderDetailsFromBigCom.total_inc_tax)).toFixed(2) || "0.00";
+      const grandTotal =  (+subTotal + +orderDetailsFromBigCom.shipping_cost_inc_tax).toFixed(2);
       let mailPayload = {
         to: serverOrderDetails.serverOrderCustomerDetails.email,
         orderDetails: {
@@ -1251,10 +1236,10 @@ export class ServerOrderService {
             serverOrderDetails.serverOrderDeliveryDetails.deliveryAddress,
           deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
           // subTotal: serverOrderDetails.productTotal || 0,
-          subTotal: (parseFloat(orderDetailsFromBigCom.subtotal_inc_tax)).toFixed(2)|| "0.00",
+          // subTotal: (parseFloat(orderDetailsFromBigCom.subtotal_inc_tax)).toFixed(2)|| "0.00",
+          subTotal: subTotal.toFixed(2) || "0.00",
           deliveryCharge: (parseFloat(orderDetailsFromBigCom.shipping_cost_ex_tax)).toFixed(2) || "0.00",
           deliveryFeeHST: (parseFloat(orderDetailsFromBigCom.shipping_cost_tax)).toFixed(2) || "0.00",
-          // subTotal: serverOrderDetails.productTotal || 0,
           // deliveryCharge: serverOrderDetails.deliveryFee || 0,
           // deliveryFeeHST: serverOrderDetails.deliveryFeeHST || 0,
           // grandTotal: serverOrderDetails.grandTotal || 0,
