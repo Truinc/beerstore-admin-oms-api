@@ -1255,27 +1255,27 @@ export class ServerOrderService {
         orderProductDetails: mailProductsArr,
       };
 
-      if (+orderStatus === 5) {
-        this.mailService.orderCancelled({
-          ...mailPayload,
-          orderDetails: {
-            ...mailPayload.orderDetails,
-            refundedAmt: grandTotal,
-          }
-        });
-      }
+      // if (+orderStatus === 5) {
+      //   this.mailService.orderCancelled({
+      //     ...mailPayload,
+      //     orderDetails: {
+      //       ...mailPayload.orderDetails,
+      //       refundedAmt: grandTotal,
+      //     }
+      //   });
+      // }
 
-      if (+orderStatus === 10) {
-        this.mailService.orderCompleted(mailPayload);
-      }
+      // if (+orderStatus === 10) {
+      //   this.mailService.orderCompleted(mailPayload);
+      // }
 
-      if (+orderStatus === 3) {
-        this.mailService.orderInTransit(mailPayload);
-      }
+      // if (+orderStatus === 3) {
+      //   this.mailService.orderInTransit(mailPayload);
+      // }
 
-      if (+orderStatus === 8) {
-        this.mailService.orderConfirmed(mailPayload);
-      }
+      // if (+orderStatus === 8) {
+      //   this.mailService.orderConfirmed(mailPayload);
+      // }
     } catch (error) {
       console.log(error, 'MAIL ERR');
     }
