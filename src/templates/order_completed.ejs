@@ -869,6 +869,7 @@
                             <td colspan="2" style="height:15px" height="15">
                             </td>
                           </tr>
+                          <% if(orderDetails?.totalSavings  > 0 ) { %>
                           <tr>
                             <td
                               style="color:#f4b233;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
@@ -878,10 +879,12 @@
                               $<%= orderDetails?.totalSavings || 0 %>
                             </td>
                           </tr>
+                          <% } %>
                           <tr>
                             <td colspan="2" style="height:5px" height="5">
                             </td>
                           </tr>
+                          <% if(orderDetails?.saleSavings  > 0 ) { %>
                           <tr>
                             <td style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat">
                               Sale Savings</td>
@@ -890,10 +893,25 @@
                               $<%= orderDetails?.saleSavings || 0 %>
                             </td>
                           </tr>
+                          <% } %>
                           <tr>
                             <td colspan="2" style="height:15px" height="15">
                             </td>
                           </tr>
+                          <% if(orderDetails?.packupSaving  > 0 ) { %>
+                            <tr>
+                              <td style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                                Packup Savings</td>
+                              <td
+                                style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
+                                $<%= orderDetails?.packupSaving || 0 %>
+                              </td>
+                            </tr>
+                            <% } %>
+                            <tr>
+                              <td colspan="2" style="height:15px" height="15">
+                              </td>
+                            </tr>
                         </tbody>
                       </table>
                     </td>
