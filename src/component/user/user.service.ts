@@ -472,6 +472,20 @@ export class UserService {
 
   deleteUser = async (id: number) => {
     try {
+      const user = await this.findOne(id);
+      if (!user) {
+        return new NotFoundException('user not found');
+      }
+
+      if (user.role === 'storemanager') {
+        await  this.usersRepository
+        .createQueryBuilder()
+        .update(User)
+        .set({ manager: null })
+        .where({ manager: user.username })
+        .execute();
+      }
+
       await Promise.all([
         this.signInLogsRepository
           .createQueryBuilder()
@@ -481,8 +495,8 @@ export class UserService {
           .execute(),
         this.usersRepository.delete(id),
       ]);
-     
-      return "User deleted successfully!";
+
+      return 'User deleted successfully!';
     } catch (error) {
       return error;
     }

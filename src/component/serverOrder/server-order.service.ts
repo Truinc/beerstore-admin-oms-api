@@ -1218,7 +1218,7 @@ export class ServerOrderService {
           previousValue + +currentValue.packup_discount,
         0,
       );
-      const grandTotal =  (+subTotal + +orderDetailsFromBigCom.shipping_cost_inc_tax).toFixed(2);
+      const grandTotal =  (+subTotal + +orderDetailsFromBigCom.shipping_cost_inc_tax - +totalPackupSaving).toFixed(2);
       let mailPayload = {
         to: serverOrderDetails.serverOrderCustomerDetails.email,
         orderDetails: {
@@ -1246,6 +1246,7 @@ export class ServerOrderService {
           grandTotal,
           totalSavings: (saleSavings + +totalPackupSaving).toFixed(2),
           saleSavings: (saleSavings).toFixed(2),
+          packupSaving: totalPackupSaving,
           cancellationReason: serverOrderDetails.cancellationReason || '',
           refundedAmt: (parseFloat(orderDetailsFromBigCom.refunded_amount)).toFixed(2) || "0.00",
           refunded: mailProductsArr.find((x) => x.isRefunded === true)
