@@ -124,9 +124,9 @@ export class ServerOrderService {
     }
 
     // for testing purpose it is commented out
-    // table.andWhere('ServerOrder.storeId = :storeId', {
-    //   storeId,
-    // });
+    table.andWhere('ServerOrder.storeId = :storeId', {
+      storeId,
+    });
 
     if (search) {
       table.andWhere(
@@ -569,6 +569,7 @@ export class ServerOrderService {
         let variantData = product.product.data.variants.find(
           (x) => x.id === product.variant_id,
         );
+        console.log('variantData', variantData);
         //calculating the sale price
         if (variantData.sale_price !== variantData.price) {
           saleSavings += variantData.price - variantData.sale_price;
@@ -1116,10 +1117,12 @@ export class ServerOrderService {
     orderStatus: number,
   ) {
     try {
+      // console.log('orderId', serverOrderDetails.serverOrderProductDetails);
       const requests = [];
       let productIds = serverOrderDetails.serverOrderProductDetails
         .map((x) => `${x.productId}`)
         .join(',');
+      console.log('testing123', productIds);  
        requests.push(this.ordersService.getOrder(orderId)); 
        requests.push(this.ordersService.getOrderProducts(orderId)); 
         requests.push(
@@ -1136,16 +1139,11 @@ export class ServerOrderService {
           )
         )
       let result = await Promise.all(requests);
-      console.log('beerservice', result);
-      // let data;
-      // if(productItemsDetail){
-      //   data = productItemsDetail.data;
-      // } else {
-        let { data } = result[2];
-      // }
+      // console.log('beerservice', result);
+      let { data } = result[2];
       let orderDetailsFromBigCom = result[0];
       let orderProductDetails = result[1];
-      console.log('orderData',  orderDetailsFromBigCom, orderProductDetails, data);
+      // console.log('orderData',  orderProductDetails);
       let billingAddressFormFields = JSON.parse(
         orderDetailsFromBigCom?.billing_address?.form_fields[0]?.value,
       );
@@ -1157,57 +1155,80 @@ export class ServerOrderService {
       // let productFromdb;
       let productDetail;
       let subTotal = 0.0;
-      data.forEach((ele) => {
+      console.log('!!!!data!!!!', serverOrderDetails?.serverOrderProductDetails);
+      serverOrderDetails?.serverOrderProductDetails.forEach((details) => {
+        const ele = data.find(product => +product.id === +details.productId);
+        // console.log('ele', ele);
         let imageUrl = ele?.custom_fields.find(
           (x) => x.name === 'product_image_1',
         )?.value;
         // productFromdb = serverOrderDetails.serverOrderProductDetails.find(
-        //   (x) => x.productId == ele.id,
-        // );
-        productDetail = orderProductDetails.find(
-          (x) => x.product_id === ele.id,
-        );
-        console.log('productDetail', productDetail);
+          //   (x) => x.productId == ele.id,
+          // );
+          productDetail = orderProductDetails.find(
+            (x) => x.variant_id === details.variantId,
+            );
+        const packupDiscountObj = staffNotes.find(variant => variant.variant_id === productDetail.variant_id);
+        const packupDiscount = packupDiscountObj?.packup_discount || 0;
+        console.log('packupDiscount-->', packupDiscount);
         let variantData = ele.variants.find((x) => {
           return x.id === productDetail.variant_id;
           // return x.id === productFromdb.variantId;
         });
+        // console.log('variantData!!', variantData);
+        // console.log('productDetail', productDetail, variantData);
+        const actualQuantity = +productDetail.quantity - +productDetail.quantity_refunded;
         if (variantData?.sale_price !== variantData?.price) {
-          saleSavings += variantData?.price - variantData?.sale_price;
+          saleSavings += (variantData?.price * actualQuantity ) - ( variantData?.sale_price * actualQuantity );
         }
+        // console.log('testing', saleSavings, variantData);
         // if (productDetail.is_refunded) {
         //   totalRefundedAmount += productDetail.refund_amount;
         // }
-        const actualQuantity = +productDetail.quantity - +productDetail.quantity_refunded;
         const refundedPrice = +productDetail.quantity * +variantData.price;
         const productSubTotal = variantData?.sale_price === variantData?.price
         ? (variantData?.price * actualQuantity).toFixed(2)
         : (variantData?.sale_price * actualQuantity).toFixed(2) || 0.00;
-        console.log('mailProductsArr', {
-          imageUrl: imageUrl || '',
-          name: ele.name,
-          displayValue: productDetail?.product_options[0]?.display_value || '',
-          quantity: actualQuantity,
-          productSubTotal,
-          price: (variantData.price).toFixed(2) || 0.00,
-          salePrice: variantData?.sale_price || 0.00,
-          onSale: variantData?.sale_price === variantData.price ? false : true,
-          isRefunded: (productDetail.quantity - +productDetail?.quantity_refunded) === 0,
-          refundedQty: (productDetail?.quantity_refunded).toFixed(2)  || 0.00,
-          refundedAmt: (refundedPrice).toFixed(2) || 0.00,
-        })
-        subTotal = subTotal + +productSubTotal;
+        
+        const salesSubTotal =  (variantData?.sale_price * actualQuantity).toFixed(2) || 0.00;
+        const maxSubTotal = (variantData?.price * actualQuantity).toFixed(2) || 0.00;
+        const packupSubTotal = +salesSubTotal -  +packupDiscount;
+        const nameString = ele.name.split('~');
+        const name = nameString[0].replaceAll('-', ' ').toUpperCase();
+
+        // console.log('mailProductsArr', {
+        //   imageUrl: imageUrl || '',
+        //   name,
+        //   displayValue: productDetail?.product_options[0]?.display_value || '',
+        //   quantity: +productDetail.quantity,
+        //   productSubTotal,
+        //   price: (variantData.price).toFixed(2) || 0.00,
+        //   salePrice: (variantData?.sale_price).toFixed(2) || 0.00,
+        //   onSale: variantData?.sale_price === variantData.price ? false : true,
+        //   packupDiscount,
+        //   packupSubTotal: packupSubTotal.toFixed(2),
+        //   isRefunded: (productDetail.quantity - +productDetail?.quantity_refunded) === 0,
+        //   refundedQty: (productDetail?.quantity_refunded).toFixed(2)  || 0.00,
+        //   refundedAmt: (refundedPrice).toFixed(2) || 0.00,
+        // })
+        if(packupDiscount){
+          subTotal = subTotal + +packupSubTotal;
+        } else {
+          subTotal = subTotal + +productSubTotal;
+        }
         mailProductsArr.push({
           imageUrl: imageUrl || '',
-          name: ele.name,
+          name,
           displayValue: productDetail?.product_options[0]?.display_value || '',
-          quantity: actualQuantity,
+          quantity: +productDetail.quantity,
           productSubTotal,
+          packupDiscount,
+          packupSubTotal: packupSubTotal.toFixed(2),
           price: (variantData.price).toFixed(2) || 0.00,
-          salePrice: variantData?.sale_price || 0.00,
+          salePrice: (variantData?.sale_price).toFixed(2) || 0.00,
           onSale: variantData?.sale_price === variantData.price ? false : true,
           isRefunded: (productDetail.quantity - +productDetail?.quantity_refunded) === 0,
-          refundedQty: (productDetail?.quantity_refunded).toFixed(2)  || 0.00,
+          refundedQty: productDetail?.quantity_refunded  || 0,
           refundedAmt: (refundedPrice).toFixed(2) || 0.00,
         });
       });
@@ -1218,7 +1239,7 @@ export class ServerOrderService {
           previousValue + +currentValue.packup_discount,
         0,
       );
-      const grandTotal =  (+subTotal + +orderDetailsFromBigCom.shipping_cost_inc_tax - +totalPackupSaving).toFixed(2);
+      const grandTotal =  (+subTotal + +orderDetailsFromBigCom.shipping_cost_inc_tax ).toFixed(2);
       let mailPayload = {
         to: serverOrderDetails.serverOrderCustomerDetails.email,
         orderDetails: {
@@ -1233,7 +1254,9 @@ export class ServerOrderService {
             billingAddressFormFields.pick_delivery_date_text,
           ).format('MMMM D, YYYY'),
           deliveryLocation:
-            serverOrderDetails.serverOrderDeliveryDetails.deliveryAddress,
+          billingAddressFormFields.order_type === 'delivery' ?
+            billingAddressFormFields.delivery_address :
+            billingAddressFormFields.current_store_address,
           deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
           // subTotal: serverOrderDetails.productTotal || 0,
           // subTotal: (parseFloat(orderDetailsFromBigCom.subtotal_inc_tax)).toFixed(2)|| "0.00",
@@ -1246,7 +1269,7 @@ export class ServerOrderService {
           grandTotal,
           totalSavings: (saleSavings + +totalPackupSaving).toFixed(2),
           saleSavings: (saleSavings).toFixed(2),
-          packupSaving: totalPackupSaving,
+          packupSaving: totalPackupSaving.toFixed(2),
           cancellationReason: serverOrderDetails.cancellationReason || '',
           refundedAmt: (parseFloat(orderDetailsFromBigCom.refunded_amount)).toFixed(2) || "0.00",
           refunded: mailProductsArr.find((x) => x.isRefunded === true)
@@ -1254,6 +1277,8 @@ export class ServerOrderService {
             : false,
         },
         orderProductDetails: mailProductsArr,
+        storeContact: billingAddressFormFields?.store_contact || '',
+        orderType: billingAddressFormFields.order_type,
       };
 
       if (+orderStatus === 5) {
@@ -1274,8 +1299,20 @@ export class ServerOrderService {
         this.mailService.orderInTransit(mailPayload);
       }
 
+      console.log(
+        'orderType',
+        billingAddressFormFields.order_type,
+        billingAddressFormFields.pickup_type,
+      );
       if (+orderStatus === 8) {
-        this.mailService.orderConfirmed(mailPayload);
+        if (
+          billingAddressFormFields.order_type === 'pickup' &&
+          billingAddressFormFields.pickup_type === 'curbside'
+        ) {
+          this.mailService.orderCurbsideConfirmed(mailPayload);
+        } else {
+          this.mailService.orderConfirmed(mailPayload);
+        }
       }
     } catch (error) {
       console.log(error, 'MAIL ERR');

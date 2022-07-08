@@ -9,6 +9,7 @@ export class MailService {
         ORDER_CREATED: "order_created",
         ORDER_CANCELLED: "order_cancelled",
         ORDER_CONFIRMED: "order_confirmed",
+        ORDER_CURBSIDE_CONFIRMED: "order_confirmed_curb",
         ORDER_COMPLETED: "order_completed",
         ORDER_INTRANSIT: "order_intransit",
     };
@@ -52,8 +53,20 @@ export class MailService {
         });
     }
 
+    async orderCurbsideConfirmed(data: MailDto) {
+        return this.mailerService.sendMail({
+            to: data.to,
+            subject: this.mailSubjects.ORDER_CONFIRMED,
+            template: this.templateNames.ORDER_CURBSIDE_CONFIRMED,
+            context: {
+                orderDetails: data.orderDetails,
+                orderProductDetails: data.orderProductDetails,
+                siteBaseUrl: this.configService.get('mail').site_base_url
+            }
+        });
+    }
+
     async orderCancelled(data: MailDto) {
-        console.log('orderCancel', data);
         return this.mailerService.sendMail({
             to: data.to,
             subject: this.mailSubjects.ORDER_CANCELLED,
