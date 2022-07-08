@@ -385,8 +385,8 @@
                           <tr>
                             <td class="logo_header" style="text-align: center;" width="100%" align="center">
                               <a href="#" target="_blank">
-                                <img src="<%= siteBaseUrl %>/wp-content/uploads/2020/08/cart.png" class="img_responsive"
-                                  style="border:none;" alt="icon" width="100px" border="0">
+                                <img src="<%= siteBaseUrl %>/wp-content/uploads/2020/08/cart.png" 
+                                class="img_responsive" style="border:none;" alt="icon" width="100px" border="0">
                               </a>
                             </td>
                           </tr>
@@ -404,8 +404,6 @@
             </td>
           </tr>
 
-
-
           <tr>
             <td style="background: #f4f4f4;" bgcolor="#f4f4f4">
               <table class="deviceWidth" width="100%" cellspacing="0" cellpadding="0" border="0" align="left">
@@ -416,7 +414,6 @@
                     Thank You!
                   </td>
                 </tr>
-
                 <tr>
                   <td class="space_left_right" style="width:100%;padding: 0 25px">
                     <p class="para" style="color:#404040; font-size:18px; margin:0;">
@@ -439,111 +436,112 @@
                   </td>
                 </tr>
                 <% if(orderDetails?.refunded) { %>
-                <tr>
-                  <td style="padding:0 25px;background:#f4f4f4" bgcolor="#f4f4f4">
-                    <table style="background:#fff;border:1px solid #dddddd;border-collapse:separate;border-radius:10px"
-                      width="100%" cellspacing="0" cellpadding="0" border="0">
-                      <tbody>
-                        <tr>
-                          <td colspan="3" style="height:10px" height="10">
-                          </td>
-                        </tr>
-                        <tr>
-                          <td colspan="3" style="height:10px" height="10">
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style="width:10%;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;color:#404040;vertical-align:top;padding:0px 20px">
-                            <img
-                              src="https://ci3.googleusercontent.com/proxy/IGTb25zf-xgz3jo7wT0eSYyuHvxgktcZmMbMfIkaV9RvMTd8cowED9-Nlrtc8ioIuUs9K_8CGd0RaBI4BkmkZFZs9GG6zX7-ZPMiMCrqeD4oLy8B=s0-d-e1-ft#https://tbsecoms.wpengine.com/wp-content/uploads/2020/08/info.png"
-                              alt="" class="CToWUd">
-                          </td>
-                          <td
-                            style="width:90%;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;color:#404040;vertical-align:top;padding:0 20px 0 0">
-                            The following items have been partially or fully removed from your order due to insufficient
-                            inventory. Your Cart items and prices have been updated accordingly.
-                          </td>
-                        </tr>
-                        <tr>
-                          <td colspan="3" style="height:30px" height="30">
-                          </td>
-                        </tr>
-                        <tr>
-                          <td colspan="3" style="padding:0 15px">
-                            <table width="100%" cellspacing="0" cellpadding="0" border="0">
-                              <tbody>
-                                <tr>
-                                  <td colspan="2"
-                                    style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;width:60%">
-                                    Items
-                                  </td>
-                                  <td
-                                    style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;text-align:center;width:10%">
-                                    Qty
-                                  </td>
-                                  <td
-                                    style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;text-align:left;width:14%;padding-left:15px">
-                                    Price
-                                  </td>
-                                  <td
-                                    style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;text-align:right;width:20%;padding-right:15px">
-                                    Sub Total
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td colspan="5" height="5" style="height:5px">
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td colspan="5" style="width:100%">
-                                    <hr style="margin:0;border:none;border-top:1px solid #ddd">
-                                  </td>
-                                </tr>
-                                <% orderProductDetails.forEach((product)=> { %>
-                                  <% if(product.refundedQty > 0 ) { %>
+                  <tr>
+                    <td style="padding:0 25px;background:#f4f4f4" bgcolor="#f4f4f4">
+                      <table
+                        style="background:#fff;border:1px solid #dddddd;border-collapse:separate;border-radius:10px"
+                        width="100%" cellspacing="0" cellpadding="0" border="0">
+                        <tbody>
+                          <tr>
+                            <td colspan="3" style="height:10px" height="10">
+                            </td>
+                          </tr>
+                          <tr>
+                            <td colspan="3" style="height:10px" height="10">
+                            </td>
+                          </tr>
+                          <tr>
+                            <td
+                              style="width:10%;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;color:#404040;vertical-align:top;padding:0px 20px">
+                              <img
+                                src="https://ci3.googleusercontent.com/proxy/IGTb25zf-xgz3jo7wT0eSYyuHvxgktcZmMbMfIkaV9RvMTd8cowED9-Nlrtc8ioIuUs9K_8CGd0RaBI4BkmkZFZs9GG6zX7-ZPMiMCrqeD4oLy8B=s0-d-e1-ft#https://tbsecoms.wpengine.com/wp-content/uploads/2020/08/info.png"
+                                alt="" class="CToWUd">
+                            </td>
+                            <td
+                              style="width:90%;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;color:#404040;vertical-align:top;padding:0 20px 0 0">
+                              The following items have been partially or fully removed from your order due to
+                              insufficient
+                              inventory. Your Cart items and prices have been updated accordingly.
+                            </td>
+                          </tr>
+                          <!-- <tr>
+                            <td colspan="3" style="height:30px" height="30">
+                            </td>
+                          </tr> -->
+                          <tr>
+                            <td colspan="3" style="padding:0 15px">
+                              <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                                <tbody>
                                   <tr>
-                                    <td
-                                      style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:15px;padding-left:0">
-                                      <img
-                                        src="<%= product.imageUrl %>"
-                                        width="100" height="auto" style="width:100px;height:auto" alt="" class="CToWUd">
+                                    <td colspan="2"
+                                      style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;width:60%">
+                                      Items
                                     </td>
                                     <td
-                                      style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:0 10px;width:38%">
-                                      <h2
-                                        style="margin:0;font-size:16px;font-weight:bold;color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat">
-                                        <%= product.name %>
-                                      </h2>
-                                      <p
-                                        style="margin:0;font-size:13px;color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat">
-                                        <%= product.displayValue %>
-                                      </p>
+                                      style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;text-align:center;width:10%">
+                                      Qty
                                     </td>
                                     <td
-                                      style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#ef2753;text-align:center;vertical-align:middle;font-weight:bold">
-                                      -<%= product.refundedQty %>
+                                      style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;text-align:left;width:14%;padding-left:15px">
+                                      Price
                                     </td>
                                     <td
-                                      style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#ef2753;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold">
-                                      -$<%= product.price %>
-                                    </td>
-                                    <td
-                                      style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#ef2753;text-align:right;vertical-align:middle;padding-right:15px;font-weight:bold">
-                                      -$<%= product.refundedAmt %>
+                                      style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;text-align:right;width:20%;padding-right:15px">
+                                      Sub Total
                                     </td>
                                   </tr>
-                                  <%}%>
-                                <%});%>
-                              </tbody>
-                            </table>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </td>
-                </tr>
-                <%}%>
+                                  <tr>
+                                    <td colspan="5" height="5" style="height:5px">
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td colspan="5" style="width:100%">
+                                      <hr style="margin:0;border:none;border-top:1px solid #ddd">
+                                    </td>
+                                  </tr>
+                                  <% orderProductDetails.forEach((product)=> { %>
+                                    <% if(product.refundedQty > 0 ) { %>
+                                      <tr>
+                                        <td
+                                          style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:15px;padding-left:0">
+                                          <img src="<%= product.imageUrl %>" width="100" height="auto"
+                                            style="width:100px;height:auto" alt="" class="CToWUd">
+                                        </td>
+                                        <td
+                                          style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:0 10px;width:38%">
+                                          <h2
+                                            style="margin:0;font-size:16px;font-weight:bold;color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                                            <%= product.name %>
+                                          </h2>
+                                          <p
+                                            style="margin:0;font-size:13px;color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                                            <%= product.displayValue %>
+                                          </p>
+                                        </td>
+                                        <td
+                                          style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#ef2753;text-align:center;vertical-align:middle;font-weight:bold">
+                                          -<%= product.refundedQty %>
+                                        </td>
+                                        <td
+                                          style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#ef2753;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold">
+                                          -$<%= product.price %>
+                                        </td>
+                                        <td
+                                          style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#ef2753;text-align:right;vertical-align:middle;padding-right:15px;font-weight:bold">
+                                          -$<%= product.refundedAmt %>
+                                        </td>
+                                      </tr>
+                                      <%}%>
+                                    <%});%>
+                                </tbody>
+                              </table>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                  <%}%>
               </table>
             </td>
           </tr>
@@ -834,7 +832,9 @@
             <td height="20" style="height:20px;">
             </td>
           </tr>
-          <tr><td height="20" style="height:20px"></td></tr>
+          <!-- <tr>
+            <td height="20" style="height:20px"></td>
+          </tr> -->
           <tr>
             <td style="width:100%;padding:0 25px">
               <table width="100%" cellspacing="0" cellpadding="0" border="0">
@@ -863,80 +863,110 @@
                     </td>
                   </tr>
                   <% orderProductDetails.forEach((product)=> { %>
-                    <% if(product.quantity - product.refundedQty > 0) { %>
-                    <tr style="background:#f4f4f4" bgcolor="#f4f4f4">
-                      <td
-                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:15px">
-                        <img src="<%= product.imageUrl %>" width="100" height="auto"
-                          style="width:100px;height:auto;border:1px solid #ddd;border-radius:4px" alt="" class="CToWUd">
-                      </td>
-                      <td
-                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:0 10px;width:38%">
-                        <h2
-                          style="margin:0;font-size:16px;font-weight:bold;color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat">
-                          <%= product.name %>
-                        </h2>
-                        <p
-                          style="margin:0;font-size:13px;color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat">
-                          <%= product.displayValue %>
-                        </p>
-                        <table style="width:120px" width="120px" cellspacing="0" cellpadding="0" border="0">
-                          <tbody>
-                            <tr>
-                              <td width="auto" style="width:auto;padding-top:10px">
-                                <table
-                                  style="margin-top:0;margin-bottom:0;margin-right:auto;margin-left:auto;border-spacing:0;width:50px"
-                                  cellspacing="0 " align="left" cellpadding="0" border="0">
-                                  <tbody>
-                                    <tr>
-                                      <% if(product.onSale){ %>
-                                        <td
-                                          style="border-radius:5px;text-align:center;background:#ad2f33;padding-top:2px;padding-bottom:2px;padding-right:4px;padding-left:4px"
-                                          width="50 " bgcolor="#ad2f33 " align="center ">
-                                          <a href="#m_-343405735075903143_m_1454673122863119151_m_-6687196424747639421_!"
-                                            style="background:#ad2f33;display:inline-block;text-decoration:none;text-align:center;font-weight:bold;font-size:9px;font-family:Arial,Helvetica,sans-serif,Montserrat;border-radius:5px;line-height:15px;color:#fff;background-image:none;background-repeat:repeat;background-position:top left;border-radius:5px;border-width:1px;border:0px;text-align:center;width:50px;padding-top:2px;padding-bottom:2px">
-                                            SALE
-                                          </a>
-                                        </td>
-                                        <% } %>
-                                    </tr>
-                                  </tbody>
-                                </table>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </td>
-                      <td
-                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold">
-                        <div style="display:block;background-color:transparent">
-                          <%= product.quantity - product.refundedQty %>
-                        </div>
-                      </td>
-                      <td
-                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold">
-                        <% if(product.onSale) { %>
-                          <p style="margin:0"><strike>$<%= product.price %></strike></p>
-                          <p style="margin:0">$<%= product.salePrice %>
+                      <tr style="background:#f4f4f4" bgcolor="#f4f4f4">
+                        <td
+                          style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:15px">
+                          <img src="<%= product.imageUrl %>" width="100" height="auto"
+                            style="width:100px;height:auto;border:1px solid #ddd;border-radius:4px" alt=""
+                            class="CToWUd">
+                        </td>
+                        <td
+                          style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:0 10px;width:38%">
+                          <h2
+                            style="margin:0;font-size:16px;font-weight:bold;color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                            <%= product.name %>
+                          </h2>
+                          <p
+                            style="margin:0;font-size:13px;color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                            <%= product.displayValue %>
                           </p>
-                          <% } else { %>
-                            <p style="margin:0">$<%= product.price %>
+                          <table style="width:120px" width="120px" cellspacing="0" cellpadding="0" border="0">
+                            <tbody>
+                              <tr>
+                                <% if(product.packupDiscount > 0){ %>
+                                  <td width="60px" style="width:60px;padding-top:10px">
+                                    <table
+                                      style="margin-top:0;margin-bottom:0;margin-right:auto;margin-left:auto;border-spacing:0;width:50px;margin-right:2px"
+                                      cellspacing="0 " align="left" cellpadding="0" border="0">
+                                      <tbody>
+                                        <tr>
+                                          <td
+                                            style="border-radius:5px;text-align:center;background:#f4b233;padding-top:2px;padding-bottom:2px;padding-right:4px;padding-left:4px"
+                                            width="50 " bgcolor="#f4b233 " align="center ">
+                                            <a href="#m_2348638704042929767_!"
+                                              style="background:#f4b233;display:inline-block;text-decoration:none;text-align:center;font-weight:bold;font-size:9px;font-family:Arial,Helvetica,sans-serif,Montserrat;border-radius:5px;line-height:15px;color:#000;background-image:none;background-repeat:repeat;background-position:top left;border-radius:5px;border-width:1px;border:0px;text-align:center;width:50px;padding-top:2px;padding-bottom:2px">
+                                              PACKUP
+                                            </a>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </td>
+                                <% } %>
+                                <% if(product.onSale){ %>
+                                      <td width="auto" style="width:auto;padding-top:10px">
+                                        <table
+                                          style="margin-top:0;margin-bottom:0;margin-right:auto;margin-left:auto;border-spacing:0;width:50px"
+                                          cellspacing="0 " align="left" cellpadding="0" border="0">
+                                          <tbody>
+                                            <tr>
+                                              <td
+                                                style="border-radius:5px;text-align:center;background:#ad2f33;padding-top:2px;padding-bottom:2px;padding-right:4px;padding-left:4px"
+                                                width="50 " bgcolor="#ad2f33 " align="center ">
+                                                <a href="#m_-343405735075903143_m_1454673122863119151_m_-6687196424747639421_!"
+                                                  style="background:#ad2f33;display:inline-block;text-decoration:none;text-align:center;font-weight:bold;font-size:9px;font-family:Arial,Helvetica,sans-serif,Montserrat;border-radius:5px;line-height:15px;color:#fff;background-image:none;background-repeat:repeat;background-position:top left;border-radius:5px;border-width:1px;border:0px;text-align:center;width:50px;padding-top:2px;padding-bottom:2px">
+                                                  SALE
+                                                </a>
+                                              </td>
+                                            </tr>
+                                          </tbody>
+                                        </table>
+                                      </td>
+                                <% } %>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </td>
+                        <td
+                          style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold">
+                          <div style="display:block;background-color:transparent">
+                            <%= product.quantity - product.refundedQty %>
+                          </div>
+                          <% if(product.refundedQty > 0 ) { %>
+                          <div style="color:#000;display:block;font-size:10px;font-weight:bold">
+                            Refunded: <%= product.refundedQty %>
+                          </div>
+                          <% } %>
+                        </td>
+                        <td
+                          style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold">
+                          <% if(product.onSale) { %>
+                            <p style="margin:0"><strike>$<%= product.price %></strike></p>
+                            <p style="margin:0">$<%= product.salePrice %>
                             </p>
-                            <% } %>
-                      </td>
-                      <td
-                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:right;vertical-align:middle;padding-right:15px;font-weight:bold">
-                        <p style="margin:0">$<%= product.productSubTotal %>
-                        </p>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td colspan="5" style="width:100%">
-                        <hr style="margin:0;border:none;border-top:1px solid #ddd">
-                      </td>
-                    </tr>
-                    <%}%>
-                  <% }); %>
+                            <% } else { %>
+                              <p style="margin:0">$<%= product.price %>
+                              </p>
+                              <% } %>
+                        </td>
+                        <td
+                          style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:right;vertical-align:middle;padding-right:15px;font-weight:bold">
+                          <% if(product.packupDiscount > 0) { %>
+                            <p style="margin:0"><strike>$<%= product.productSubTotal %></strike></p>
+                            <p style="margin:0">$<%= product.packupSubTotal %>
+                                <% } else { %>
+                                  <p style="margin:0">$<%= product.productSubTotal %>
+                                      <% } %>
+
+                                  </p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td colspan="5" style="width:100%">
+                          <hr style="margin:0;border:none;border-top:1px solid #ddd">
+                        </td>
+                      </tr>
+                    <% }); %>
                 </tbody>
               </table>
             </td>
@@ -945,6 +975,9 @@
             <td class="space_left_right" style="width:100%;padding: 0 25px">
               <hr style="margin: 0;border: none;border-top: 1px solid #ddd;">
             </td>
+          </tr>
+          <tr>
+            <td height="20" style="height:20px"></td>
           </tr>
           <tr>
             <td style="width:100%;padding:0 25px">
@@ -964,105 +997,119 @@
                             </td>
                             <td
                               style="text-align:right;font-family:Arial,Helvetica,sans-serif,Montserrat;color:#404040;font-size:16px;font-weight:bold">
-                              $<%= orderDetails?.subTotal || 0 %>
+                              $<%= orderDetails?.subTotal || 0.0 %>
                             </td>
                           </tr>
-                          <tr>
-                            <td colspan="2" style="height:5px" height="5">
-                            </td>
-                          </tr>
-                          <tr>
-                            <td style="font-family:Arial,Helvetica,sans-serif,Montserrat;color:#404040;font-size:16px">
-                              Delivery Charge
-                            </td>
-                            <td
-                              style="text-align:right;font-family:Arial,Helvetica,sans-serif,Montserrat;color:#404040;font-size:16px">
-                              $<%= orderDetails?.deliveryCharge || 0 %>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td colspan="2" style="height:5px" height="5">
-                            </td>
-                          </tr>
-                          <tr>
-                            <td style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat">
-                              Delivery HST
-                            </td>
-                            <td
-                              style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat">
-                              $<%= orderDetails?.deliveryFeeHST || 0 %>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td colspan="2" style="height:5px" height="5">
-                            </td>
-                          </tr>
-                          <tr>
-                            <td
-                              style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
-                              Total
-                            </td>
-                            <td
-                              style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
-                              $<%= orderDetails?.grandTotal || 0 %>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td colspan="2" style="height:15px" height="15">
-                            </td>
-                          </tr>
-                          <tr>
-                            <td colspan="2" style="width:100%">
-                              <hr style="margin:0;border:none;border-top:1px solid #ddd">
-                            </td>
-                          </tr>
-                          <tr>
-                            <td colspan="2" style="height:15px" height="15">
-                            </td>
-                          </tr>
-                          <% if(orderDetails?.totalSavings  > 0 ) { %>
-                          <tr>
-                            <td
-                              style="color:#f4b233;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
-                              Total Savings</td>
-                            <td
-                              style="text-align:right;color:#f4b233;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
-                              $<%= orderDetails?.totalSavings || 0 %>
-                            </td>
-                          </tr>
-                          <% } %>
-                          <tr>
-                            <td colspan="2" style="height:5px" height="5">
-                            </td>
-                          </tr>
-                          <% if(orderDetails?.saleSavings  > 0 ) { %>
-                          <tr>
-                            <td style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat">
-                              Sale Savings</td>
-                            <td
-                              style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
-                              $<%= orderDetails?.saleSavings || 0 %>
-                            </td>
-                          </tr>
-                          <% } %>
-                          <tr>
-                            <td colspan="2" style="height:15px" height="15">
-                            </td>
-                          </tr>
-                          <% if(orderDetails?.packupSaving  > 0 ) { %>
+                          <% if(orderDetails?.deliveryCharge > 0 ) { %>
                             <tr>
-                              <td style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat">
-                                Packup Savings</td>
+                              <td colspan="2" style="height:5px" height="5">
+                              </td>
+                            </tr>
+                            <tr>
                               <td
-                                style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
-                                $<%= orderDetails?.packupSaving || 0 %>
+                                style="font-family:Arial,Helvetica,sans-serif,Montserrat;color:#404040;font-size:16px">
+                                Delivery Charge
+                              </td>
+                              <td
+                                style="text-align:right;font-family:Arial,Helvetica,sans-serif,Montserrat;color:#404040;font-size:16px">
+                                $<%= orderDetails?.deliveryCharge || 0.0 %>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td colspan="2" style="height:5px" height="5">
+                              </td>
+                            </tr>
+                            <tr>
+                              <td
+                                style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                                Delivery HST
+                              </td>
+                              <td
+                                style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                                $<%= orderDetails?.deliveryFeeHST || 0.0 %>
                               </td>
                             </tr>
                             <% } %>
-                            <tr>
-                              <td colspan="2" style="height:15px" height="15">
-                              </td>
-                            </tr>
+                              <tr>
+                                <td colspan="2" style="height:5px" height="5">
+                                </td>
+                              </tr>
+                              <tr>
+                                <td
+                                  style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
+                                  Total
+                                </td>
+                                <td
+                                  style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
+                                  $<%= orderDetails?.grandTotal || 0.0 %>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td colspan="2" style="height:15px" height="15">
+                                </td>
+                              </tr>
+                              <% if(orderDetails?.refundedAmt > 0 ) { %>
+                              <tr>
+                                <td
+                                  style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
+                                  Refund Amount
+                                </td>
+                                <td
+                                  style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
+                                  $<%= orderDetails?.refundedAmt || 0.0 %>
+                                </td>
+                              </tr>
+                              <% } %>
+                              <tr>
+                                <td colspan="2" style="width:100%">
+                                  <hr style="margin:0;border:none;border-top:1px solid #ddd">
+                                </td>
+                              </tr>
+                              <tr>
+                                <td colspan="2" style="height:15px" height="15">
+                                </td>
+                              </tr>
+                              <% if(orderDetails?.totalSavings > 0 ) { %>
+                                <tr>
+                                  <td
+                                    style="color:#f4b233;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
+                                    Total Savings</td>
+                                  <td
+                                    style="text-align:right;color:#f4b233;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
+                                    $<%= orderDetails?.totalSavings || 0.0 %>
+                                  </td>
+                                </tr>
+                                <% } %>
+                                  <tr>
+                                    <td colspan="2" style="height:5px" height="5">
+                                    </td>
+                                  </tr>
+                                  <% if(orderDetails?.packupSaving> 0 ) { %>
+                                    <tr>
+                                      <td
+                                        style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                                        Packup Savings</td>
+                                      <td
+                                        style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
+                                        $<%= orderDetails?.packupSaving || 0.0 %>
+                                      </td>
+                                    </tr>
+                                    <% } %>
+                                      <% if(orderDetails?.saleSavings> 0 ) { %>
+                                        <tr>
+                                          <td
+                                            style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                                            Sale Savings</td>
+                                          <td
+                                            style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
+                                            $<%= orderDetails?.saleSavings || 0.0 %>
+                                          </td>
+                                        </tr>
+                                        <% } %>
+                                          <tr>
+                                            <td colspan="2" style="height:15px" height="15">
+                                            </td>
+                                          </tr>
                         </tbody>
                       </table>
                     </td>
@@ -1129,9 +1176,16 @@
                         Important Information for our Beer Store Customers</span>
                       <p class="block"
                         style="font-size:14px; color: #404040; padding-top: 20px;font-weight: normal; margin: 0;font-family: Arial, Helvetica, sans-serif, Montserrat; line-height: 25px;">
-                        The order must be delivered to the person that placed the order. Please have valid
-                        government-issued photo identification ready (such as driver’s licence, passport, or photo
-                        card). Please pay driver on delivery.</p>
+                        <% if(orderDetails?.orderType === 'delivery' ) { %>
+                          The order must be delivered to the person that placed the order. Please have valid
+                          government-issued photo identification ready (such as driver’s licence, passport, or photo
+                          card). Please pay driver on delivery.
+                          <% } else { %>
+                            When picking up your beer, please bring government-issued photo id and the same credit card
+                            you used to place the online order.
+                            Your id and credit card must match the name entered on your order.
+                            <% } %>
+                      </p>
                     </td>
                   </tr>
                   <tr>

@@ -18,7 +18,7 @@ import { join } from 'path';
           },
         },
         defaults: {
-          from: `"No Reply" <${config.get('mail').from_email_id}>`,
+          from: `${config.get('mail').from_name} <${config.get('mail').from_email_id}>`,
         },
         template: {
           dir: join(__dirname, '..', '..','templates'),
