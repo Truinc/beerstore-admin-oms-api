@@ -124,9 +124,9 @@ export class ServerOrderService {
     }
 
     // for testing purpose it is commented out
-    // table.andWhere('ServerOrder.storeId = :storeId', {
-    //   storeId,
-    // });
+    table.andWhere('ServerOrder.storeId = :storeId', {
+      storeId,
+    });
 
     if (search) {
       table.andWhere(
