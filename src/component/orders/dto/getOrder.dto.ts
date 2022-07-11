@@ -36,4 +36,8 @@ export class GetOrderDto {
     @ApiProperty({ type: String, required: false, description: 'manufacturer of beer' })
     @IsOptional()
     brewer: string;
+
+    @ApiProperty({ type: String, required: false, description: 'cancelled by customer/store' })
+    @IsOptional()
+    cancelledby: string;
 }

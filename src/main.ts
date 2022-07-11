@@ -4,6 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import ValidationExceptions from '@beerstore/core/exceptions/validation.exceptions';
+import { json } from 'body-parser';
 
 import { OmsModule } from './oms.module';
 
@@ -11,6 +12,8 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(OmsModule, {
     cors: true,
   });
+
+  app.use(json({ limit: '5mb' }));
 
   app.enableCors();
 

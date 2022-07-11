@@ -204,6 +204,9 @@ export class UserController {
   @Get('userMeta/:id')
   async getUserMeta(@Param('id', ParseIntPipe) id: number) {
     const userMeta = await this.userService.getUserMeta(id);
+    if(Object.keys(userMeta).length <= 0 ){
+      throw new NotFoundException('User not found');
+    }
     return userMeta;
   }
 

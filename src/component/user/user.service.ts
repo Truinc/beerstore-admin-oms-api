@@ -158,7 +158,7 @@ export class UserService {
         items,
       };
     } catch (err) {
-      console.log(err, "ERRRRR")
+      console.log(err, 'ERRRRR');
       throw new BadRequestException(err.message);
     }
   }
@@ -360,7 +360,57 @@ export class UserService {
     });
   }
 
+  // async getUserMeta(id: number): Promise<any> {
+  //   let baseStoreId = -1;
+  //   const storeIds = [];
+  //   const userMetaReq = [];
+  //   const baseStore = [];
+  //   const otherAssignedStores = [];
+  //   const userStores = await this.userStoresRepository.find({ userId: id });
+  //   userMetaReq.push(this.getSignInLogs(id));
+  //   if (Array.isArray(userStores) && userStores.length) {
+  //     userStores.forEach((userStore) => {
+  //       storeIds.push(userStore.storeId);
+  //       if (userStore.assignType === 'base') {
+  //         baseStoreId = userStore.storeId;
+  //       }
+  //     });
+  //     userMetaReq.push(
+  //       this.storeRepository
+  //         .createQueryBuilder()
+  //         .where('id IN (:...ids )', { ids: storeIds })
+  //         .getMany(),
+  //     );
+  //   }
+  //   const response = await Promise.all(userMetaReq);
+  //   if (Array.isArray(response[1]) && response[1].length) {
+  //     response[1].forEach((store) => {
+  //       if (store.id === baseStoreId) {
+  //         baseStore.push(store);
+  //       } else {
+  //         otherAssignedStores.push(store);
+  //       }
+  //     });
+  //   }
+  //   return {
+  //     signInLogs: response[0] || [],
+  //     baseStore: baseStore,
+  //     otherAssignedStores,
+  //   };
+  // }
+
   async getUserMeta(id: number): Promise<any> {
+    const user = await this.usersRepository.findOne(
+      {
+        id,
+      },
+      { relations: ['usersStores'] },
+    );
+
+    if (!user) {
+      throw new NotFoundException('user not found');
+    }
+
     let baseStoreId = -1;
     const storeIds = [];
     const userMetaReq = [];
@@ -392,10 +442,14 @@ export class UserService {
         }
       });
     }
+
     return {
-      signInLogs: response[0] || [],
-      baseStore: baseStore,
-      otherAssignedStores,
+      user,
+      userMeta: {
+        signInLogs: response[0] || [],
+        baseStore: baseStore,
+        otherAssignedStores,
+      },
     };
   }
 
@@ -427,8 +481,18 @@ export class UserService {
     try {
       const user = await this.findOne(id);
       if (!user) {
-        return new NotFoundException('User not found!');
+        return new NotFoundException('user not found');
       }
+
+      if (user.role === 'storemanager') {
+        await this.usersRepository
+          .createQueryBuilder()
+          .update(User)
+          .set({ manager: null })
+          .where({ manager: user.username })
+          .execute();
+      }
+
       await Promise.all([
         this.signInLogsRepository
           .createQueryBuilder()
