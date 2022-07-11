@@ -1335,7 +1335,7 @@ export class ServerOrderService {
         billingAddressFormFields.order_type,
         billingAddressFormFields.pickup_type,
       );
-      if (+orderStatus === 8) {
+      if (+orderStatus === 8 || +orderStatus === 9) {
         if (
           billingAddressFormFields.order_type === 'pickup' &&
           billingAddressFormFields.pickup_type === 'curbside'
