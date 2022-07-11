@@ -682,32 +682,32 @@ export class ServerOrderService {
 
       let staffNotes = JSON.parse(orderDetails.staff_notes);
 
-      this.mailService.orderCreated({
-        to: customerDetails.email,
-        orderDetails: {
-          customerName: customerDetails.name,
-          orderNumber: +serverOrder.orderId,
-          orderDate: moment(serverOrderParsed.orderDate).format('MMMM D, YYYY'),
-          paymentMethod: orderDetails.payment_method,
-          totalCost: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
-          deliverydate: moment(
-            billingAddressFormFields.pick_delivery_date_text,
-          ).format('MMMM D, YYYY'),
-          deliveryLocation: deliveryDetails.deliveryAddress,
-          deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
-          subTotal: `${(serverOrderParsed.productTotal).toFixed(2)}` || "0.00",
-          deliveryCharge: (serverOrderParsed.deliveryFee).toFixed(2) || "0.00",
-          deliveryFeeHST: (serverOrderParsed.deliveryFeeHST).toFixed(2) || "0.00",
-          grandTotal: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
-          totalSavings: staffNotes.reduce(
-            (previousValue, currentValue) =>
-              previousValue + +currentValue.packup_discount,
-            0,
-          ),
-          saleSavings: (saleSavings).toFixed(2),
-        },
-        orderProductDetails: mailProductsArr,
-      });
+      // this.mailService.orderCreated({
+      //   to: customerDetails.email,
+      //   orderDetails: {
+      //     customerName: customerDetails.name,
+      //     orderNumber: +serverOrder.orderId,
+      //     orderDate: moment(serverOrderParsed.orderDate).format('MMMM D, YYYY'),
+      //     paymentMethod: orderDetails.payment_method,
+      //     totalCost: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
+      //     deliverydate: moment(
+      //       billingAddressFormFields.pick_delivery_date_text,
+      //     ).format('MMMM D, YYYY'),
+      //     deliveryLocation: deliveryDetails.deliveryAddress,
+      //     deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
+      //     subTotal: `${(serverOrderParsed.productTotal).toFixed(2)}` || "0.00",
+      //     deliveryCharge: (serverOrderParsed.deliveryFee).toFixed(2) || "0.00",
+      //     deliveryFeeHST: (serverOrderParsed.deliveryFeeHST).toFixed(2) || "0.00",
+      //     grandTotal: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
+      //     totalSavings: staffNotes.reduce(
+      //       (previousValue, currentValue) =>
+      //         previousValue + +currentValue.packup_discount,
+      //       0,
+      //     ),
+      //     saleSavings: (saleSavings).toFixed(2),
+      //   },
+      //   orderProductDetails: mailProductsArr,
+      // });
 
       return 'Order placed';
     } catch (err) {
