@@ -67,6 +67,7 @@ export class ServerOrderCustomerDetails {
   @ApiProperty({ type: Date })
   @Column({
     type: 'date',
+    nullable: true,
   })
   dob: Date;
 

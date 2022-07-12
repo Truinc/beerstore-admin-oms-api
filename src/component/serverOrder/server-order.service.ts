@@ -511,9 +511,8 @@ export class ServerOrderService {
         name: `${orderDetails.billing_address.first_name} ${orderDetails.billing_address.last_name}`,
         email: orderDetails.billing_address.email,
         postalCode: orderDetails.billing_address.zip,
-        dob: moment(billingAddressFormFields.dob, 'DD-MM-YYYY').format(
-          'YYYY-MM-DD',
-        ),
+        dob: billingAddressFormFields.dob ? moment(billingAddressFormFields.dob, 'DD-MM-YYYY').format(
+          'YYYY-MM-DD') : null,
         salutation: billingAddressFormFields.salutation,
         customerType: CustomerTypeEnum.Email,
         ccType: transactionDetails?.card?.card_type || null,
@@ -521,6 +520,8 @@ export class ServerOrderService {
         cardAmount: +transactionDetails?.amount || 0,
         authCode: +transactionDetails?.auth_code || null,
       };
+
+      console.log('customerDetails', customerDetails);
 
       let singleUnits = 0;
       let twoSixUnits = 0;
@@ -672,7 +673,6 @@ export class ServerOrderService {
         refundReason: '',
         pickUpType: billingAddressFormFields.pickup_type || '',
       };
-
       await this.serverOrderRepository.save(
         this.serverOrderRepository.create({
           ...serverOrderParsed,
@@ -681,7 +681,7 @@ export class ServerOrderService {
           serverOrderProductDetails: productsArr,
         }),
       );
-
+    console.log('tesitng213123', billingAddressFormFields.source);
     let staffNotes = JSON.parse(orderDetails.staff_notes);
     if(billingAddressFormFields.source !== 'kiosk'){
     this.mailService.orderCreated({
