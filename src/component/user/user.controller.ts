@@ -107,13 +107,14 @@ export class UserController {
   @UseGuards(JwtAccessGuard)
   @HttpCode(HttpStatus.OK)
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    const user = this.userService.findOne(id);
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    const user = await this.userService.findOne(id);
     if (!user) {
       throw new NotFoundException('user not found');
     }
     return user;
   }
+
 
   @ApiOkResponse({ description: '204. Success', type: User })
   @ApiNotFoundResponse({ description: 'user not found' })
