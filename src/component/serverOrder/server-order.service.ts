@@ -1316,6 +1316,10 @@ export class ServerOrderService {
           });
         }
   
+        if (+orderStatus === 11) {
+          this.mailService.orderCreated(mailPayload);
+        }
+
         if (+orderStatus === 10) {
           this.mailService.orderCompleted(mailPayload);
         }
