@@ -715,111 +715,110 @@
                     </td>
                   </tr>
                   <% orderProductDetails.forEach((product)=> { %>
-                    <% if(product.quantity - product.refundedQty> 0) { %>
-                      <tr style="background:#f4f4f4" bgcolor="#f4f4f4">
-                        <td
-                          style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:15px">
-                          <img src="<%= product.imageUrl %>" width="100" height="auto"
-                            style="width:100px;height:auto;border:1px solid #ddd;border-radius:4px" alt=""
-                            class="CToWUd">
-                        </td>
-                        <td
-                          style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:0 10px;width:38%">
-                          <h2
-                            style="margin:0;font-size:16px;font-weight:bold;color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat">
-                            <%= product.name %>
-                          </h2>
-                          <p
-                            style="margin:0;font-size:13px;color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat">
-                            <%= product.displayValue %>
-                          </p>
-                          <table style="width:120px" width="120px" cellspacing="0" cellpadding="0" border="0">
-                            <tbody>
-                              <tr>
-                                <% if(product.packupDiscount> 0){ %>
-                                  <td width="60px" style="width:60px;padding-top:10px">
-                                    <table
-                                      style="margin-top:0;margin-bottom:0;margin-right:auto;margin-left:auto;border-spacing:0;width:50px;margin-right:2px"
-                                      cellspacing="0 " align="left" cellpadding="0" border="0">
-                                      <tbody>
-                                        <tr>
-                                          <td
-                                            style="border-radius:5px;text-align:center;background:#f4b233;padding-top:2px;padding-bottom:2px;padding-right:4px;padding-left:4px"
-                                            width="50 " bgcolor="#f4b233 " align="center ">
-                                            <a href="#m_2348638704042929767_!"
-                                              style="background:#f4b233;display:inline-block;text-decoration:none;text-align:center;font-weight:bold;font-size:9px;font-family:Arial,Helvetica,sans-serif,Montserrat;border-radius:5px;line-height:15px;color:#000;background-image:none;background-repeat:repeat;background-position:top left;border-radius:5px;border-width:1px;border:0px;text-align:center;width:50px;padding-top:2px;padding-bottom:2px">
-                                              PACKUP
-                                            </a>
-                                          </td>
-                                        </tr>
-                                      </tbody>
-                                    </table>
-                                  </td>
-                                  <% } %>
-                                    <% if(product.onSale){ %>
-                                      <td width="auto" style="width:auto;padding-top:10px">
-                                        <table
-                                          style="margin-top:0;margin-bottom:0;margin-right:auto;margin-left:auto;border-spacing:0;width:50px"
-                                          cellspacing="0 " align="left" cellpadding="0" border="0">
-                                          <tbody>
-                                            <tr>
-                                              <td
-                                                style="border-radius:5px;text-align:center;background:#ad2f33;padding-top:2px;padding-bottom:2px;padding-right:4px;padding-left:4px"
-                                                width="50 " bgcolor="#ad2f33 " align="center ">
-                                                <a href="#m_-343405735075903143_m_1454673122863119151_m_-6687196424747639421_!"
-                                                  style="background:#ad2f33;display:inline-block;text-decoration:none;text-align:center;font-weight:bold;font-size:9px;font-family:Arial,Helvetica,sans-serif,Montserrat;border-radius:5px;line-height:15px;color:#fff;background-image:none;background-repeat:repeat;background-position:top left;border-radius:5px;border-width:1px;border:0px;text-align:center;width:50px;padding-top:2px;padding-bottom:2px">
-                                                  SALE
-                                                </a>
-                                              </td>
-                                            </tr>
-                                          </tbody>
-                                        </table>
-                                      </td>
-                                      <% } %>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </td>
-                        <td
-                          style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold">
-                          <div style="display:block;background-color:transparent">
-                            <%= product.quantity - product.refundedQty %>
-                          </div>
-                          <% if(product.refundedQty> 0 ) { %>
-                            <div style="color:#000;display:block;font-size:10px;font-weight:bold">
-                              Refunded: <%= product.refundedQty %>
-                            </div>
-                            <% } %>
-                        </td>
-                        <td
-                          style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold">
-                          <% if(product.onSale) { %>
-                            <p style="margin:0"><strike>$<%= product.price %></strike></p>
-                            <p style="margin:0">$<%= product.salePrice %>
-                            </p>
-                            <% } else { %>
-                              <p style="margin:0">$<%= product.price %>
-                              </p>
+                    <tr style="background:#f4f4f4" bgcolor="#f4f4f4">
+                      <td
+                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:15px">
+                        <img src="<%= product.imageUrl %>" width="100" height="auto"
+                          style="width:100px;height:auto;border:1px solid #ddd;border-radius:4px" alt=""
+                          class="CToWUd">
+                      </td>
+                      <td
+                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;vertical-align:middle;padding:0 10px;width:38%">
+                        <h2
+                          style="margin:0;font-size:16px;font-weight:bold;color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                          <%= product.name %>
+                        </h2>
+                        <p
+                          style="margin:0;font-size:13px;color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                          <%= product.displayValue %>
+                        </p>
+                        <table style="width:120px" width="120px" cellspacing="0" cellpadding="0" border="0">
+                          <tbody>
+                            <tr>
+                              <% if(product.packupDiscount > 0){ %>
+                                <td width="60px" style="width:60px;padding-top:10px">
+                                  <table
+                                    style="margin-top:0;margin-bottom:0;margin-right:auto;margin-left:auto;border-spacing:0;width:50px;margin-right:2px"
+                                    cellspacing="0 " align="left" cellpadding="0" border="0">
+                                    <tbody>
+                                      <tr>
+                                        <td
+                                          style="border-radius:5px;text-align:center;background:#f4b233;padding-top:2px;padding-bottom:2px;padding-right:4px;padding-left:4px"
+                                          width="50 " bgcolor="#f4b233 " align="center ">
+                                          <a href="#m_2348638704042929767_!"
+                                            style="background:#f4b233;display:inline-block;text-decoration:none;text-align:center;font-weight:bold;font-size:9px;font-family:Arial,Helvetica,sans-serif,Montserrat;border-radius:5px;line-height:15px;color:#000;background-image:none;background-repeat:repeat;background-position:top left;border-radius:5px;border-width:1px;border:0px;text-align:center;width:50px;padding-top:2px;padding-bottom:2px">
+                                            PACKUP
+                                          </a>
+                                        </td>
+                                      </tr>
+                                    </tbody>
+                                  </table>
+                                </td>
                               <% } %>
-                        </td>
-                        <td
-                          style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:right;vertical-align:middle;padding-right:15px;font-weight:bold">
-                          <% if(product.packupDiscount> 0) { %>
-                            <p style="margin:0"><strike>$<%= product.productSubTotal %></strike></p>
-                            <p style="margin:0">$<%= product.packupSubTotal %>
-                                <% } else { %>
-                                  <p style="margin:0">$<%= product.productSubTotal %>
-                                      <% } %>
+                              <% if(product.onSale){ %>
+                                    <td width="auto" style="width:auto;padding-top:10px">
+                                      <table
+                                        style="margin-top:0;margin-bottom:0;margin-right:auto;margin-left:auto;border-spacing:0;width:50px"
+                                        cellspacing="0 " align="left" cellpadding="0" border="0">
+                                        <tbody>
+                                          <tr>
+                                            <td
+                                              style="border-radius:5px;text-align:center;background:#ad2f33;padding-top:2px;padding-bottom:2px;padding-right:4px;padding-left:4px"
+                                              width="50 " bgcolor="#ad2f33 " align="center ">
+                                              <a href="#m_-343405735075903143_m_1454673122863119151_m_-6687196424747639421_!"
+                                                style="background:#ad2f33;display:inline-block;text-decoration:none;text-align:center;font-weight:bold;font-size:9px;font-family:Arial,Helvetica,sans-serif,Montserrat;border-radius:5px;line-height:15px;color:#fff;background-image:none;background-repeat:repeat;background-position:top left;border-radius:5px;border-width:1px;border:0px;text-align:center;width:50px;padding-top:2px;padding-bottom:2px">
+                                                SALE
+                                              </a>
+                                            </td>
+                                          </tr>
+                                        </tbody>
+                                      </table>
+                                    </td>
+                              <% } %>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </td>
+                      <td
+                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold">
+                        <div style="display:block;background-color:transparent">
+                          <%= product.quantity - product.refundedQty %>
+                        </div>
+                        <% if(product.refundedQty > 0 ) { %>
+                        <div style="color:#000;display:block;font-size:10px;font-weight:bold">
+                          Refunded: <%= product.refundedQty %>
+                        </div>
+                        <% } %>
+                      </td>
+                      <td
+                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold">
+                        <% if(product.onSale) { %>
+                          <p style="margin:0"><strike>$<%= product.price %></strike></p>
+                          <p style="margin:0">$<%= product.salePrice %>
+                          </p>
+                          <% } else { %>
+                            <p style="margin:0">$<%= product.price %>
+                            </p>
+                            <% } %>
+                      </td>
+                      <td
+                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:right;vertical-align:middle;padding-right:15px;font-weight:bold">
+                        <% if(product.packupDiscount > 0) { %>
+                          <p style="margin:0"><strike>$<%= product.productSubTotal %></strike></p>
+                          <p style="margin:0">$<%= product.packupSubTotal %>
+                              <% } else { %>
+                                <p style="margin:0">$<%= product.productSubTotal %>
+                                    <% } %>
 
-                                  </p>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td colspan="5" style="width:100%">
-                          <hr style="margin:0;border:none;border-top:1px solid #ddd">
-                        </td>
-                      </tr>
-                      <% }}); %>
+                                </p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colspan="5" style="width:100%">
+                        <hr style="margin:0;border:none;border-top:1px solid #ddd">
+                      </td>
+                    </tr>
+                  <% }); %>
                 </tbody>
               </table>
             </td>
