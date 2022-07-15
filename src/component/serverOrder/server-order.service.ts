@@ -697,8 +697,7 @@ export class ServerOrderService {
     let staffNotes = JSON.parse(orderDetails.staff_notes);
     if(billingAddressFormFields.source !== 'kiosk'){
 
-      const serverOrder = await this.findOne(orderDetails.id);
-
+      const serverOrder = await this.serverOrderDetail(orderDetails.id);
     // this.mailService.orderCreated({
     //   to: customerDetails.email,
     //   orderDetails: {
