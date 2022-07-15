@@ -33,9 +33,9 @@ import SignUpDto from './dto/sign-up.dto';
 import RefreshTokenDto from './dto/refresh-token.dto';
 import ForgetPasswordDto from './dto/forget-password.dto';
 import { TokenResponseDto } from '../token/dto/token-response.dto';
-// import RolesGuard from '@beerstore/core/guard/role.guard';
 import { Roles } from '../../decorators/roles.decorator';
 import { RolesEnum } from '../user/entity/user.entity';
+import RolesGuard from '@beerstore/core/guards/role.guard';
 
 @ApiTags('auth')
 @ApiExtraModels(TokenResponseDto)
@@ -62,6 +62,8 @@ export default class AuthController {
   @ApiBody({ type: SignUpDto })
   @ApiOkResponse()
   @ApiInternalServerErrorResponse()
+  @UseGuards(RolesGuard)
+  @Roles(RolesEnum.superadmin)
   @HttpCode(HttpStatus.CREATED)
   @Post('register')
   async register(@Body() payload: SignUpDto): Promise<JwtTokensDto> {

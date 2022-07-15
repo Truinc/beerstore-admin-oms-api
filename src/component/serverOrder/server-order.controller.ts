@@ -110,6 +110,8 @@ export class ServerOrderController {
     RolesEnum.superadmin,
     RolesEnum.customerservicerep,
     RolesEnum.storemanager,
+    RolesEnum.reportingadmin,
+    RolesEnum.ithelpdesk
   )
   @HttpCode(HttpStatus.OK)
   @Get()
@@ -143,6 +145,8 @@ export class ServerOrderController {
     RolesEnum.superadmin,
     RolesEnum.customerservicerep,
     RolesEnum.storemanager,
+    RolesEnum.reportingadmin,
+    RolesEnum.ithelpdesk
   )
   @Post('/post-feed')
   async createPostFeed(@Body() createPostFeed: CreatePostFeedDto) {
@@ -158,6 +162,8 @@ export class ServerOrderController {
     RolesEnum.superadmin,
     RolesEnum.customerservicerep,
     RolesEnum.storemanager,
+    RolesEnum.reportingadmin,
+    RolesEnum.ithelpdesk
   )
   @HttpCode(HttpStatus.OK)
   @Get('/details/:id/store/:storeId')
@@ -198,6 +204,8 @@ export class ServerOrderController {
     RolesEnum.superadmin,
     RolesEnum.customerservicerep,
     RolesEnum.storemanager,
+    RolesEnum.reportingadmin,
+    RolesEnum.ithelpdesk
   )
   @HttpCode(HttpStatus.OK)
   @Post('/cancel-order/:id')
@@ -218,6 +226,8 @@ export class ServerOrderController {
     RolesEnum.superadmin,
     RolesEnum.customerservicerep,
     RolesEnum.storemanager,
+    RolesEnum.reportingadmin,
+    RolesEnum.ithelpdesk
   )
   @HttpCode(HttpStatus.OK)
   @Get('/:id')
@@ -247,6 +257,8 @@ export class ServerOrderController {
     RolesEnum.superadmin,
     RolesEnum.customerservicerep,
     RolesEnum.storemanager,
+    RolesEnum.reportingadmin,
+    RolesEnum.ithelpdesk
   )
   @HttpCode(HttpStatus.OK)
   @Patch('/finish-order/:id')
@@ -288,6 +300,8 @@ export class ServerOrderController {
     RolesEnum.superadmin,
     RolesEnum.customerservicerep,
     RolesEnum.storemanager,
+    RolesEnum.reportingadmin,
+    RolesEnum.ithelpdesk
   )
   @HttpCode(HttpStatus.OK)
   @Patch('/:id')
