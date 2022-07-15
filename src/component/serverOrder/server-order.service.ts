@@ -130,10 +130,11 @@ export class ServerOrderService {
       );
     }
 
-    // for testing purpose it is commented out
-    table.andWhere('ServerOrder.storeId = :storeId', {
-      storeId,
-    });
+    if(storeId){
+      table.andWhere('ServerOrder.storeId = :storeId', {
+        storeId,
+      });
+    }
 
     if (search) {
       table.andWhere(
@@ -595,8 +596,8 @@ export class ServerOrderService {
             variantData.sale_price === variantData.price
               ? (variantData.price * product.quantity).toFixed(2)
               : (variantData.sale_price * product.quantity).toFixed(2),
-          price: variantData.price.toFixed(2) || 0,
-          salePrice: variantData.sale_price.toFixed(2) || 0,
+          price: (variantData.price).toFixed(2) || 0,
+          salePrice: (variantData.sale_price).toFixed(2) || 0,
           onSale: variantData.sale_price === variantData.price ? false : true,
         });
 
@@ -890,7 +891,7 @@ export class ServerOrderService {
             +orderStatus,
             serverOrder.orderType,
           );
-        }
+          }
       } catch (err) {}
       this.sendMailOnStatusChange(id?.toString(), serverOrder, orderStatus);
       return response[0];
@@ -1254,6 +1255,7 @@ export class ServerOrderService {
           0,
         );
         const grandTotal =  (+subTotal + +orderDetailsFromBigCom.shipping_cost_inc_tax ).toFixed(2);
+       
         let mailPayload = {
           to: serverOrderDetails.serverOrderCustomerDetails.email,
           orderDetails: {
@@ -1262,39 +1264,45 @@ export class ServerOrderService {
             orderDate: moment(serverOrderDetails.orderDate).format(
               'MMMM D, YYYY',
             ),
+            storeContact: billingAddressFormFields?.store_contact || '',
+            orderType: billingAddressFormFields.order_type,
             paymentMethod: orderDetailsFromBigCom?.payment_method,
             totalCost: grandTotal,
             deliverydate: moment(
               billingAddressFormFields.pick_delivery_date_text,
             ).format('MMMM D, YYYY'),
             deliveryLocation:
-            billingAddressFormFields.order_type === 'delivery' ?
-              billingAddressFormFields.delivery_address :
-              billingAddressFormFields.current_store_address,
+              billingAddressFormFields.order_type === 'delivery'
+                ? billingAddressFormFields.delivery_address
+                : billingAddressFormFields.current_store_address,
             deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
             // subTotal: serverOrderDetails.productTotal || 0,
             // subTotal: (parseFloat(orderDetailsFromBigCom.subtotal_inc_tax)).toFixed(2)|| "0.00",
-            subTotal: subTotal.toFixed(2) || "0.00",
-            deliveryCharge: (parseFloat(orderDetailsFromBigCom.shipping_cost_ex_tax)).toFixed(2) || "0.00",
-            deliveryFeeHST: (parseFloat(orderDetailsFromBigCom.shipping_cost_tax)).toFixed(2) || "0.00",
+            subTotal: subTotal.toFixed(2) || '0.00',
+            deliveryCharge:
+              parseFloat(orderDetailsFromBigCom.shipping_cost_ex_tax).toFixed(
+                2,
+              ) || '0.00',
+            deliveryFeeHST:
+              parseFloat(orderDetailsFromBigCom.shipping_cost_tax).toFixed(2) ||
+              '0.00',
             // deliveryCharge: serverOrderDetails.deliveryFee || 0,
             // deliveryFeeHST: serverOrderDetails.deliveryFeeHST || 0,
             // grandTotal: serverOrderDetails.grandTotal || 0,
             grandTotal,
             totalSavings: (saleSavings + +totalPackupSaving).toFixed(2),
-            saleSavings: (saleSavings).toFixed(2),
+            saleSavings: saleSavings.toFixed(2),
             packupSaving: totalPackupSaving.toFixed(2),
             cancellationReason: serverOrderDetails.cancellationReason || '',
-            refundedAmt: (parseFloat(orderDetailsFromBigCom.refunded_amount)).toFixed(2) || "0.00",
+            refundedAmt:
+              parseFloat(orderDetailsFromBigCom.refunded_amount).toFixed(2) ||
+              '0.00',
             refunded: mailProductsArr.find((x) => x.isRefunded === true)
               ? true
               : false,
           },
           orderProductDetails: mailProductsArr,
-          storeContact: billingAddressFormFields?.store_contact || '',
-          orderType: billingAddressFormFields.order_type,
         };
-  
         if (+orderStatus === 5) {
           this.mailService.orderCancelled({
             ...mailPayload,
@@ -1313,11 +1321,12 @@ export class ServerOrderService {
           this.mailService.orderInTransit(mailPayload);
         }
   
-        console.log(
-          'orderType',
-          billingAddressFormFields.order_type,
-          billingAddressFormFields.pickup_type,
-        );
+        // console.log(
+        //   'orderType',
+        //   billingAddressFormFields.order_type,
+        //   billingAddressFormFields.pickup_type,
+        //   orderStatus
+        // );
         if (+orderStatus === 8 || +orderStatus === 9) {
           if (
             billingAddressFormFields.order_type === 'pickup' &&
