@@ -587,19 +587,19 @@ export class ServerOrderService {
         if (variantData.sale_price !== variantData.price) {
           saleSavings += variantData.price - variantData.sale_price;
         }
-        mailProductsArr.push({
-          imageUrl: imageUrl || '',
-          name: product.name,
-          displayValue: product?.product_options[0]?.display_value,
-          quantity: +product.quantity,
-          productSubTotal:
-            variantData.sale_price === variantData.price
-              ? (variantData.price * product.quantity).toFixed(2)
-              : (variantData.sale_price * product.quantity).toFixed(2),
-          price: (variantData.price).toFixed(2) || 0,
-          salePrice: (variantData.sale_price).toFixed(2) || 0,
-          onSale: variantData.sale_price === variantData.price ? false : true,
-        });
+        // mailProductsArr.push({
+        //   imageUrl: imageUrl || '',
+        //   name: product.name,
+        //   displayValue: product?.product_options[0]?.display_value,
+        //   quantity: +product.quantity,
+        //   productSubTotal:
+        //     variantData.sale_price === variantData.price
+        //       ? (variantData.price * product.quantity).toFixed(2)
+        //       : (variantData.sale_price * product.quantity).toFixed(2),
+        //   price: (variantData.price).toFixed(2) || 0,
+        //   salePrice: (variantData.sale_price).toFixed(2) || 0,
+        //   onSale: variantData.sale_price === variantData.price ? false : true,
+        // });
 
         productTotal += +product.total_inc_tax;
         return {
@@ -696,32 +696,35 @@ export class ServerOrderService {
     console.log('tesitng213123', billingAddressFormFields.source);
     let staffNotes = JSON.parse(orderDetails.staff_notes);
     if(billingAddressFormFields.source !== 'kiosk'){
-    this.mailService.orderCreated({
-      to: customerDetails.email,
-      orderDetails: {
-        customerName: customerDetails.name,
-        orderNumber: +serverOrder.orderId,
-        orderDate: moment(serverOrderParsed.orderDate).format('MMMM D, YYYY'),
-        paymentMethod: orderDetails.payment_method,
-        totalCost: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
-        deliverydate: moment(
-          billingAddressFormFields.pick_delivery_date_text,
-        ).format('MMMM D, YYYY'),
-        deliveryLocation: deliveryDetails.deliveryAddress,
-        deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
-        subTotal: `${(serverOrderParsed.productTotal).toFixed(2)}` || "0.00",
-        deliveryCharge: (serverOrderParsed.deliveryFee).toFixed(2) || "0.00",
-        deliveryFeeHST: (serverOrderParsed.deliveryFeeHST).toFixed(2) || "0.00",
-        grandTotal: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
-        totalSavings: staffNotes.reduce(
-          (previousValue, currentValue) =>
-            previousValue + +currentValue.packup_discount,
-          0,
-        ),
-        saleSavings: (saleSavings).toFixed(2),
-      },
-      orderProductDetails: mailProductsArr,
-    });
+
+      const serverOrder = await this.serverOrderDetail(orderDetails.id);
+    // this.mailService.orderCreated({
+    //   to: customerDetails.email,
+    //   orderDetails: {
+    //     customerName: customerDetails.name,
+    //     orderNumber: +serverOrder.orderId,
+    //     orderDate: moment(serverOrderParsed.orderDate).format('MMMM D, YYYY'),
+    //     paymentMethod: orderDetails.payment_method,
+    //     totalCost: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
+    //     deliverydate: moment(
+    //       billingAddressFormFields.pick_delivery_date_text,
+    //     ).format('MMMM D, YYYY'),
+    //     deliveryLocation: deliveryDetails.deliveryAddress,
+    //     deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
+    //     subTotal: `${(serverOrderParsed.productTotal).toFixed(2)}` || "0.00",
+    //     deliveryCharge: (serverOrderParsed.deliveryFee).toFixed(2) || "0.00",
+    //     deliveryFeeHST: (serverOrderParsed.deliveryFeeHST).toFixed(2) || "0.00",
+    //     grandTotal: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
+    //     totalSavings: staffNotes.reduce(
+    //       (previousValue, currentValue) =>
+    //         previousValue + +currentValue.packup_discount,
+    //       0,
+    //     ),
+    //     saleSavings: (saleSavings).toFixed(2),
+    //   },
+    //   orderProductDetails: mailProductsArr,
+    // });
+    this.sendMailOnStatusChange(`${orderDetails.id}`,serverOrder, 11 );
   }
       return 'Order placed';
     } catch (err) {
@@ -1134,7 +1137,7 @@ export class ServerOrderService {
       let productIds = serverOrderDetails.serverOrderProductDetails
         .map((x) => `${x.productId}`)
         .join(',');
-      console.log('testing123', productIds);
+      // console.log('testing123', productIds);
       requests.push(this.ordersService.getOrder(orderId));
       requests.push(this.ordersService.getOrderProducts(orderId));
       requests.push(
@@ -1313,6 +1316,10 @@ export class ServerOrderService {
           });
         }
   
+        if (+orderStatus === 11) {
+          this.mailService.orderCreated(mailPayload);
+        }
+
         if (+orderStatus === 10) {
           this.mailService.orderCompleted(mailPayload);
         }
