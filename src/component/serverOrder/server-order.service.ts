@@ -1336,7 +1336,6 @@ export class ServerOrderService {
           } else {
             this.mailService.orderConfirmed(mailPayload);
           }
-        this.mailService.orderCreated(mailPayload);
         }
       }
     } catch (error) {
