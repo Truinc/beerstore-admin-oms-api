@@ -518,9 +518,8 @@ export class ServerOrderService {
         name: `${orderDetails.billing_address.first_name} ${orderDetails.billing_address.last_name}`,
         email: orderDetails.billing_address.email,
         postalCode: orderDetails.billing_address.zip,
-        dob: moment(billingAddressFormFields.dob, 'DD-MM-YYYY').format(
-          'YYYY-MM-DD',
-        ),
+        dob: billingAddressFormFields.dob ? moment(billingAddressFormFields.dob, 'DD-MM-YYYY').format(
+          'YYYY-MM-DD') : null,
         salutation: billingAddressFormFields.salutation,
         customerType: CustomerTypeEnum.Email,
         ccType: transactionDetails?.card?.card_type || null,
@@ -528,6 +527,8 @@ export class ServerOrderService {
         cardAmount: +transactionDetails?.amount || 0,
         authCode: +transactionDetails?.auth_code || null,
       };
+
+      console.log('customerDetails', customerDetails);
 
       let singleUnits = 0;
       let twoSixUnits = 0;
@@ -607,8 +608,8 @@ export class ServerOrderService {
           lineItem: index + 1,
           itemSKU: product.sku,
           itemDescription: '',
-          brewer: '',
-          category: '',
+          brewer,
+          category,
           quantity: product.quantity,
           packSize: +packSize,
           volume: +volume,
@@ -635,6 +636,7 @@ export class ServerOrderService {
         orderId: `${orderDetails.id}`,
         storeId: `${billingAddressFormFields.store_id}`,
         orderType:
+        billingAddressFormFields.source === 'kiosk' ? 'kiosk' : 
           billingAddressFormFields.order_type === 'pickup'
             ? billingAddressFormFields.pickup_type
             : billingAddressFormFields.order_type,
@@ -682,7 +684,6 @@ export class ServerOrderService {
         refundReason: '',
         pickUpType: billingAddressFormFields.pickup_type || '',
       };
-
       await this.serverOrderRepository.save(
         this.serverOrderRepository.create({
           ...serverOrderParsed,
@@ -691,36 +692,36 @@ export class ServerOrderService {
           serverOrderProductDetails: productsArr,
         }),
       );
-
-      let staffNotes = JSON.parse(orderDetails.staff_notes);
-
-      this.mailService.orderCreated({
-        to: customerDetails.email,
-        orderDetails: {
-          customerName: customerDetails.name,
-          orderNumber: +serverOrder.orderId,
-          orderDate: moment(serverOrderParsed.orderDate).format('MMMM D, YYYY'),
-          paymentMethod: orderDetails.payment_method,
-          totalCost: serverOrderParsed.grandTotal.toFixed(2) || '0.00',
-          deliverydate: moment(
-            billingAddressFormFields.pick_delivery_date_text,
-          ).format('MMMM D, YYYY'),
-          deliveryLocation: deliveryDetails.deliveryAddress,
-          deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
-          subTotal: `${serverOrderParsed.productTotal.toFixed(2)}` || '0.00',
-          deliveryCharge: serverOrderParsed.deliveryFee.toFixed(2) || '0.00',
-          deliveryFeeHST: serverOrderParsed.deliveryFeeHST.toFixed(2) || '0.00',
-          grandTotal: serverOrderParsed.grandTotal.toFixed(2) || '0.00',
-          totalSavings: staffNotes.reduce(
-            (previousValue, currentValue) =>
-              previousValue + +currentValue.packup_discount,
-            0,
-          ),
-          saleSavings: saleSavings.toFixed(2),
-        },
-        orderProductDetails: mailProductsArr,
-      });
-
+    console.log('tesitng213123', billingAddressFormFields.source);
+    let staffNotes = JSON.parse(orderDetails.staff_notes);
+    if(billingAddressFormFields.source !== 'kiosk'){
+    this.mailService.orderCreated({
+      to: customerDetails.email,
+      orderDetails: {
+        customerName: customerDetails.name,
+        orderNumber: +serverOrder.orderId,
+        orderDate: moment(serverOrderParsed.orderDate).format('MMMM D, YYYY'),
+        paymentMethod: orderDetails.payment_method,
+        totalCost: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
+        deliverydate: moment(
+          billingAddressFormFields.pick_delivery_date_text,
+        ).format('MMMM D, YYYY'),
+        deliveryLocation: deliveryDetails.deliveryAddress,
+        deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
+        subTotal: `${(serverOrderParsed.productTotal).toFixed(2)}` || "0.00",
+        deliveryCharge: (serverOrderParsed.deliveryFee).toFixed(2) || "0.00",
+        deliveryFeeHST: (serverOrderParsed.deliveryFeeHST).toFixed(2) || "0.00",
+        grandTotal: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
+        totalSavings: staffNotes.reduce(
+          (previousValue, currentValue) =>
+            previousValue + +currentValue.packup_discount,
+          0,
+        ),
+        saleSavings: (saleSavings).toFixed(2),
+      },
+      orderProductDetails: mailProductsArr,
+    });
+  }
       return 'Order placed';
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -880,7 +881,7 @@ export class ServerOrderService {
       ]);
 
       try {
-        if (checkoutId) {
+        if (checkoutId && serverOrder?.orderType !== 'kiosk') {
           await this.sendPushNotification(
             this.configService.get('beerstoreApp').title,
             `Your Order #${id} has been ${OrderstatusText[orderStatus]}.`,
@@ -998,7 +999,7 @@ export class ServerOrderService {
       console.log('res', resp);
       this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus);
       try {
-        if (checkoutId) {
+        if (checkoutId && orderType !== 'kiosk') {
           this.sendPushNotification(
             this.configService.get('beerstoreApp').title,
             `Your Order #${id} has been cancelled.`,
@@ -1102,7 +1103,7 @@ export class ServerOrderService {
       const response = await Promise.all(requests);
       this.sendMailOnStatusChange(orderId, prevOrder, serverOrder.orderStatus);
       try {
-        if (checkoutId) {
+        if (checkoutId && prevOrder?.orderType !== 'kiosk') {
           this.sendPushNotification(
             this.configService.get('beerstoreApp').title,
             `Your Order #${orderId} has been ${
@@ -1157,192 +1158,176 @@ export class ServerOrderService {
       let billingAddressFormFields = JSON.parse(
         orderDetailsFromBigCom?.billing_address?.form_fields[0]?.value,
       );
-      let staffNotes = JSON.parse(orderDetailsFromBigCom.staff_notes);
-      console.log('staffNotes', staffNotes);
-      let mailProductsArr = [];
-      let saleSavings = 0;
-      // let totalRefundedAmount = 0;
-      // let productFromdb;
-      let productDetail;
-      let subTotal = 0.0;
-      console.log(
-        '!!!!data!!!!',
-        serverOrderDetails?.serverOrderProductDetails,
-      );
-      serverOrderDetails?.serverOrderProductDetails.forEach((details) => {
-        const ele = data.find((product) => +product.id === +details.productId);
-        // console.log('ele', ele);
-        let imageUrl = ele?.custom_fields.find(
-          (x) => x.name === 'product_image_1',
-        )?.value;
-        // productFromdb = serverOrderDetails.serverOrderProductDetails.find(
-        //   (x) => x.productId == ele.id,
-        // );
-        productDetail = orderProductDetails.find(
-          (x) => x.variant_id === details.variantId,
-        );
-        const packupDiscountObj = staffNotes.find(
-          (variant) => variant.variant_id === productDetail.variant_id,
-        );
-        const packupDiscount = packupDiscountObj?.packup_discount || 0;
-        console.log('packupDiscount-->', packupDiscount);
-        let variantData = ele.variants.find((x) => {
-          return x.id === productDetail.variant_id;
-          // return x.id === productFromdb.variantId;
+      if(billingAddressFormFields.source !== 'kiosk'){
+        let staffNotes = JSON.parse(orderDetailsFromBigCom.staff_notes);
+        console.log('staffNotes', staffNotes);
+        let mailProductsArr = [];
+        let saleSavings = 0;
+        // let totalRefundedAmount = 0;
+        // let productFromdb;
+        let productDetail;
+        let subTotal = 0.0;
+        console.log('!!!!data!!!!', serverOrderDetails?.serverOrderProductDetails);
+        serverOrderDetails?.serverOrderProductDetails.forEach((details) => {
+          const ele = data.find(product => +product.id === +details.productId);
+          // console.log('ele', ele);
+          let imageUrl = ele?.custom_fields.find(
+            (x) => x.name === 'product_image_1',
+          )?.value;
+          // productFromdb = serverOrderDetails.serverOrderProductDetails.find(
+            //   (x) => x.productId == ele.id,
+            // );
+            productDetail = orderProductDetails.find(
+              (x) => x.variant_id === details.variantId,
+              );
+          const packupDiscountObj = staffNotes.find(variant => variant.variant_id === productDetail.variant_id);
+          const packupDiscount = packupDiscountObj?.packup_discount || 0;
+          console.log('packupDiscount-->', packupDiscount);
+          let variantData = ele.variants.find((x) => {
+            return x.id === productDetail.variant_id;
+            // return x.id === productFromdb.variantId;
+          });
+          // console.log('variantData!!', variantData);
+          // console.log('productDetail', productDetail, variantData);
+          const actualQuantity = +productDetail.quantity - +productDetail.quantity_refunded;
+          if (variantData?.sale_price !== variantData?.price) {
+            saleSavings += (variantData?.price * actualQuantity ) - ( variantData?.sale_price * actualQuantity );
+          }
+          // console.log('testing', saleSavings, variantData);
+          // if (productDetail.is_refunded) {
+          //   totalRefundedAmount += productDetail.refund_amount;
+          // }
+          const refundedPrice = +productDetail.quantity * +variantData.price;
+          const productSubTotal = variantData?.sale_price === variantData?.price
+          ? (variantData?.price * actualQuantity).toFixed(2)
+          : (variantData?.sale_price * actualQuantity).toFixed(2) || 0.00;
+          
+          const salesSubTotal =  (variantData?.sale_price * actualQuantity).toFixed(2) || 0.00;
+          const maxSubTotal = (variantData?.price * actualQuantity).toFixed(2) || 0.00;
+          const packupSubTotal = +salesSubTotal -  +packupDiscount;
+          const nameString = ele.name.split('~');
+  
+          const name = nameString[0].replace(/-/g, ' ')?.toUpperCase();
+  
+  
+          // console.log('mailProductsArr', {
+          //   imageUrl: imageUrl || '',
+          //   name,
+          //   displayValue: productDetail?.product_options[0]?.display_value || '',
+          //   quantity: +productDetail.quantity,
+          //   productSubTotal,
+          //   price: (variantData.price).toFixed(2) || 0.00,
+          //   salePrice: (variantData?.sale_price).toFixed(2) || 0.00,
+          //   onSale: variantData?.sale_price === variantData.price ? false : true,
+          //   packupDiscount,
+          //   packupSubTotal: packupSubTotal.toFixed(2),
+          //   isRefunded: (productDetail.quantity - +productDetail?.quantity_refunded) === 0,
+          //   refundedQty: (productDetail?.quantity_refunded).toFixed(2)  || 0.00,
+          //   refundedAmt: (refundedPrice).toFixed(2) || 0.00,
+          // })
+          if(packupDiscount){
+            subTotal = subTotal + +packupSubTotal;
+          } else {
+            subTotal = subTotal + +productSubTotal;
+          }
+          mailProductsArr.push({
+            imageUrl: imageUrl || '',
+            name,
+            displayValue: productDetail?.product_options[0]?.display_value || '',
+            quantity: +productDetail.quantity,
+            productSubTotal,
+            packupDiscount,
+            packupSubTotal: packupSubTotal.toFixed(2),
+            price: (variantData.price).toFixed(2) || 0.00,
+            salePrice: (variantData?.sale_price).toFixed(2) || 0.00,
+            onSale: variantData?.sale_price === variantData.price ? false : true,
+            isRefunded: (productDetail.quantity - +productDetail?.quantity_refunded) === 0,
+            refundedQty: productDetail?.quantity_refunded  || 0,
+            refundedAmt: (refundedPrice).toFixed(2) || 0.00,
+          });
         });
-        // console.log('variantData!!', variantData);
-        // console.log('productDetail', productDetail, variantData);
-        const actualQuantity =
-          +productDetail.quantity - +productDetail.quantity_refunded;
-        if (variantData?.sale_price !== variantData?.price) {
-          saleSavings +=
-            variantData?.price * actualQuantity -
-            variantData?.sale_price * actualQuantity;
-        }
-        // console.log('testing', saleSavings, variantData);
-        // if (productDetail.is_refunded) {
-        //   totalRefundedAmount += productDetail.refund_amount;
-        // }
-        const refundedPrice = +productDetail.quantity * +variantData.price;
-        const productSubTotal =
-          variantData?.sale_price === variantData?.price
-            ? (variantData?.price * actualQuantity).toFixed(2)
-            : (variantData?.sale_price * actualQuantity).toFixed(2) || 0.0;
-
-        const salesSubTotal =
-          (variantData?.sale_price * actualQuantity).toFixed(2) || 0.0;
-        const maxSubTotal =
-          (variantData?.price * actualQuantity).toFixed(2) || 0.0;
-        const packupSubTotal = +salesSubTotal - +packupDiscount;
-        const nameString = ele.name.split('~');
-        const name = nameString[0].replaceAll('-', ' ').toUpperCase();
-
-        // console.log('mailProductsArr', {
-        //   imageUrl: imageUrl || '',
-        //   name,
-        //   displayValue: productDetail?.product_options[0]?.display_value || '',
-        //   quantity: +productDetail.quantity,
-        //   productSubTotal,
-        //   price: (variantData.price).toFixed(2) || 0.00,
-        //   salePrice: (variantData?.sale_price).toFixed(2) || 0.00,
-        //   onSale: variantData?.sale_price === variantData.price ? false : true,
-        //   packupDiscount,
-        //   packupSubTotal: packupSubTotal.toFixed(2),
-        //   isRefunded: (productDetail.quantity - +productDetail?.quantity_refunded) === 0,
-        //   refundedQty: (productDetail?.quantity_refunded).toFixed(2)  || 0.00,
-        //   refundedAmt: (refundedPrice).toFixed(2) || 0.00,
-        // })
-        if (packupDiscount) {
-          subTotal = subTotal + +packupSubTotal;
-        } else {
-          subTotal = subTotal + +productSubTotal;
-        }
-        mailProductsArr.push({
-          imageUrl: imageUrl || '',
-          name,
-          displayValue: productDetail?.product_options[0]?.display_value || '',
-          quantity: +productDetail.quantity,
-          productSubTotal,
-          packupDiscount,
-          packupSubTotal: packupSubTotal.toFixed(2),
-          price: variantData.price.toFixed(2) || 0.0,
-          salePrice: (variantData?.sale_price).toFixed(2) || 0.0,
-          onSale: variantData?.sale_price === variantData.price ? false : true,
-          isRefunded:
-            productDetail.quantity - +productDetail?.quantity_refunded === 0,
-          refundedQty: productDetail?.quantity_refunded || 0,
-          refundedAmt: refundedPrice.toFixed(2) || 0.0,
-        });
-      });
-
-      console.log('mailProductsArr', mailProductsArr);
-      const totalPackupSaving = staffNotes.reduce(
-        (previousValue, currentValue) =>
-          previousValue + +currentValue.packup_discount,
-        0,
-      );
-      const grandTotal = (
-        +subTotal + +orderDetailsFromBigCom.shipping_cost_inc_tax
-      ).toFixed(2);
-      let mailPayload = {
-        to: serverOrderDetails.serverOrderCustomerDetails.email,
-        orderDetails: {
-          customerName: serverOrderDetails.serverOrderCustomerDetails.name,
-          orderNumber: +orderId,
-          orderDate: moment(serverOrderDetails.orderDate).format(
-            'MMMM D, YYYY',
-          ),
-          paymentMethod: orderDetailsFromBigCom?.payment_method,
-          totalCost: grandTotal,
-          deliverydate: moment(
-            billingAddressFormFields.pick_delivery_date_text,
-          ).format('MMMM D, YYYY'),
-          deliveryLocation:
-            billingAddressFormFields.order_type === 'delivery'
-              ? billingAddressFormFields.delivery_address
-              : billingAddressFormFields.current_store_address,
-          deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
-          // subTotal: serverOrderDetails.productTotal || 0,
-          // subTotal: (parseFloat(orderDetailsFromBigCom.subtotal_inc_tax)).toFixed(2)|| "0.00",
-          subTotal: subTotal.toFixed(2) || '0.00',
-          deliveryCharge:
-            parseFloat(orderDetailsFromBigCom.shipping_cost_ex_tax).toFixed(
-              2,
-            ) || '0.00',
-          deliveryFeeHST:
-            parseFloat(orderDetailsFromBigCom.shipping_cost_tax).toFixed(2) ||
-            '0.00',
-          // deliveryCharge: serverOrderDetails.deliveryFee || 0,
-          // deliveryFeeHST: serverOrderDetails.deliveryFeeHST || 0,
-          // grandTotal: serverOrderDetails.grandTotal || 0,
-          grandTotal,
-          totalSavings: (saleSavings + +totalPackupSaving).toFixed(2),
-          saleSavings: saleSavings.toFixed(2),
-          packupSaving: totalPackupSaving.toFixed(2),
-          cancellationReason: serverOrderDetails.cancellationReason || '',
-          refundedAmt:
-            parseFloat(orderDetailsFromBigCom.refunded_amount).toFixed(2) ||
-            '0.00',
-          refunded: mailProductsArr.find((x) => x.isRefunded === true)
-            ? true
-            : false,
-        },
-        orderProductDetails: mailProductsArr,
-        storeContact: billingAddressFormFields?.store_contact || '',
-        orderType: billingAddressFormFields.order_type,
-      };
-
-      if (+orderStatus === 5) {
-        this.mailService.orderCancelled({
-          ...mailPayload,
+  
+        console.log('mailProductsArr', mailProductsArr);
+        const totalPackupSaving = staffNotes.reduce(
+          (previousValue, currentValue) =>
+            previousValue + +currentValue.packup_discount,
+          0,
+        );
+        const grandTotal =  (+subTotal + +orderDetailsFromBigCom.shipping_cost_inc_tax ).toFixed(2);
+        let mailPayload = {
+          to: serverOrderDetails.serverOrderCustomerDetails.email,
           orderDetails: {
-            ...mailPayload.orderDetails,
-            refundedAmt: grandTotal,
+            customerName: serverOrderDetails.serverOrderCustomerDetails.name,
+            orderNumber: +orderId,
+            orderDate: moment(serverOrderDetails.orderDate).format(
+              'MMMM D, YYYY',
+            ),
+            paymentMethod: orderDetailsFromBigCom?.payment_method,
+            totalCost: grandTotal,
+            deliverydate: moment(
+              billingAddressFormFields.pick_delivery_date_text,
+            ).format('MMMM D, YYYY'),
+            deliveryLocation:
+            billingAddressFormFields.order_type === 'delivery' ?
+              billingAddressFormFields.delivery_address :
+              billingAddressFormFields.current_store_address,
+            deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
+            // subTotal: serverOrderDetails.productTotal || 0,
+            // subTotal: (parseFloat(orderDetailsFromBigCom.subtotal_inc_tax)).toFixed(2)|| "0.00",
+            subTotal: subTotal.toFixed(2) || "0.00",
+            deliveryCharge: (parseFloat(orderDetailsFromBigCom.shipping_cost_ex_tax)).toFixed(2) || "0.00",
+            deliveryFeeHST: (parseFloat(orderDetailsFromBigCom.shipping_cost_tax)).toFixed(2) || "0.00",
+            // deliveryCharge: serverOrderDetails.deliveryFee || 0,
+            // deliveryFeeHST: serverOrderDetails.deliveryFeeHST || 0,
+            // grandTotal: serverOrderDetails.grandTotal || 0,
+            grandTotal,
+            totalSavings: (saleSavings + +totalPackupSaving).toFixed(2),
+            saleSavings: (saleSavings).toFixed(2),
+            packupSaving: totalPackupSaving.toFixed(2),
+            cancellationReason: serverOrderDetails.cancellationReason || '',
+            refundedAmt: (parseFloat(orderDetailsFromBigCom.refunded_amount)).toFixed(2) || "0.00",
+            refunded: mailProductsArr.find((x) => x.isRefunded === true)
+              ? true
+              : false,
           },
-        });
-      }
-
-      if (+orderStatus === 10) {
-        this.mailService.orderCompleted(mailPayload);
-      }
-
-      if (+orderStatus === 3) {
-        this.mailService.orderInTransit(mailPayload);
-      }
-
-      console.log(
-        'orderType',
-        billingAddressFormFields.order_type,
-        billingAddressFormFields.pickup_type,
-      );
-      if (+orderStatus === 8 || +orderStatus === 9) {
-        if (
-          billingAddressFormFields.order_type === 'pickup' &&
-          billingAddressFormFields.pickup_type === 'curbside'
-        ) {
-          this.mailService.orderCurbsideConfirmed(mailPayload);
-        } else {
-          this.mailService.orderConfirmed(mailPayload);
+          orderProductDetails: mailProductsArr,
+          storeContact: billingAddressFormFields?.store_contact || '',
+          orderType: billingAddressFormFields.order_type,
+        };
+  
+        if (+orderStatus === 5) {
+          this.mailService.orderCancelled({
+            ...mailPayload,
+            orderDetails: {
+              ...mailPayload.orderDetails,
+              refundedAmt: grandTotal,
+            }
+          });
+        }
+  
+        if (+orderStatus === 10) {
+          this.mailService.orderCompleted(mailPayload);
+        }
+  
+        if (+orderStatus === 3) {
+          this.mailService.orderInTransit(mailPayload);
+        }
+  
+        console.log(
+          'orderType',
+          billingAddressFormFields.order_type,
+          billingAddressFormFields.pickup_type,
+        );
+        if (+orderStatus === 8) {
+          if (
+            billingAddressFormFields.order_type === 'pickup' &&
+            billingAddressFormFields.pickup_type === 'curbside'
+          ) {
+            this.mailService.orderCurbsideConfirmed(mailPayload);
+          } else {
+            this.mailService.orderConfirmed(mailPayload);
+          }
+        this.mailService.orderCreated(mailPayload);
         }
       }
     } catch (error) {
