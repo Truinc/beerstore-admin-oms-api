@@ -50,7 +50,7 @@ export class UpdateOrderDto {
 
   @ApiProperty({ type: String })
   @IsOptional()
-  @IsEmail()
+  // @IsEmail()
   @IsString()
   @MaxLength(200)
   readonly customerEmail?: string;

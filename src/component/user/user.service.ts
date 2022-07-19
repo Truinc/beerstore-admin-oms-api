@@ -124,12 +124,18 @@ export class UserService {
           'manager',
           'isActive',
           'employeeId',
+          'storeId',
         ];
         const sortKey = Object.keys(sort)[0];
         if (validSortKey.includes(sortKey)) {
-          const sortObj = {
-            [`User.${sortKey}`]: sort[sortKey],
-          };
+          const sortObj =
+            sortKey === 'storeId'
+              ? {
+                  [`UserStores.${sortKey}`]: sort[sortKey],
+                }
+              : {
+                  [`User.${sortKey}`]: sort[sortKey],
+                };
           table.orderBy(sortObj as { [key: string]: 'ASC' | 'DESC' });
         } else {
           throw new BadRequestException(`Invalid sort param :- ${sortKey}`);
@@ -143,7 +149,7 @@ export class UserService {
         table.take(take);
       }
       const response = await table.getManyAndCount();
-      console.log('response', response);
+      console.log('response ------- >>', response);
       const [items, total] = response;
       return {
         total,
@@ -152,6 +158,7 @@ export class UserService {
         items,
       };
     } catch (err) {
+      console.log(err, 'ERRRRR');
       throw new BadRequestException(err.message);
     }
   }
@@ -478,12 +485,12 @@ export class UserService {
       }
 
       if (user.role === 'storemanager') {
-        await  this.usersRepository
-        .createQueryBuilder()
-        .update(User)
-        .set({ manager: null })
-        .where({ manager: user.username })
-        .execute();
+        await this.usersRepository
+          .createQueryBuilder()
+          .update(User)
+          .set({ manager: null })
+          .where({ manager: user.username })
+          .execute();
       }
 
       await Promise.all([

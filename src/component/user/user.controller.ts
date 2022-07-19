@@ -14,6 +14,7 @@ import {
   Patch,
   InternalServerErrorException,
   Req,
+  BadRequestException,
 } from '@nestjs/common';
 import { Request as HttpRequest } from 'express';
 import {
@@ -52,14 +53,30 @@ export class UserController {
     description: '204. Created',
     type: CreateUserDto,
   })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
   @UseGuards(JwtAccessGuard, RolesGuard)
-  @Roles(RolesEnum.superadmin, RolesEnum.ithelpdesk, RolesEnum.storemanager)
+  @Roles(
+    RolesEnum.superadmin,
+    RolesEnum.reportingadmin,
+    RolesEnum.ithelpdesk,
+    RolesEnum.customerservicerep,
+    RolesEnum.storemanager,
+  )
   @HttpCode(HttpStatus.OK)
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() createUserDto: CreateUserDto) {
+  async create(@Body() createUserDto: CreateUserDto, @Req() request: HttpRequest & { user: User }) {
     try {
+      const {
+        user: { role },
+      } = request || { role: '' };
+      const { role: userRole } = createUserDto;
+      if (role) {
+        if (userRole !== 'superadmin' && role === 'superAdmin') {
+          throw new BadRequestException(
+            `Yor are not authorized to create superadmin account`,
+          );
+        }
+      }
       const user = await this.userService.create(createUserDto);
       return user;
     } catch (error) {
@@ -107,13 +124,14 @@ export class UserController {
   @UseGuards(JwtAccessGuard)
   @HttpCode(HttpStatus.OK)
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    const user = this.userService.findOne(id);
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    const user = await this.userService.findOne(id);
     if (!user) {
       throw new NotFoundException('user not found');
     }
     return user;
   }
+
 
   @ApiOkResponse({ description: '204. Success', type: User })
   @ApiNotFoundResponse({ description: 'user not found' })
@@ -203,7 +221,7 @@ export class UserController {
   @Get('userMeta/:id')
   async getUserMeta(@Param('id', ParseIntPipe) id: number) {
     const userMeta = await this.userService.getUserMeta(id);
-    if(Object.keys(userMeta).length <= 0 ){
+    if (Object.keys(userMeta).length <= 0) {
       throw new NotFoundException('User not found');
     }
     return userMeta;

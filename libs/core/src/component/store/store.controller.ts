@@ -431,7 +431,7 @@ export class StoreController {
   @HttpCode(HttpStatus.OK)
   @Delete('save/holiday/calender/:parentId')
   async deleteHoliday(@Param('parentId', ParseIntPipe) parentId: number) {
-    return this.storeService.deleteHoliday(parentId);
+    return await this.storeService.deleteHoliday(parentId);
   }
 
   @ApiPaginatedResponse(HolidayHours)

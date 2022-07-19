@@ -1031,8 +1031,16 @@ export class StoreService {
   }
 
   async deleteHoliday(id: number) {
+    try {
+      const holiday = await this.storeHolidayHrsRepository.findOne(id);
+      if (!holiday) {
+        return new NotFoundException('Holiday not found!');
+      }
     await this.storeHolidayHrsRepository.delete(id);
     return;
+    } catch (error) {
+      return error;
+    }
   }
 
   async findAllHolidays(take: number, skip: number, sort: object) {

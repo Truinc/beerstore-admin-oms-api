@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-types */
+/* eslint-disable prefer-const */
 import {
   BadRequestException,
   forwardRef,
@@ -8,7 +10,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Brackets } from 'typeorm';
+import { Repository, Brackets, Between } from 'typeorm';
 import { CreateOrderHistoryDto } from '../order-history/dto/create-order-history.dto';
 import { OrderHistoryService } from '../order-history/order-history.service';
 import { OrdersService } from '../orders/orders.service';
@@ -52,6 +54,7 @@ const OrderstatusText = {
   10: 'completed',
   8: 'awaiting pickup',
   3: 'partial shipped',
+  // 9: 'awaiting shipment'
 };
 @Injectable()
 export class ServerOrderService {
@@ -95,7 +98,11 @@ export class ServerOrderService {
         'ServerOrder.serverOrderCustomerDetails',
         'ServerOrderCustomerDetails',
       );
-    if (status) {
+    if (status[2]) {
+      table.where({
+        orderStatus: Between('8', '9'),
+      });
+    } else {
       table.where('ServerOrder.orderStatus = :orderStatus', {
         orderStatus: status,
       });
@@ -123,10 +130,11 @@ export class ServerOrderService {
       );
     }
 
-    // for testing purpose it is commented out
-    // table.andWhere('ServerOrder.storeId = :storeId', {
-    //   storeId,
-    // });
+    if(storeId){
+      table.andWhere('ServerOrder.storeId = :storeId', {
+        storeId,
+      });
+    }
 
     if (search) {
       table.andWhere(
@@ -202,7 +210,7 @@ export class ServerOrderService {
         max_date_created,
         vector,
         brewer,
-        cancelledby
+        cancelledby,
       );
     }
 
@@ -214,7 +222,7 @@ export class ServerOrderService {
         max_date_created,
         vector,
         brewer,
-        cancelledby
+        cancelledby,
       );
     }
   }
@@ -261,14 +269,14 @@ export class ServerOrderService {
       table.andWhere('ServerOrder.orderStatus = :orderStatus', {
         orderStatus: status_id,
       });
-      if(cancelledby === 'customer'){
+      if (cancelledby === 'customer') {
         table.andWhere('ServerOrder.cancelledByCustomer = :cancelStatus', {
           cancelStatus: 1,
-        }); 
-      } else if(cancelledby === 'store'){
+        });
+      } else if (cancelledby === 'store') {
         table.andWhere('ServerOrder.cancelledByDriver = :driverStatus', {
           driverStatus: 0,
-        }); 
+        });
         table.andWhere('ServerOrder.cancelledByCustomer = :customerStatus', {
           customerStatus: 0,
         });
@@ -511,9 +519,8 @@ export class ServerOrderService {
         name: `${orderDetails.billing_address.first_name} ${orderDetails.billing_address.last_name}`,
         email: orderDetails.billing_address.email,
         postalCode: orderDetails.billing_address.zip,
-        dob: moment(billingAddressFormFields.dob, 'DD-MM-YYYY').format(
-          'YYYY-MM-DD',
-        ),
+        dob: billingAddressFormFields.dob ? moment(billingAddressFormFields.dob, 'DD-MM-YYYY').format(
+          'YYYY-MM-DD') : null,
         salutation: billingAddressFormFields.salutation,
         customerType: CustomerTypeEnum.Email,
         ccType: transactionDetails?.card?.card_type || null,
@@ -521,6 +528,8 @@ export class ServerOrderService {
         cardAmount: +transactionDetails?.amount || 0,
         authCode: +transactionDetails?.auth_code || null,
       };
+
+      console.log('customerDetails', customerDetails);
 
       let singleUnits = 0;
       let twoSixUnits = 0;
@@ -549,18 +558,22 @@ export class ServerOrderService {
 
         let hlTotal = (product.quantity * +packSize * +volume) / 1000 / 100;
         volumeTotalHL += hlTotal;
-        
-        let itemDescription = "";
+
+        let itemDescription = '';
         const customFields = product?.product?.data?.custom_fields || [];
         const pageTitle = product?.product?.data?.page_title || '';
-        if(pageTitle){
+        if (pageTitle) {
           itemDescription = pageTitle.split('~')[0] || '';
         }
-        let brewer = "";
-        let category = "";
-        if(customFields.length > 0){
-          brewer = customFields.find(field => field.name === 'Producer')?.value || '';
-          category = customFields.find(field => field.name === 'Category')?.value || '';
+        let brewer = '';
+        let category = '';
+        if (customFields.length > 0) {
+          brewer =
+            customFields.find((field) => field.name === 'Producer')?.value ||
+            '';
+          category =
+            customFields.find((field) => field.name === 'Category')?.value ||
+            '';
         }
 
         let imageUrl = product.product?.data?.custom_fields.find(
@@ -569,23 +582,24 @@ export class ServerOrderService {
         let variantData = product.product.data.variants.find(
           (x) => x.id === product.variant_id,
         );
+        console.log('variantData', variantData);
         //calculating the sale price
         if (variantData.sale_price !== variantData.price) {
           saleSavings += variantData.price - variantData.sale_price;
         }
-        mailProductsArr.push({
-          imageUrl: imageUrl || '',
-          name: product.name,
-          displayValue: product?.product_options[0]?.display_value,
-          quantity: +product.quantity,
-          productSubTotal:
-            variantData.sale_price === variantData.price
-              ? (variantData.price * product.quantity).toFixed(2)
-              : (variantData.sale_price * product.quantity).toFixed(2),
-          price: (variantData.price).toFixed(2) || 0,
-          salePrice: (variantData.sale_price).toFixed(2) || 0,
-          onSale: variantData.sale_price === variantData.price ? false : true,
-        });
+        // mailProductsArr.push({
+        //   imageUrl: imageUrl || '',
+        //   name: product.name,
+        //   displayValue: product?.product_options[0]?.display_value,
+        //   quantity: +product.quantity,
+        //   productSubTotal:
+        //     variantData.sale_price === variantData.price
+        //       ? (variantData.price * product.quantity).toFixed(2)
+        //       : (variantData.sale_price * product.quantity).toFixed(2),
+        //   price: (variantData.price).toFixed(2) || 0,
+        //   salePrice: (variantData.sale_price).toFixed(2) || 0,
+        //   onSale: variantData.sale_price === variantData.price ? false : true,
+        // });
 
         productTotal += +product.total_inc_tax;
         return {
@@ -595,8 +609,8 @@ export class ServerOrderService {
           lineItem: index + 1,
           itemSKU: product.sku,
           itemDescription: '',
-          brewer: '',
-          category: '',
+          brewer,
+          category,
           quantity: product.quantity,
           packSize: +packSize,
           volume: +volume,
@@ -623,6 +637,7 @@ export class ServerOrderService {
         orderId: `${orderDetails.id}`,
         storeId: `${billingAddressFormFields.store_id}`,
         orderType:
+        billingAddressFormFields.source === 'kiosk' ? 'kiosk' : 
           billingAddressFormFields.order_type === 'pickup'
             ? billingAddressFormFields.pickup_type
             : billingAddressFormFields.order_type,
@@ -670,7 +685,6 @@ export class ServerOrderService {
         refundReason: '',
         pickUpType: billingAddressFormFields.pickup_type || '',
       };
-
       await this.serverOrderRepository.save(
         this.serverOrderRepository.create({
           ...serverOrderParsed,
@@ -679,36 +693,39 @@ export class ServerOrderService {
           serverOrderProductDetails: productsArr,
         }),
       );
+    console.log('tesitng213123', billingAddressFormFields.source);
+    let staffNotes = JSON.parse(orderDetails.staff_notes);
+    if(billingAddressFormFields.source !== 'kiosk'){
 
-      let staffNotes = JSON.parse(orderDetails.staff_notes);
-
-      // this.mailService.orderCreated({
-      //   to: customerDetails.email,
-      //   orderDetails: {
-      //     customerName: customerDetails.name,
-      //     orderNumber: +serverOrder.orderId,
-      //     orderDate: moment(serverOrderParsed.orderDate).format('MMMM D, YYYY'),
-      //     paymentMethod: orderDetails.payment_method,
-      //     totalCost: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
-      //     deliverydate: moment(
-      //       billingAddressFormFields.pick_delivery_date_text,
-      //     ).format('MMMM D, YYYY'),
-      //     deliveryLocation: deliveryDetails.deliveryAddress,
-      //     deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
-      //     subTotal: `${(serverOrderParsed.productTotal).toFixed(2)}` || "0.00",
-      //     deliveryCharge: (serverOrderParsed.deliveryFee).toFixed(2) || "0.00",
-      //     deliveryFeeHST: (serverOrderParsed.deliveryFeeHST).toFixed(2) || "0.00",
-      //     grandTotal: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
-      //     totalSavings: staffNotes.reduce(
-      //       (previousValue, currentValue) =>
-      //         previousValue + +currentValue.packup_discount,
-      //       0,
-      //     ),
-      //     saleSavings: (saleSavings).toFixed(2),
-      //   },
-      //   orderProductDetails: mailProductsArr,
-      // });
-
+      const serverOrder = await this.serverOrderDetail(orderDetails.id);
+    // this.mailService.orderCreated({
+    //   to: customerDetails.email,
+    //   orderDetails: {
+    //     customerName: customerDetails.name,
+    //     orderNumber: +serverOrder.orderId,
+    //     orderDate: moment(serverOrderParsed.orderDate).format('MMMM D, YYYY'),
+    //     paymentMethod: orderDetails.payment_method,
+    //     totalCost: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
+    //     deliverydate: moment(
+    //       billingAddressFormFields.pick_delivery_date_text,
+    //     ).format('MMMM D, YYYY'),
+    //     deliveryLocation: deliveryDetails.deliveryAddress,
+    //     deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
+    //     subTotal: `${(serverOrderParsed.productTotal).toFixed(2)}` || "0.00",
+    //     deliveryCharge: (serverOrderParsed.deliveryFee).toFixed(2) || "0.00",
+    //     deliveryFeeHST: (serverOrderParsed.deliveryFeeHST).toFixed(2) || "0.00",
+    //     grandTotal: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
+    //     totalSavings: staffNotes.reduce(
+    //       (previousValue, currentValue) =>
+    //         previousValue + +currentValue.packup_discount,
+    //       0,
+    //     ),
+    //     saleSavings: (saleSavings).toFixed(2),
+    //   },
+    //   orderProductDetails: mailProductsArr,
+    // });
+    this.sendMailOnStatusChange(`${orderDetails.id}`,serverOrder, 11 );
+  }
       return 'Order placed';
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -798,60 +815,69 @@ export class ServerOrderService {
       serverOrder.orderStatus = orderStatus;
       serverOrder.partialOrder = partial !== '0';
       const refundQuote = {
-          "items": [],
-          "tax_adjustment_amount": 0
-      }
-      if(+serverOrder.orderStatus === +8 || +serverOrder.orderStatus === +9 ){
+        items: [],
+        tax_adjustment_amount: 0,
+      };
+      if (+serverOrder.orderStatus === +8 || +serverOrder.orderStatus === +9) {
         serverOrder.pickUpReadyDateTime = moment().toDate();
       }
 
-      if(serverOrder?.orderStatus !== 3){
-        if(serverOrder?.serverOrderProductDetails){
+      if (serverOrder?.orderStatus !== 3) {
+        if (serverOrder?.serverOrderProductDetails) {
           refundOrder.products.forEach((product, _idx) => {
-            const updatedProduct = serverOrder.serverOrderProductDetails.find(prod => product.sku === prod.itemSKU);
-            if(updatedProduct){
+            const updatedProduct = serverOrder.serverOrderProductDetails.find(
+              (prod) => product.sku === prod.itemSKU,
+            );
+            if (updatedProduct) {
               // serverOrder.serverOrderProductDetails[_idx].quantity =  updatedProduct.quantity;
-              serverOrder.serverOrderProductDetails[_idx].quantity =  +product.originalQty - +product.refundQty;
-              if(+product.refundQty > 0){
+              serverOrder.serverOrderProductDetails[_idx].quantity =
+                +product.originalQty - +product.refundQty;
+              if (+product.refundQty > 0) {
                 refundQuote.items.push({
-                  "item_id": product.id,
-                  "item_type": "PRODUCT",
-                  "quantity": product.refundQty, 
-                })
+                  item_id: product.id,
+                  item_type: 'PRODUCT',
+                  quantity: product.refundQty,
+                });
               }
             }
           });
         }
-  
-        if(refundQuote.items.length > 0){
+
+        if (refundQuote.items.length > 0) {
           const paymentRefund = {
             ...refundQuote,
-            "payments": [
-                {
-                "provider_id": "storecredit",
-                "amount": -1,
-                "offline": false
-                }
-            ]
-            }
-            const quotesRes = await this.ordersService.setRefundQuotes(id, refundQuote);
-            console.log('quotesRes', JSON.stringify(quotesRes));
-            paymentRefund.payments[0].amount = quotesRes.data.total_refund_amount;
-            console.log('paymentTesting', paymentRefund);
-            const refundedOrder = await this.ordersService.refundHandler(id, paymentRefund);
-            console.log('refundedAmount', JSON.stringify(refundedOrder));
-            console.log('serverOrder', serverOrder);
-            // serverOrder.grandTotal = 
-            // serverOrder.productTotal = 
+            payments: [
+              {
+                provider_id: 'storecredit',
+                amount: -1,
+                offline: false,
+              },
+            ],
+          };
+          const quotesRes = await this.ordersService.setRefundQuotes(
+            id,
+            refundQuote,
+          );
+          console.log('quotesRes', JSON.stringify(quotesRes));
+          paymentRefund.payments[0].amount = quotesRes.data.total_refund_amount;
+          console.log('paymentTesting', paymentRefund);
+          const refundedOrder = await this.ordersService.refundHandler(
+            id,
+            paymentRefund,
+          );
+          console.log('refundedAmount', JSON.stringify(refundedOrder));
+          console.log('serverOrder', serverOrder);
+          // serverOrder.grandTotal =
+          // serverOrder.productTotal =
         }
         console.log('createOrderDto1234567', createOrderDto);
-        await this.ordersService.updateOrder(`${id}`, createOrderDto); 
-      } else if (serverOrder?.orderStatus === 3){
+        await this.ordersService.updateOrder(`${id}`, createOrderDto);
+      } else if (serverOrder?.orderStatus === 3) {
         await this.ordersService.updateOrder(`${id}`, {
           status_id: 3,
         });
       }
-     
+
       const orderToSave = await this.serverOrderRepository.preload(serverOrder);
       const response = await Promise.all([
         this.serverOrderRepository.save(orderToSave),
@@ -859,7 +885,7 @@ export class ServerOrderService {
       ]);
 
       try {
-        if (checkoutId) {
+        if (checkoutId && serverOrder?.orderType !== 'kiosk') {
           await this.sendPushNotification(
             this.configService.get('beerstoreApp').title,
             `Your Order #${id} has been ${OrderstatusText[orderStatus]}.`,
@@ -868,9 +894,8 @@ export class ServerOrderService {
             +orderStatus,
             serverOrder.orderType,
           );
-        } 
-      } catch (err) {
-      }
+          }
+      } catch (err) {}
       this.sendMailOnStatusChange(id?.toString(), serverOrder, orderStatus);
       return response[0];
     } catch (err) {
@@ -938,12 +963,9 @@ export class ServerOrderService {
       } = data;
       if (orderType === 'pickup' || orderType === 'curbside') {
         if (transactionId) {
-          await this.bamboraService.UpdatePaymentStatus(
-            transactionId,
-            {
-              amount: 0,
-            },
-          );
+          await this.bamboraService.UpdatePaymentStatus(transactionId, {
+            amount: 0,
+          });
         }
       } else if (orderType === 'delivery') {
         await this.cancelBeerGuyOrder(`${id}`, cancellationReason);
@@ -976,12 +998,12 @@ export class ServerOrderService {
           name: cancellationBy,
           identifier:
             cancellationBy.toLowerCase() === 'customer' ? '' : identifier,
-        })
+        }),
       ]);
       console.log('res', resp);
       this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus);
       try {
-        if (checkoutId) {
+        if (checkoutId && orderType !== 'kiosk') {
           this.sendPushNotification(
             this.configService.get('beerstoreApp').title,
             `Your Order #${id} has been cancelled.`,
@@ -990,10 +1012,8 @@ export class ServerOrderService {
             +serverOrder.orderStatus,
             orderType,
           );
-        } 
-    } catch (err) {
-
-    }
+        }
+      } catch (err) {}
       return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -1012,7 +1032,7 @@ export class ServerOrderService {
     try {
       const { amount, ...orderDetails } = serverOrder;
       let prevOrder = await this.serverOrderDetail(+orderId);
-      console.log('prevOrder', prevOrder)
+      console.log('prevOrder', prevOrder);
       if (
         prevOrder.orderType === 'pickup' ||
         prevOrder.orderType === 'curbside'
@@ -1028,8 +1048,7 @@ export class ServerOrderService {
       } else if (prevOrder.orderType === 'delivery') {
         // update beer guy
       }
-      
-      
+
       // if(prevOrder?.serverOrderProductDetails){
       //   createOrderDto.products.forEach((product, _idx) => {
       //     const updatedProduct = prevOrder.serverOrderProductDetails.find(prod => product.sku === prod.itemSKU);
@@ -1061,9 +1080,8 @@ export class ServerOrderService {
           cancellationBy: serverOrder.cancellationBy,
           cancellationReason: serverOrder.cancellationReason,
           cancellationNote: serverOrder.cancellationNote,
-          
-        }    
-      } else if(+serverOrder.orderStatus === 10){
+        };
+      } else if (+serverOrder.orderStatus === 10) {
         //completed
         prevOrder = {
           ...prevOrder,
@@ -1074,8 +1092,8 @@ export class ServerOrderService {
           ...prevOrder,
           pickUpReadyDateTime: moment().toDate(),
         };
-      } 
-      if (+serverOrder.orderStatus === 3){
+      }
+      if (+serverOrder.orderStatus === 3) {
         await this.ordersService.updateOrder(orderId, {
           status_id: 3,
         });
@@ -1089,7 +1107,7 @@ export class ServerOrderService {
       const response = await Promise.all(requests);
       this.sendMailOnStatusChange(orderId, prevOrder, serverOrder.orderStatus);
       try {
-        if (checkoutId) {
+        if (checkoutId && prevOrder?.orderType !== 'kiosk') {
           this.sendPushNotification(
             this.configService.get('beerstoreApp').title,
             `Your Order #${orderId} has been ${
@@ -1099,11 +1117,9 @@ export class ServerOrderService {
             orderId,
             +serverOrder.orderStatus,
             prevOrder.orderType,
-          ); 
+          );
         }
-      } catch (err) {
-        
-      }
+      } catch (err) {}
       return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -1116,166 +1132,219 @@ export class ServerOrderService {
     orderStatus: number,
   ) {
     try {
+      // console.log('orderId', serverOrderDetails.serverOrderProductDetails);
       const requests = [];
       let productIds = serverOrderDetails.serverOrderProductDetails
         .map((x) => `${x.productId}`)
         .join(',');
-       requests.push(this.ordersService.getOrder(orderId)); 
-       requests.push(this.ordersService.getOrderProducts(orderId)); 
-        requests.push(
-          this.beerService.findAll(
-            undefined,
-            undefined,
-            productIds,
-            undefined,
-            undefined,
-            'variants,custom_fields,images,primary_image',
-            undefined,
-            undefined,
-            null,
-          )
-        )
+      // console.log('testing123', productIds);
+      requests.push(this.ordersService.getOrder(orderId));
+      requests.push(this.ordersService.getOrderProducts(orderId));
+      requests.push(
+        this.beerService.findAll(
+          undefined,
+          undefined,
+          productIds,
+          undefined,
+          undefined,
+          'variants,custom_fields,images,primary_image',
+          undefined,
+          undefined,
+          null,
+        ),
+      );
       let result = await Promise.all(requests);
-      console.log('beerservice', result);
-      // let data;
-      // if(productItemsDetail){
-      //   data = productItemsDetail.data;
-      // } else {
-        let { data } = result[2];
-      // }
-      let orderDetailsFromBigCom = result[0];
+      // console.log('beerservice', result);
+      let { data } = result[2];
+      const orderDetailsFromBigCom = result[0];
       let orderProductDetails = result[1];
-      console.log('orderData',  orderDetailsFromBigCom, orderProductDetails, data);
+      // console.log('orderData',  orderProductDetails);
       let billingAddressFormFields = JSON.parse(
         orderDetailsFromBigCom?.billing_address?.form_fields[0]?.value,
       );
-      let staffNotes = JSON.parse(orderDetailsFromBigCom.staff_notes);
-      console.log('staffNotes', staffNotes);
-      let mailProductsArr = [];
-      let saleSavings = 0;
-      // let totalRefundedAmount = 0;
-      // let productFromdb;
-      let productDetail;
-      let subTotal = 0.0;
-      data.forEach((ele) => {
-        let imageUrl = ele?.custom_fields.find(
-          (x) => x.name === 'product_image_1',
-        )?.value;
-        // productFromdb = serverOrderDetails.serverOrderProductDetails.find(
-        //   (x) => x.productId == ele.id,
-        // );
-        productDetail = orderProductDetails.find(
-          (x) => x.product_id === ele.id,
+      if(billingAddressFormFields.source !== 'kiosk'){
+        let staffNotes = JSON.parse(orderDetailsFromBigCom.staff_notes);
+        console.log('staffNotes', staffNotes);
+        let mailProductsArr = [];
+        let saleSavings = 0;
+        // let totalRefundedAmount = 0;
+        // let productFromdb;
+        let productDetail;
+        let subTotal = 0.0;
+        console.log('!!!!data!!!!', serverOrderDetails?.serverOrderProductDetails);
+        serverOrderDetails?.serverOrderProductDetails.forEach((details) => {
+          const ele = data.find(product => +product.id === +details.productId);
+          // console.log('ele', ele);
+          let imageUrl = ele?.custom_fields.find(
+            (x) => x.name === 'product_image_1',
+          )?.value;
+          // productFromdb = serverOrderDetails.serverOrderProductDetails.find(
+            //   (x) => x.productId == ele.id,
+            // );
+            productDetail = orderProductDetails.find(
+              (x) => x.variant_id === details.variantId,
+              );
+          const packupDiscountObj = staffNotes.find(variant => variant.variant_id === productDetail.variant_id);
+          const packupDiscount = packupDiscountObj?.packup_discount || 0;
+          console.log('packupDiscount-->', packupDiscount);
+          let variantData = ele.variants.find((x) => {
+            return x.id === productDetail.variant_id;
+            // return x.id === productFromdb.variantId;
+          });
+          // console.log('variantData!!', variantData);
+          // console.log('productDetail', productDetail, variantData);
+          const actualQuantity = +productDetail.quantity - +productDetail.quantity_refunded;
+          if (variantData?.sale_price !== variantData?.price) {
+            saleSavings += (variantData?.price * actualQuantity ) - ( variantData?.sale_price * actualQuantity );
+          }
+          // console.log('testing', saleSavings, variantData);
+          // if (productDetail.is_refunded) {
+          //   totalRefundedAmount += productDetail.refund_amount;
+          // }
+          const refundedPrice = +productDetail.quantity * +variantData.price;
+          const productSubTotal = variantData?.sale_price === variantData?.price
+          ? (variantData?.price * actualQuantity).toFixed(2)
+          : (variantData?.sale_price * actualQuantity).toFixed(2) || 0.00;
+          
+          const salesSubTotal =  (variantData?.sale_price * actualQuantity).toFixed(2) || 0.00;
+          const maxSubTotal = (variantData?.price * actualQuantity).toFixed(2) || 0.00;
+          const packupSubTotal = +salesSubTotal -  +packupDiscount;
+          const nameString = ele.name.split('~');
+  
+          const name = nameString[0].replace(/-/g, ' ')?.toUpperCase();
+  
+  
+          // console.log('mailProductsArr', {
+          //   imageUrl: imageUrl || '',
+          //   name,
+          //   displayValue: productDetail?.product_options[0]?.display_value || '',
+          //   quantity: +productDetail.quantity,
+          //   productSubTotal,
+          //   price: (variantData.price).toFixed(2) || 0.00,
+          //   salePrice: (variantData?.sale_price).toFixed(2) || 0.00,
+          //   onSale: variantData?.sale_price === variantData.price ? false : true,
+          //   packupDiscount,
+          //   packupSubTotal: packupSubTotal.toFixed(2),
+          //   isRefunded: (productDetail.quantity - +productDetail?.quantity_refunded) === 0,
+          //   refundedQty: (productDetail?.quantity_refunded).toFixed(2)  || 0.00,
+          //   refundedAmt: (refundedPrice).toFixed(2) || 0.00,
+          // })
+          if(packupDiscount){
+            subTotal = subTotal + +packupSubTotal;
+          } else {
+            subTotal = subTotal + +productSubTotal;
+          }
+          mailProductsArr.push({
+            imageUrl: imageUrl || '',
+            name,
+            displayValue: productDetail?.product_options[0]?.display_value || '',
+            quantity: +productDetail.quantity,
+            productSubTotal,
+            packupDiscount,
+            packupSubTotal: packupSubTotal.toFixed(2),
+            price: (variantData.price).toFixed(2) || 0.00,
+            salePrice: (variantData?.sale_price).toFixed(2) || 0.00,
+            onSale: variantData?.sale_price === variantData.price ? false : true,
+            isRefunded: (productDetail.quantity - +productDetail?.quantity_refunded) === 0,
+            refundedQty: productDetail?.quantity_refunded  || 0,
+            refundedAmt: (refundedPrice).toFixed(2) || 0.00,
+          });
+        });
+  
+        console.log('mailProductsArr', mailProductsArr);
+        const totalPackupSaving = staffNotes.reduce(
+          (previousValue, currentValue) =>
+            previousValue + +currentValue.packup_discount,
+          0,
         );
-        console.log('productDetail', productDetail);
-        let variantData = ele.variants.find((x) => {
-          return x.id === productDetail.variant_id;
-          // return x.id === productFromdb.variantId;
-        });
-        if (variantData?.sale_price !== variantData?.price) {
-          saleSavings += variantData?.price - variantData?.sale_price;
+        const grandTotal =  (+subTotal + +orderDetailsFromBigCom.shipping_cost_inc_tax ).toFixed(2);
+       
+        let mailPayload = {
+          to: serverOrderDetails.serverOrderCustomerDetails.email,
+          orderDetails: {
+            customerName: serverOrderDetails.serverOrderCustomerDetails.name,
+            orderNumber: +orderId,
+            orderDate: moment(serverOrderDetails.orderDate).format(
+              'MMMM D, YYYY',
+            ),
+            storeContact: billingAddressFormFields?.store_contact || '',
+            orderType: billingAddressFormFields.order_type,
+            paymentMethod: orderDetailsFromBigCom?.payment_method,
+            totalCost: grandTotal,
+            deliverydate: moment(
+              billingAddressFormFields.pick_delivery_date_text,
+            ).format('MMMM D, YYYY'),
+            deliveryLocation:
+              billingAddressFormFields.order_type === 'delivery'
+                ? billingAddressFormFields.delivery_address
+                : billingAddressFormFields.current_store_address,
+            deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
+            // subTotal: serverOrderDetails.productTotal || 0,
+            // subTotal: (parseFloat(orderDetailsFromBigCom.subtotal_inc_tax)).toFixed(2)|| "0.00",
+            subTotal: subTotal.toFixed(2) || '0.00',
+            deliveryCharge:
+              parseFloat(orderDetailsFromBigCom.shipping_cost_ex_tax).toFixed(
+                2,
+              ) || '0.00',
+            deliveryFeeHST:
+              parseFloat(orderDetailsFromBigCom.shipping_cost_tax).toFixed(2) ||
+              '0.00',
+            // deliveryCharge: serverOrderDetails.deliveryFee || 0,
+            // deliveryFeeHST: serverOrderDetails.deliveryFeeHST || 0,
+            // grandTotal: serverOrderDetails.grandTotal || 0,
+            grandTotal,
+            totalSavings: (saleSavings + +totalPackupSaving).toFixed(2),
+            saleSavings: saleSavings.toFixed(2),
+            packupSaving: totalPackupSaving.toFixed(2),
+            cancellationReason: serverOrderDetails.cancellationReason || '',
+            refundedAmt:
+              parseFloat(orderDetailsFromBigCom.refunded_amount).toFixed(2) ||
+              '0.00',
+            refunded: mailProductsArr.find((x) => x.isRefunded === true)
+              ? true
+              : false,
+          },
+          orderProductDetails: mailProductsArr,
+        };
+        if (+orderStatus === 5) {
+          this.mailService.orderCancelled({
+            ...mailPayload,
+            orderDetails: {
+              ...mailPayload.orderDetails,
+              refundedAmt: grandTotal,
+            }
+          });
         }
-        // if (productDetail.is_refunded) {
-        //   totalRefundedAmount += productDetail.refund_amount;
-        // }
-        const actualQuantity = +productDetail.quantity - +productDetail.quantity_refunded;
-        const refundedPrice = +productDetail.quantity * +variantData.price;
-        const productSubTotal = variantData?.sale_price === variantData?.price
-        ? (variantData?.price * actualQuantity).toFixed(2)
-        : (variantData?.sale_price * actualQuantity).toFixed(2) || 0.00;
-        console.log('mailProductsArr', {
-          imageUrl: imageUrl || '',
-          name: ele.name,
-          displayValue: productDetail?.product_options[0]?.display_value || '',
-          quantity: actualQuantity,
-          productSubTotal,
-          price: (variantData.price).toFixed(2) || 0.00,
-          salePrice: variantData?.sale_price || 0.00,
-          onSale: variantData?.sale_price === variantData.price ? false : true,
-          isRefunded: (productDetail.quantity - +productDetail?.quantity_refunded) === 0,
-          refundedQty: (productDetail?.quantity_refunded).toFixed(2)  || 0.00,
-          refundedAmt: (refundedPrice).toFixed(2) || 0.00,
-        })
-        subTotal = subTotal + +productSubTotal;
-        mailProductsArr.push({
-          imageUrl: imageUrl || '',
-          name: ele.name,
-          displayValue: productDetail?.product_options[0]?.display_value || '',
-          quantity: actualQuantity,
-          productSubTotal,
-          price: (variantData.price).toFixed(2) || 0.00,
-          salePrice: variantData?.sale_price || 0.00,
-          onSale: variantData?.sale_price === variantData.price ? false : true,
-          isRefunded: (productDetail.quantity - +productDetail?.quantity_refunded) === 0,
-          refundedQty: (productDetail?.quantity_refunded).toFixed(2)  || 0.00,
-          refundedAmt: (refundedPrice).toFixed(2) || 0.00,
-        });
-      });
+  
+        if (+orderStatus === 11) {
+          this.mailService.orderCreated(mailPayload);
+        }
 
-      console.log('mailProductsArr', mailProductsArr);
-      const totalPackupSaving = staffNotes.reduce(
-        (previousValue, currentValue) =>
-          previousValue + +currentValue.packup_discount,
-        0,
-      );
-      const grandTotal =  (+subTotal + +orderDetailsFromBigCom.shipping_cost_inc_tax).toFixed(2);
-      let mailPayload = {
-        to: serverOrderDetails.serverOrderCustomerDetails.email,
-        orderDetails: {
-          customerName: serverOrderDetails.serverOrderCustomerDetails.name,
-          orderNumber: +orderId,
-          orderDate: moment(serverOrderDetails.orderDate).format(
-            'MMMM D, YYYY',
-          ),
-          paymentMethod: orderDetailsFromBigCom?.payment_method,
-          totalCost: grandTotal,
-          deliverydate: moment(
-            billingAddressFormFields.pick_delivery_date_text,
-          ).format('MMMM D, YYYY'),
-          deliveryLocation:
-            serverOrderDetails.serverOrderDeliveryDetails.deliveryAddress,
-          deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
-          // subTotal: serverOrderDetails.productTotal || 0,
-          // subTotal: (parseFloat(orderDetailsFromBigCom.subtotal_inc_tax)).toFixed(2)|| "0.00",
-          subTotal: subTotal.toFixed(2) || "0.00",
-          deliveryCharge: (parseFloat(orderDetailsFromBigCom.shipping_cost_ex_tax)).toFixed(2) || "0.00",
-          deliveryFeeHST: (parseFloat(orderDetailsFromBigCom.shipping_cost_tax)).toFixed(2) || "0.00",
-          // deliveryCharge: serverOrderDetails.deliveryFee || 0,
-          // deliveryFeeHST: serverOrderDetails.deliveryFeeHST || 0,
-          // grandTotal: serverOrderDetails.grandTotal || 0,
-          grandTotal,
-          totalSavings: (saleSavings + +totalPackupSaving).toFixed(2),
-          saleSavings: (saleSavings).toFixed(2),
-          cancellationReason: serverOrderDetails.cancellationReason || '',
-          refundedAmt: (parseFloat(orderDetailsFromBigCom.refunded_amount)).toFixed(2) || "0.00",
-          refunded: mailProductsArr.find((x) => x.isRefunded === true)
-            ? true
-            : false,
-        },
-        orderProductDetails: mailProductsArr,
-      };
-
-      // if (+orderStatus === 5) {
-      //   this.mailService.orderCancelled({
-      //     ...mailPayload,
-      //     orderDetails: {
-      //       ...mailPayload.orderDetails,
-      //       refundedAmt: grandTotal,
-      //     }
-      //   });
-      // }
-
-      // if (+orderStatus === 10) {
-      //   this.mailService.orderCompleted(mailPayload);
-      // }
-
-      // if (+orderStatus === 3) {
-      //   this.mailService.orderInTransit(mailPayload);
-      // }
-
-      // if (+orderStatus === 8) {
-      //   this.mailService.orderConfirmed(mailPayload);
-      // }
+        if (+orderStatus === 10) {
+          this.mailService.orderCompleted(mailPayload);
+        }
+  
+        if (+orderStatus === 3) {
+          this.mailService.orderInTransit(mailPayload);
+        }
+  
+        // console.log(
+        //   'orderType',
+        //   billingAddressFormFields.order_type,
+        //   billingAddressFormFields.pickup_type,
+        //   orderStatus
+        // );
+        if (+orderStatus === 8 || +orderStatus === 9) {
+          if (
+            billingAddressFormFields.order_type === 'pickup' &&
+            billingAddressFormFields.pickup_type === 'curbside'
+          ) {
+            this.mailService.orderCurbsideConfirmed(mailPayload);
+          } else {
+            this.mailService.orderConfirmed(mailPayload);
+          }
+        }
+      }
     } catch (error) {
       console.log(error, 'MAIL ERR');
     }
