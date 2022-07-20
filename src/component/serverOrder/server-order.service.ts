@@ -9,6 +9,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import * as momentTz from 'moment-timezone';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Brackets, Between } from 'typeorm';
 import { CreateOrderHistoryDto } from '../order-history/dto/create-order-history.dto';
@@ -632,15 +633,23 @@ export class ServerOrderService {
         billingAddressFormFields.pick_delivery_time.split('-') || '';
       const orderDeliveryDate =
         billingAddressFormFields.pick_delivery_date_text;
-      const fulfillmentDate = moment(
+      // const fulfillmentDate = moment(
+      //   `${orderDeliveryDate} ${timeSplit[0]}`,
+      //   'YYYY-MM-DD HH:mm A',
+      // ).format('YYYY-MM-DD HH:mm:ss');
+
+      const fulfillmentDate = momentTz(
         `${orderDeliveryDate} ${timeSplit[0]}`,
         'YYYY-MM-DD HH:mm A',
-      ).format('YYYY-MM-DD HH:mm:ss');
+      )
+        .tz(this.configService.get('timezone').zone)
+        .format('YYYY-MM-DD HH:mm:ss');
+
       let staffNotes = JSON.parse(orderDetails.staff_notes);
       let totalDiscount = 0;
-      staffNotes.forEach(notes => {
+      staffNotes.forEach((notes) => {
         totalDiscount += +notes.packup_discount;
-      })
+      });
       const serverOrderParsed = {
         orderId: `${orderDetails.id}`,
         storeId: `${billingAddressFormFields.store_id}`,
@@ -670,10 +679,10 @@ export class ServerOrderService {
           parseFloat(orderDetails.shipping_cost_tax).toFixed(2),
         ),
         grandTotal:
-          (productTotal +
+          productTotal +
           Number(parseFloat(orderDetails.shipping_cost_ex_tax).toFixed(2)) +
-          Number(parseFloat(orderDetails.shipping_cost_tax).toFixed(2)))
-          - +totalDiscount,
+          Number(parseFloat(orderDetails.shipping_cost_tax).toFixed(2)) -
+          +totalDiscount,
         volumeTotalHL,
         singleUnits: singleUnits,
         packUnits2_6: twoSixUnits,
@@ -704,7 +713,7 @@ export class ServerOrderService {
         }),
       );
       // console.log('tesitng213123', billingAddressFormFields.source);
-      
+
       if (billingAddressFormFields.source !== 'kiosk') {
         const serverOrder = await this.serverOrderDetail(orderDetails.id);
         // this.mailService.orderCreated({
