@@ -326,7 +326,7 @@ export class ServerOrderController {
       orderStatus,
       orderDetails,
       refundOrder,
-      // serverOrder,
+      serverOrder,
       partial,
       checkoutId,
     );

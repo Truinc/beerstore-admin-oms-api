@@ -98,5 +98,8 @@ export default () => ({
     username: process.env.MAIL_USERNAME,
     password: process.env.MAIL_PASSWORD,
     site_base_url: process.env.SITE_BASE_URL
+  },
+  timezone: {
+    zone: process.env.TIME_ZONE
   }
 });
