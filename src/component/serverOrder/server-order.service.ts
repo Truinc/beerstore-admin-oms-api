@@ -493,6 +493,13 @@ export class ServerOrderService {
         orderDetails?.billing_address?.form_fields[0]?.value,
       );
 
+      this.orderHistoryService.create({
+        orderId: `${orderDetails.id}`,
+        orderStatus: 11,
+        name: 'Order Queue',
+        identifier: '',
+      });
+      
       const deliveryDetails = {
         orderId: `${orderDetails.id}`,
         deliveryId: null,
@@ -1031,7 +1038,7 @@ export class ServerOrderService {
             cancellationBy.toLowerCase() === 'customer' ? '' : identifier,
         }),
       ]);
-      console.log('res', resp);
+      // console.log('res', resp);
       this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus);
       try {
         if (checkoutId && orderType !== 'kiosk') {
