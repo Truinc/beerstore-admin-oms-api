@@ -499,7 +499,7 @@ export class ServerOrderService {
         name: 'Order Queue',
         identifier: '',
       });
-      
+
       const deliveryDetails = {
         orderId: `${orderDetails.id}`,
         deliveryId: null,
@@ -540,7 +540,7 @@ export class ServerOrderService {
         authCode: +transactionDetails?.auth_code || null,
       };
 
-      console.log('customerDetails', customerDetails);
+      // console.log('customerDetails', customerDetails);
 
       let singleUnits = 0;
       let twoSixUnits = 0;
@@ -593,7 +593,7 @@ export class ServerOrderService {
         let variantData = product.product.data.variants.find(
           (x) => x.id === product.variant_id,
         );
-        console.log('variantData', variantData);
+        // console.log('variantData', variantData);
         //calculating the sale price
         if (variantData.sale_price !== variantData.price) {
           saleSavings += variantData.price - variantData.sale_price;
@@ -828,14 +828,13 @@ export class ServerOrderService {
     id: number,
     createOrderHistoryDto: CreateOrderHistoryDto,
     orderStatus: number,
-    createOrderDto: CreateOrderDto,
+    orderDetails: CreateOrderDto,
     refundOrder: RefundOrderDto,
-    serverOrderData: UpdateOrderDto,
+    createOrderDto: UpdateOrderDto,
     partial?: string,
     checkoutId?: string,
   ): Promise<any> {
     try {
-      // console.log('testing32423', createOrderDto, serverOrderData);
       const serverOrder = await this.serverOrderDetail(id);
       serverOrder.orderStatus = orderStatus;
       serverOrder.partialOrder = partial !== '0';
@@ -863,9 +862,9 @@ export class ServerOrderService {
                   item_type: 'PRODUCT',
                   quantity: product.refundQty,
                 });
-                if((+product.originalQty - +product.refundQty) == 0){
-                  serverOrder.serverOrderProductDetails[_idx].itemTotal = 0.00;
-                  serverOrder.serverOrderProductDetails[_idx].itemHLTotal = 0.00; 
+                if (+product.originalQty - +product.refundQty == 0) {
+                  serverOrder.serverOrderProductDetails[_idx].itemTotal = 0.0;
+                  serverOrder.serverOrderProductDetails[_idx].itemHLTotal = 0.0;
                 }
               }
             }
@@ -887,27 +886,31 @@ export class ServerOrderService {
             id,
             refundQuote,
           );
-          console.log('quotesRes', JSON.stringify(quotesRes));
           paymentRefund.payments[0].amount = quotesRes.data.total_refund_amount;
-          console.log('paymentTesting', paymentRefund);
           await this.ordersService.refundHandler(id, paymentRefund);
-          // console.log('refundedAmount', JSON.stringify(refundedOrder));
-          console.log('serverOrder', serverOrder);
         }
-        console.log('createOrderDto1234567', createOrderDto);
-        const resp = await this.ordersService.updateOrder(
-          `${id}`,
-          createOrderDto,
-        );
-        // console.log('resp', resp);
-        serverOrder.grandTotal = +resp.total_inc_tax - +resp.refunded_amount;
-        serverOrder.productTotal =
-          +resp.total_inc_tax -
-          (+resp.refunded_amount + +resp.shipping_cost_inc_tax);
-        serverOrder.deliveryFee = +resp.shipping_cost_ex_tax;
-        serverOrder.deliveryFeeHST = +resp.shipping_cost_tax;
-        serverOrder.refundedAmount = +resp.refunded_amount;
-        serverOrder.refunded = +resp.refunded_amount > 0;
+
+        let staffNotes = JSON.parse(orderDetails?.staff_notes);
+        let totalDiscount = 0;
+        staffNotes.forEach((notes) => {
+          totalDiscount += +notes.packup_discount;
+        });
+
+        await this.ordersService.updateOrder(`${id}`, orderDetails);
+        serverOrder.grandTotal =
+          +createOrderDto.productTotal + +orderDetails.shipping_cost_inc_tax - +totalDiscount;
+        serverOrder.productTotal = +createOrderDto.productTotal - +totalDiscount;
+        serverOrder.deliveryFee = +orderDetails.shipping_cost_ex_tax;
+        serverOrder.deliveryFeeHST =
+          +orderDetails.shipping_cost_inc_tax -
+          +orderDetails.shipping_cost_ex_tax;
+        serverOrder.refundedAmount = +orderDetails.refunded_amount;
+        serverOrder.refunded = +orderDetails.refunded_amount > 0;
+        serverOrder.volumeTotalHL = createOrderDto.volumeTotalHL;
+        serverOrder.singleUnits = createOrderDto.singleUnits;
+        serverOrder.packUnits2_6 = createOrderDto.packUnits2_6;
+        serverOrder.packUnits8_18 = createOrderDto.packUnits8_18;
+        serverOrder.packUnits_24Plus = createOrderDto.packUnits_24Plus;
       } else if (serverOrder?.orderStatus === 3) {
         await this.ordersService.updateOrder(`${id}`, {
           status_id: 3,
@@ -915,7 +918,6 @@ export class ServerOrderService {
       }
 
       const orderToSave = await this.serverOrderRepository.preload(serverOrder);
-      // console.log('orderToSave', orderToSave);
 
       const response = await Promise.all([
         this.serverOrderRepository.save(orderToSave),
@@ -945,7 +947,7 @@ export class ServerOrderService {
   async handleBeerGuy(updateOrder: BeerGuyUpdateDto): Promise<ServerOrder> {
     try {
       const serverOrder = {
-        orderStatus: +updateOrder.orderId,
+        orderStatus: +updateOrder.orderStatus,
         cancellationReason: updateOrder?.cancellationReason || '',
         cancellationBy: updateOrder?.cancellationBy || '',
         cancellationDate: updateOrder.cancellationDate || null,
@@ -1202,7 +1204,6 @@ export class ServerOrderService {
       );
       if (billingAddressFormFields.source !== 'kiosk') {
         let staffNotes = JSON.parse(orderDetailsFromBigCom.staff_notes);
-        console.log('staffNotes', staffNotes);
         let mailProductsArr = [];
         let saleSavings = 0;
         // let totalRefundedAmount = 0;
@@ -1231,7 +1232,7 @@ export class ServerOrderService {
             (variant) => variant.variant_id === productDetail.variant_id,
           );
           const packupDiscount = packupDiscountObj?.packup_discount || 0;
-          console.log('packupDiscount-->', packupDiscount);
+          // console.log('packupDiscount-->', packupDiscount);
           let variantData = ele.variants.find((x) => {
             return x.id === productDetail.variant_id;
             // return x.id === productFromdb.variantId;
@@ -1304,7 +1305,7 @@ export class ServerOrderService {
           });
         });
 
-        console.log('mailProductsArr', mailProductsArr);
+        // console.log('mailProductsArr', mailProductsArr);
         const totalPackupSaving = staffNotes.reduce(
           (previousValue, currentValue) =>
             previousValue + +currentValue.packup_discount,
