@@ -722,7 +722,7 @@ export class ServerOrderService {
       );
       if (billingAddressFormFields.source !== 'kiosk') {
         const serverOrder = await this.serverOrderDetail(orderDetails.id);
-        this.sendMailOnStatusChange(`${orderDetails.id}`, serverOrder, 11);
+        // this.sendMailOnStatusChange(`${orderDetails.id}`, serverOrder, 11);
       }
       return 'Order placed';
     } catch (err) {
@@ -907,7 +907,7 @@ export class ServerOrderService {
           );
         }
       } catch (err) {}
-      this.sendMailOnStatusChange(id?.toString(), serverOrder, orderStatus);
+      // this.sendMailOnStatusChange(id?.toString(), serverOrder, orderStatus);
       return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -1012,7 +1012,7 @@ export class ServerOrderService {
         }),
       ]);
       // console.log('res', resp);
-      this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus);
+      // this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus);
       try {
         if (checkoutId && orderType !== 'kiosk') {
           this.sendPushNotification(
@@ -1116,7 +1116,7 @@ export class ServerOrderService {
       requests.push(this.serverOrderRepository.save(orderToSave));
       requests.push(this.orderHistoryService.create(createOrderHistoryDto));
       const response = await Promise.all(requests);
-      this.sendMailOnStatusChange(orderId, prevOrder, serverOrder.orderStatus);
+      // this.sendMailOnStatusChange(orderId, prevOrder, serverOrder.orderStatus);
       try {
         if (checkoutId && prevOrder?.orderType !== 'kiosk') {
           this.sendPushNotification(
