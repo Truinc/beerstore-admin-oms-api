@@ -444,7 +444,6 @@ export class ServerOrderService {
     try {
       const createPostFeed = await this.postFeedRepository.create(postFeed);
       const response = await this.postFeedRepository.save(createPostFeed);
-      // console.log('response', response);
       return this.postFeedRepository.findOne(response.id);
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -634,6 +633,8 @@ export class ServerOrderService {
           utmCampaign: null,
           utmTerm: null,
           utmContent: null,
+          tbsArticleId: product?.sku?.split("_")?.[0] || '',
+          tbsProductId: product?.product?.data?.sku?.split("_")?.[0]|| '',
         };
       });
       const timeSplit =
@@ -719,36 +720,8 @@ export class ServerOrderService {
           serverOrderProductDetails: productsArr,
         }),
       );
-      // console.log('tesitng213123', billingAddressFormFields.source);
-
       if (billingAddressFormFields.source !== 'kiosk') {
         const serverOrder = await this.serverOrderDetail(orderDetails.id);
-        // this.mailService.orderCreated({
-        //   to: customerDetails.email,
-        //   orderDetails: {
-        //     customerName: customerDetails.name,
-        //     orderNumber: +serverOrder.orderId,
-        //     orderDate: moment(serverOrderParsed.orderDate).format('MMMM D, YYYY'),
-        //     paymentMethod: orderDetails.payment_method,
-        //     totalCost: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
-        //     deliverydate: moment(
-        //       billingAddressFormFields.pick_delivery_date_text,
-        //     ).format('MMMM D, YYYY'),
-        //     deliveryLocation: deliveryDetails.deliveryAddress,
-        //     deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
-        //     subTotal: `${(serverOrderParsed.productTotal).toFixed(2)}` || "0.00",
-        //     deliveryCharge: (serverOrderParsed.deliveryFee).toFixed(2) || "0.00",
-        //     deliveryFeeHST: (serverOrderParsed.deliveryFeeHST).toFixed(2) || "0.00",
-        //     grandTotal: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
-        //     totalSavings: staffNotes.reduce(
-        //       (previousValue, currentValue) =>
-        //         previousValue + +currentValue.packup_discount,
-        //       0,
-        //     ),
-        //     saleSavings: (saleSavings).toFixed(2),
-        //   },
-        //   orderProductDetails: mailProductsArr,
-        // });
         this.sendMailOnStatusChange(`${orderDetails.id}`, serverOrder, 11);
       }
       return 'Order placed';
@@ -783,22 +756,6 @@ export class ServerOrderService {
     await this.serverOrderRepository.update(order.id, serverOrder);
     return this.findOne(id);
   }
-
-  // async updateServerOrderStatus(
-  //   id: number,
-  //   orderStatus: number,
-  //   partial: string,
-  // ): Promise<ServerOrder> {
-  //   const order = await this.findOne(id);
-  //   if (!order) {
-  //     throw new NotFoundException('Order not found');
-  //   }
-  //   await this.serverOrderRepository.update(order.id, {
-  //     orderStatus,
-  //     // partial,
-  //   });
-  //   return this.findOne(id);
-  // }
 
   async serverOrderDetail(orderId: number): Promise<ServerOrder> {
     const serverOrder = await this.serverOrderRepository.findOne(
@@ -835,9 +792,18 @@ export class ServerOrderService {
     checkoutId?: string,
   ): Promise<any> {
     try {
-      const serverOrder = await this.serverOrderDetail(id);
+      // console.log('testing32423', createOrderDto, serverOrderData);
+      let updateBeerGuy = false;
+      // const serverOrder = await this.serverOrderDetail(id);
+      const orderRes = await Promise.all([
+        this.serverOrderDetail(id),
+        this.ordersService.getOrder(`${id}`),
+      ]);
+      const serverOrder = orderRes[0];
+      const bigCommOrder = orderRes[1];
       serverOrder.orderStatus = orderStatus;
       serverOrder.partialOrder = partial !== '0';
+
       const refundQuote = {
         items: [],
         tax_adjustment_amount: 0,
@@ -888,6 +854,10 @@ export class ServerOrderService {
           );
           paymentRefund.payments[0].amount = quotesRes.data.total_refund_amount;
           await this.ordersService.refundHandler(id, paymentRefund);
+          // update beer guy for partial order
+          if (serverOrder.orderType === 'delivery') {
+            updateBeerGuy = true;
+          }
         }
 
         let staffNotes = JSON.parse(orderDetails?.staff_notes);
@@ -920,6 +890,7 @@ export class ServerOrderService {
       const orderToSave = await this.serverOrderRepository.preload(serverOrder);
 
       const response = await Promise.all([
+        { ...(updateBeerGuy && this.updateBeerGuyOrder(bigCommOrder)) },
         this.serverOrderRepository.save(orderToSave),
         this.orderHistoryService.create(createOrderHistoryDto),
       ]);
@@ -955,8 +926,8 @@ export class ServerOrderService {
       const orderHistory = {
         orderId: updateOrder.orderId,
         orderStatus: updateOrder.orderStatus,
-        name: updateOrder.driverName || '',
-        identifier: 'The Beer Guy',
+        name: updateOrder.driverName || 'The Beer Guy',
+        identifier: '',
       };
       const orderDetails = {
         status_id: updateOrder.orderStatus,
@@ -1177,7 +1148,6 @@ export class ServerOrderService {
       let productIds = serverOrderDetails.serverOrderProductDetails
         .map((x) => `${x.productId}`)
         .join(',');
-      // console.log('testing123', productIds);
       requests.push(this.ordersService.getOrder(orderId));
       requests.push(this.ordersService.getOrderProducts(orderId));
       requests.push(
@@ -1480,5 +1450,162 @@ export class ServerOrderService {
     );
     console.log('beerguy cancel order', cancelOrderRes);
     return cancelOrderRes;
+  };
+
+  updateBeerGuyOrder = async (bigCommOrder: any) => {
+    console.log('orderId', bigCommOrder);
+    const {
+      id,
+      customer_id,
+      billing_address,
+      customer_message,
+      total_inc_tax,
+      base_shipping_cost,
+      shipping_cost_tax,
+      payment_method,
+      total_tax,
+    } = bigCommOrder;
+    const formFieldsObj = billing_address.form_fields[0];
+    const sequenceArr = billing_address.form_fields[1].value;
+    const sequence = JSON.parse(sequenceArr);
+    let products = [];
+    let productSequence;
+    let orderProduct;
+    
+    const productIds = [];
+    sequence.forEach(product => {
+      productIds.push(product.product_id);
+    })
+
+    const productDetails = await this.beerService.findAll(
+      undefined,
+      undefined,
+      productIds.toString(),
+      undefined,
+      undefined,
+      'variants,custom_fields,images,primary_image',
+      undefined,
+      undefined,
+      null,
+    )
+    console.log('productDetails', productDetails);
+    let productSkews = {};
+    productDetails?.data?.forEach((details) => {
+      console.log('testing', details.id, details.sku.split('_')[0]);
+      productSkews[details.id] = details.sku.split('_')[0]
+    });
+    console.log('productSkews', productSkews);
+
+    sequence.forEach(product => {
+      const skuStr = product.sku;
+      const sku =  skuStr.split('_')[0];
+      // productIds.push(product.product_id);
+      productSequence = product.sequence;
+      if(Array.isArray(productSequence) && productSequence.length > 0 ){
+        if (productSequence[0]?.sale){
+          const variant = productSequence[0]?.sale?.variant;
+          if(variant){
+            const currentPrice = variant?.price_info?.value?.current_price
+            orderProduct = {
+              tbs_product_id: productSkews[product.product_id] || '',
+              tbs_article_id: sku,
+              price: currentPrice?.total_price,
+              hst: currentPrice?.tax[0].tax_amount || 0.00,
+              isSale: variant?.price_info?.value?.on_sale !== 'N',
+              name: variant?.variant_info?.label,
+              deposit: currentPrice.deposit,
+              quantity: productSequence[0]?.sale?.quantity || 0,
+            };
+          }
+        }
+         if(productSequence[0]?.sub){
+           const { variant, quantity } = productSequence[0]?.sub || { quantity: 0};
+           if(variant){
+            const currentPrice = variant?.price_info?.value?.current_price;
+            const taxAmount = currentPrice?.tax[0].tax_amount || 0.00;
+            orderProduct.sub = {
+              tbs_article_id: sku,
+              tbs_product_id: productSkews[product.product_id] || '',
+              price: (quantity * +currentPrice.total_price).toFixed(2),
+              hst: (quantity * taxAmount).toFixed(2),
+              deposit: (quantity * +currentPrice.deposit).toFixed(2),
+              quantity,
+            };
+           }
+         } 
+         products.push(orderProduct);
+      }
+    });
+
+    const {
+      store_id,
+      checkout_id,
+      delivery_phone,
+      order_email,
+      pick_delivery_date_text,
+      pick_delivery_time,
+      order_type,
+      delivery_address,
+      buzzer,
+      dob,
+      salutation,
+    } = JSON.parse(formFieldsObj.value);
+
+
+    const payload = {
+      tbs_shopping_cart_id: checkout_id,
+      tbs_purchase_id: id,
+      tbs_customer_id: customer_id,
+      tbs_location_id: store_id,
+      beer_xpress_location_id: store_id,
+      name: `${billing_address.first_name} ${billing_address.last_name}`,
+      products,
+      phone: delivery_phone,
+      email: order_email,
+      purchase_extra: customer_message,
+      schedule_date: pick_delivery_date_text,
+      schedule_time: pick_delivery_time,
+      order_type,
+      cell: delivery_phone,
+      total_price: total_inc_tax,
+      delivery_fee: base_shipping_cost,
+      delivery_hst: shipping_cost_tax,
+      delivery_payment_type_id: 2,
+      order_type_id: 2,
+      payment_type: payment_method === 'cash' ? 'cash' : 'Credit/Debit',
+      address: delivery_address,
+      addr2: '',
+      buzzer, 
+      intersection: '',
+      location_extra: customer_message,
+      hst_amount: total_tax,
+      deposit_amount: '',
+      dob,
+      salutation,
+    };
+    console.log('testing21312', JSON.stringify(payload));
+
+    const params = new URLSearchParams({
+      api_key: this.configService.get('thebeerguy').key,
+    });
+    const updateOrderRes = await lastValueFrom(
+      this.httpService
+        .post<{ result: string; output: string }>(
+          `${
+            this.configService.get('thebeerguy').url
+          }/purchase/update/?${params.toString()}`,
+          payload,
+        )
+        .pipe(
+          map((response) => response.data),
+          catchError((err) => {
+            const message = err.message;
+            console.log('err-message', message);
+            throw new UnprocessableEntityException(message);
+          }),
+        ),
+    );
+    console.log('beerguy update order', updateOrderRes);
+    return updateOrderRes;
   };
 }
