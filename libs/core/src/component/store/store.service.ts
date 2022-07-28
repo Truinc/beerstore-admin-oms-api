@@ -1002,9 +1002,17 @@ export class StoreService {
     holidayInfo: CreateHolidayInfoDto[],
   ) {
     const holidayInfoList = [];
-    if (holidayHour.id) {
-      await this.deleteHoliday(holidayHour.id);
-      delete holidayHour.id;
+    if (holidayHour.startDate) {
+      const holiday = await this.storeHolidayHrsRepository
+        .createQueryBuilder('holidayHour')
+        .where({
+          startDate: holidayHour.startDate,
+        })
+        .getOne();
+      if (holiday) {
+        await this.deleteHoliday(holiday.id);
+        delete holidayHour.id;
+      }
     }
     for (const info of holidayInfo) {
       if (Array.isArray(info.storeIdList) && info.storeIdList.length > 0) {
@@ -1036,8 +1044,8 @@ export class StoreService {
       if (!holiday) {
         return new NotFoundException('Holiday not found!');
       }
-    await this.storeHolidayHrsRepository.delete(id);
-    return;
+      await this.storeHolidayHrsRepository.delete(id);
+      return;
     } catch (error) {
       return error;
     }
