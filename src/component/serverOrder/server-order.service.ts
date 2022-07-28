@@ -892,7 +892,7 @@ export class ServerOrderService {
 
         let staffNotes = JSON.parse(orderDetails?.staff_notes);
         let totalDiscount = 0;
-        staffNotes.forEach((notes) => {
+        staffNotes?.forEach((notes) => {
           totalDiscount += +notes.packup_discount;
         });
 
@@ -904,7 +904,7 @@ export class ServerOrderService {
         serverOrder.deliveryFeeHST =
           +orderDetails.shipping_cost_inc_tax -
           +orderDetails.shipping_cost_ex_tax;
-        serverOrder.refundedAmount = +orderDetails.refunded_amount;
+        serverOrder.refundedAmount = +orderDetails.refunded_amount || 0;
         serverOrder.refunded = +orderDetails.refunded_amount > 0;
         serverOrder.volumeTotalHL = createOrderDto.volumeTotalHL;
         serverOrder.singleUnits = createOrderDto.singleUnits;
