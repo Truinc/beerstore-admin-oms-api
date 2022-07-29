@@ -29,12 +29,12 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const { username, email } = createUserDto;
+    const { username } = createUserDto;
     const alreadyRegister = await this.usersRepository.findOne({
-      where: [{ username }, { email }],
+      where: [{ username }],
     });
     if (alreadyRegister) {
-      throw new BadRequestException('Username/email already exists.');
+      throw new BadRequestException('Employee ID already exists.');
     }
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     const createdUser = await this.usersRepository.create({
@@ -204,6 +204,14 @@ export class UserService {
       const user = await this.findOne(id);
       if (!user) {
         return new NotFoundException('user not found');
+      }
+
+      const alreadyRegister = await this.usersRepository.findOne({
+        where: [{ username: body.username }],
+      });
+
+      if (alreadyRegister.id !== id) {
+        throw new BadRequestException('Employee ID already exists.');
       }
 
       // let hashedPassword = '';

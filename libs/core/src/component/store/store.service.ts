@@ -1001,33 +1001,46 @@ export class StoreService {
     holidayHour: CreateHolidayHoursDto,
     holidayInfo: CreateHolidayInfoDto[],
   ) {
-    const holidayInfoList = [];
-    if (holidayHour.id) {
-      await this.deleteHoliday(holidayHour.id);
-      delete holidayHour.id;
-    }
-    for (const info of holidayInfo) {
-      if (Array.isArray(info.storeIdList) && info.storeIdList.length > 0) {
-        for (const storeId of info.storeIdList) {
-          const obj = new HolidayInfo(
-            storeId,
-            info.group,
-            info.startDate,
-            info.holidayName,
-            info.openHours,
-            info.closeHours,
-            info.message,
-          );
-          holidayInfoList.push(obj);
+    try {
+      const holidayInfoList = [];
+      const prevholiday = await this.storeHolidayHrsRepository.findOne(
+        {
+          where: {
+            startDate: holidayHour.startDate,
+          },
+        }
+      );
+      if(prevholiday?.id && (prevholiday.id !== holidayHour.id)){
+        throw new BadRequestException('Holiday already exists.');
+      }
+      if (holidayHour.id) {
+        await this.deleteHoliday(holidayHour.id);
+        delete holidayHour.id;
+      }
+      for (const info of holidayInfo) {
+        if (Array.isArray(info.storeIdList) && info.storeIdList.length > 0) {
+          for (const storeId of info.storeIdList) {
+            const obj = new HolidayInfo(
+              storeId,
+              info.group,
+              info.startDate,
+              info.holidayName,
+              info.openHours,
+              info.closeHours,
+              info.message,
+            );
+            holidayInfoList.push(obj);
+          }
         }
       }
+      const holiday = await this.storeHolidayHrsRepository.save({
+        ...holidayHour,
+        holidayInfo: holidayInfoList,
+      });
+      return holiday;
+    } catch (error) {
+      throw new BadRequestException(error.message);
     }
-
-    const holiday = await this.storeHolidayHrsRepository.save({
-      ...holidayHour,
-      holidayInfo: holidayInfoList,
-    });
-    return holiday;
   }
 
   async deleteHoliday(id: number) {
@@ -1036,8 +1049,8 @@ export class StoreService {
       if (!holiday) {
         return new NotFoundException('Holiday not found!');
       }
-    await this.storeHolidayHrsRepository.delete(id);
-    return;
+      await this.storeHolidayHrsRepository.delete(id);
+      return;
     } catch (error) {
       return error;
     }
