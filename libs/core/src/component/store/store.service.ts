@@ -1003,6 +1003,16 @@ export class StoreService {
   ) {
     try {
       const holidayInfoList = [];
+      const prevholiday = await this.storeHolidayHrsRepository.findOne(
+        {
+          where: {
+            startDate: holidayHour.startDate,
+          },
+        }
+      );
+      if(prevholiday?.id && (prevholiday.id !== holidayHour.id)){
+        throw new BadRequestException('Holiday already exists.');
+      }
       if (holidayHour.id) {
         await this.deleteHoliday(holidayHour.id);
         delete holidayHour.id;

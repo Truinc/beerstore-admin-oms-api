@@ -696,9 +696,12 @@ export class ServerOrderService {
         packUnits2_6: twoSixUnits,
         packUnits8_18: eightEighteenUnits,
         packUnits_24Plus: twentyFourPlusUnits,
-        submittedDateTime: moment
-          .utc(orderDetails.date_created)
-          .format('YYYY-MM-DD hh:mm:ss'),
+        // submittedDateTime: moment
+        //   .utc(orderDetails.date_created)
+        //   .format('YYYY-MM-DD hh:mm:ss'),
+        submittedDateTime: momentTz(orderDetails.date_created)
+          .tz(this.configService.get('timezone').zone)
+          .format('YYYY-MM-DD HH:mm:ss'),
         openDateTime: null,
         pickUpReadyDateTime: null,
         completedByEmpId: null,
