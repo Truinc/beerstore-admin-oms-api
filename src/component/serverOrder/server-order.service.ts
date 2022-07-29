@@ -897,14 +897,14 @@ export class ServerOrderService {
 
       try {
         if (checkoutId && serverOrder?.orderType !== 'kiosk') {
-          await this.sendPushNotification(
-            this.configService.get('beerstoreApp').title,
-            `Your Order #${id} has been ${OrderstatusText[orderStatus]}.`,
-            checkoutId,
-            id.toString(),
-            +orderStatus,
-            serverOrder.orderType,
-          );
+          // await this.sendPushNotification(
+          //   this.configService.get('beerstoreApp').title,
+          //   `Your Order #${id} has been ${OrderstatusText[orderStatus]}.`,
+          //   checkoutId,
+          //   id.toString(),
+          //   +orderStatus,
+          //   serverOrder.orderType,
+          // );
         }
       } catch (err) {}
       // this.sendMailOnStatusChange(id?.toString(), serverOrder, orderStatus);
@@ -1015,14 +1015,14 @@ export class ServerOrderService {
       // this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus);
       try {
         if (checkoutId && orderType !== 'kiosk') {
-          this.sendPushNotification(
-            this.configService.get('beerstoreApp').title,
-            `Your Order #${id} has been cancelled.`,
-            checkoutId,
-            id.toString(),
-            +serverOrder.orderStatus,
-            orderType,
-          );
+          // this.sendPushNotification(
+          //   this.configService.get('beerstoreApp').title,
+          //   `Your Order #${id} has been cancelled.`,
+          //   checkoutId,
+          //   id.toString(),
+          //   +serverOrder.orderStatus,
+          //   orderType,
+          // );
         }
       } catch (err) {}
       return response[0];
@@ -1119,16 +1119,16 @@ export class ServerOrderService {
       // this.sendMailOnStatusChange(orderId, prevOrder, serverOrder.orderStatus);
       try {
         if (checkoutId && prevOrder?.orderType !== 'kiosk') {
-          this.sendPushNotification(
-            this.configService.get('beerstoreApp').title,
-            `Your Order #${orderId} has been ${
-              OrderstatusText[serverOrder.orderStatus]
-            }.`,
-            checkoutId,
-            orderId,
-            +serverOrder.orderStatus,
-            prevOrder.orderType,
-          );
+          // this.sendPushNotification(
+          //   this.configService.get('beerstoreApp').title,
+          //   `Your Order #${orderId} has been ${
+          //     OrderstatusText[serverOrder.orderStatus]
+          //   }.`,
+          //   checkoutId,
+          //   orderId,
+          //   +serverOrder.orderStatus,
+          //   prevOrder.orderType,
+          // );
         }
       } catch (err) {}
       return response[0];
