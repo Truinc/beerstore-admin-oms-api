@@ -288,6 +288,27 @@ export class StoreController {
     }
   }
 
+  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
+  @UseGuards(JwtAccessGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post()
+  async addStore(@Body() query: UpdateStoreMetaDto) {
+    const { extraFeature, deliveryFee } = query;
+    delete query.extraFeature;
+    delete query.deliveryFee;
+
+    try {
+      const store = await this.storeService.addStore(
+        query,
+        deliveryFee,
+        extraFeature,
+      );
+      return store;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   @ApiUnauthorizedResponse({ description: 'UnauthorizedResponse' })
   @UseGuards(JwtAccessGuard)
   @Get('/:storeId/storeFeatures')

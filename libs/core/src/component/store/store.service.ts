@@ -602,6 +602,52 @@ export class StoreService {
     return responseToSend;
   }
 
+  async addStore(
+    updateStoreDto: UpdateStoreMetaDto,
+    storeDeliveryData: CreateDeliveryDto,
+    storeExtraFeaturesData: CreateStoreExtraFeaturesDto[],
+  ): Promise<any> {
+    const prevStore = await this.findByStoreId(updateStoreDto.storeId);
+    if (prevStore) {
+      throw new BadRequestException('Store number already exists.');
+    }
+
+    console.log(
+      'testing',
+      updateStoreDto,
+      storeDeliveryData,
+      storeExtraFeaturesData,
+    );
+    return 'test';
+    // const strFeatures = updateStoreDto.storeFeatures.map((item) => {
+    //   const { feature } = item;
+    //   return { feature };
+    // });
+    // const payload = {
+    //   ...updateStoreDto,
+    //   storeFeatures: strFeatures,
+    // };
+    // const storeToSave = await this.storeRepository.create(payload);
+    // const store = await this.storeRepository.save(storeToSave);
+    // if (storeDeliveryData) {
+    //   const delivery = await this.storeDeliveryRepository.create(
+    //     storeDeliveryData,
+    //   );
+    //   delivery.store = store;
+    //   await this.storeDeliveryRepository.save(delivery);
+    // }
+    // if (storeExtraFeaturesData) {
+    //   const action = storeExtraFeaturesData.map(async (o) => {
+    //     const obj = await this.storeExtraFeaturesRepository.create(o);
+    //     obj.store = store;
+    //     await this.storeExtraFeaturesRepository.save(obj);
+    //   });
+    //   await Promise.all(action);
+    // }
+    // const createStore = await this.getStore(store.id, false, null);
+    // return createStore;
+  }
+
   async updateStore(
     id: number,
     updateStoreDto: UpdateStoreMetaDto,
