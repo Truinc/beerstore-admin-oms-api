@@ -33,6 +33,7 @@
       border-spacing: 0;
     }
 
+
     .lg_txt_align_right {
       text-align: right;
     }
@@ -689,20 +690,20 @@
 
           <tr>
             <td style="width:100%;padding:0 25px">
-              <table width="100%" cellspacing="0" cellpadding="0" border="0">
+              <table width="100%" style="width: 100%!important;" cellspacing="0" cellpadding="0" border="0">
                 <tbody>
                   <tr>
                     <td colspan="2"
                       style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;width:56%">
                       Items</td>
                     <td
-                      style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;text-align:center;width:10%">
+                      style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;text-align:center;width:10%!important">
                       Qty</td>
                     <td
-                      style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;text-align:left;width:14%;padding-left:15px">
+                      style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;text-align:left;width:14%!important;padding-left:15px; padding-right: 15px;">
                       Price</td>
                     <td
-                      style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;text-align:right;width:20%;padding-right:15px">
+                      style="color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;text-align:right;width:20%!important;padding-right:15px">
                       Sub Total</td>
                   </tr>
                   <tr>
@@ -732,11 +733,11 @@
                           style="margin:0;font-size:13px;color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat">
                           <%= product.displayValue %>
                         </p>
-                        <table style="width:120px" width="120px" cellspacing="0" cellpadding="0" border="0">
+                        <table style="width:120px!important" width="120" cellspacing="0" cellpadding="0" border="0">
                           <tbody>
                             <tr>
                               <% if(product.packupDiscount > 0){ %>
-                                <td width="60px" style="width:60px;padding-top:10px">
+                                <td width="60" style="width:60px!important;padding-top:10px">
                                   <table
                                     style="margin-top:0;margin-bottom:0;margin-right:auto;margin-left:auto;border-spacing:0;width:50px;margin-right:2px"
                                     cellspacing="0 " align="left" cellpadding="0" border="0">
@@ -746,7 +747,7 @@
                                           style="border-radius:5px;text-align:center;background:#f4b233;padding-top:2px;padding-bottom:2px;padding-right:4px;padding-left:4px"
                                           width="50 " bgcolor="#f4b233 " align="center ">
                                           <a href="#m_2348638704042929767_!"
-                                            style="background:#f4b233;display:inline-block;text-decoration:none;text-align:center;font-weight:bold;font-size:9px;font-family:Arial,Helvetica,sans-serif,Montserrat;border-radius:5px;line-height:15px;color:#000;background-image:none;background-repeat:repeat;background-position:top left;border-radius:5px;border-width:1px;border:0px;text-align:center;width:50px;padding-top:2px;padding-bottom:2px">
+                                            style="background:#f4b233;display:inline-block;text-decoration:none;text-align:center;font-weight:bold;font-size:9px;font-family:Arial,Helvetica,sans-serif,Montserrat;border-radius:5px;line-height:15px;color:#000;background-image:none;background-repeat:repeat;background-position:top left;border-radius:5px;border-width:1px;border:0px;text-align:center;width:50px!important;padding-top:2px;padding-bottom:2px">
                                             PACKUP
                                           </a>
                                         </td>
@@ -758,7 +759,7 @@
                               <% if(product.onSale){ %>
                                     <td width="auto" style="width:auto;padding-top:10px">
                                       <table
-                                        style="margin-top:0;margin-bottom:0;margin-right:auto;margin-left:auto;border-spacing:0;width:50px"
+                                        style="margin-top:0;margin-bottom:0;margin-right:auto;margin-left:auto;border-spacing:0;width:50px!important"
                                         cellspacing="0 " align="left" cellpadding="0" border="0">
                                         <tbody>
                                           <tr>
@@ -780,7 +781,7 @@
                         </table>
                       </td>
                       <td
-                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold">
+                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold; width:10%!important">
                         <div style="display:block;background-color:transparent">
                           <%= product.quantity - product.refundedQty %>
                         </div>
@@ -791,7 +792,7 @@
                         <% } %>
                       </td>
                       <td
-                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold">
+                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:left;vertical-align:middle;padding-left:15px;font-weight:bold; width:14%!important; padding-left:15px; padding-right: 15px;">
                         <% if(product.onSale) { %>
                           <p style="margin:0"><strike>$<%= product.price %></strike></p>
                           <p style="margin:0">$<%= product.salePrice %>
@@ -802,7 +803,7 @@
                             <% } %>
                       </td>
                       <td
-                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:right;vertical-align:middle;padding-right:15px;font-weight:bold">
+                        style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#404040;text-align:right;vertical-align:middle;padding-right:15px;font-weight:bold; width:20%!important">
                         <% if(product.packupDiscount > 0) { %>
                           <p style="margin:0"><strike>$<%= product.productSubTotal %></strike></p>
                           <p style="margin:0">$<%= product.packupSubTotal %>
@@ -829,22 +830,22 @@
           </tr>
           <tr>
             <td style="width:100%;padding:0 25px">
-              <table style="font-size:14px" width="100%" cellspacing="0" cellpadding="0" border="0">
+              <table style="font-size:14px; width: 100%!important;" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tbody>
                   <tr>
                     <td
                       style="font-weight:700;font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:16px;vertical-align:top;color:#404040;width:50%">
                     </td>
-                    <td style="padding-right:15px">
-                      <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                    <td style="padding-right:15px; width: 40%!important;">
+                      <table width="100%" style="width: 100%!important;" cellspacing="0" cellpadding="0" border="0">
                         <tbody>
                           <tr>
                             <td
-                              style="font-family:Arial,Helvetica,sans-serif,Montserrat;color:#404040;font-size:16px;font-weight:bold">
+                              style="font-family:Arial,Helvetica,sans-serif,Montserrat;color:#404040;font-size:16px;font-weight:bold; width: 50%">
                               Sub Total
                             </td>
                             <td
-                              style="text-align:right;font-family:Arial,Helvetica,sans-serif,Montserrat;color:#404040;font-size:16px;font-weight:bold">
+                              style="text-align:right;font-family:Arial,Helvetica,sans-serif,Montserrat;color:#404040;font-size:16px;font-weight:bold; width: 50%">
                               $<%= orderDetails?.subTotal || 0.0 %>
                             </td>
                           </tr>
@@ -855,11 +856,11 @@
                             </tr>
                             <tr>
                               <td
-                                style="font-family:Arial,Helvetica,sans-serif,Montserrat;color:#404040;font-size:16px">
+                                style="font-family:Arial,Helvetica,sans-serif,Montserrat;color:#404040;font-size:16px; width: 50%">
                                 Delivery Charge
                               </td>
                               <td
-                                style="text-align:right;font-family:Arial,Helvetica,sans-serif,Montserrat;color:#404040;font-size:16px">
+                                style="text-align:right;font-family:Arial,Helvetica,sans-serif,Montserrat;color:#404040;font-size:16px; width: 50%">
                                 $<%= orderDetails?.deliveryCharge || 0.0 %>
                               </td>
                             </tr>
@@ -869,11 +870,11 @@
                             </tr>
                             <tr>
                               <td
-                                style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                                style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat; width: 50%;">
                                 Delivery HST
                               </td>
                               <td
-                                style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat">
+                                style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat; width: 50%;">
                                 $<%= orderDetails?.deliveryFeeHST || 0.0 %>
                               </td>
                             </tr>
@@ -884,11 +885,11 @@
                               </tr>
                               <tr>
                                 <td
-                                  style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
+                                  style="color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold; width: 50%;">
                                   Total
                                 </td>
                                 <td
-                                  style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold">
+                                  style="text-align:right;color:#404040;font-size:16px;font-family:Arial,Helvetica,sans-serif,Montserrat;font-weight:bold; width: 50%;">
                                   $<%= orderDetails?.grandTotal || 0.0 %>
                                 </td>
                               </tr>
@@ -954,7 +955,6 @@
               </table>
             </td>
           </tr>
-
           <tr>
             <td class="space_left_right" style="width:100%;padding: 0 25px">
               <hr style="margin: 0;border: none;border-top: 1px solid #ddd;">

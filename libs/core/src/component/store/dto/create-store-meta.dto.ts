@@ -68,14 +68,19 @@ export class CreateStoreMetaDto {
   readonly country: string;
 
   @ApiProperty({ type: Number })
-  @Min(-90)
-  @Max(90)
+  // @Min(-90)
+  // @Max(90)
   readonly latitude: number;
 
   @ApiProperty({ type: Number })
-  @Min(-180)
-  @Max(180)
+  // @Min(-180)
+  // @Max(180)
   readonly longitude: number;
+
+  @ApiProperty({ type: Number })
+  @IsOptional()
+  @IsNumber()
+  readonly isActive: number;
 
   @ApiProperty({ type: String })
   @IsString()

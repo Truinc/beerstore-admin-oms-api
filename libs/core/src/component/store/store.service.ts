@@ -40,6 +40,7 @@ import { HolidayInfo } from './entities/holidayInfo.entity';
 import { CreateHolidayHoursDto } from './dto/create-holiday-hours.dto';
 import { CreateHolidayInfoDto } from './dto/create-holiday-info.dto';
 import { RolesEnum, User } from 'src/component/user/entity/user.entity';
+import { StoreStatus } from './entities/storeStatus.entity';
 // import {
 //   RolesEnum,
 //   User,
@@ -64,6 +65,8 @@ export class StoreService {
     private storeHolidayHrsRepository: Repository<HolidayHours>,
     @InjectRepository(HolidayInfo)
     private storeHolidayInfoRepository: Repository<HolidayInfo>,
+    @InjectRepository(StoreStatus)
+    private storeStatusRepository: Repository<StoreStatus>,
     private httpService: HttpService,
     private configService: ConfigService,
   ) {}
@@ -487,7 +490,6 @@ export class StoreService {
     user: User,
   ) {
     const storeIds = [];
-    console.log('user', user);
     if (user && user.role === RolesEnum.storemanager && user?.usersStores) {
       user?.usersStores.forEach((userStore) => {
         storeIds.push(userStore.storeId);
@@ -510,6 +512,9 @@ export class StoreService {
         'Store.phone AS phone',
         'Store.createdDate AS createdDate',
         'Store.updatedDate AS updatedDate',
+      ])
+      .addSelect([
+        `(select isActive from store_status where storeId = Store.id) as isActive`,
       ]);
 
     const where = [];
@@ -602,6 +607,93 @@ export class StoreService {
     return responseToSend;
   }
 
+  async addStore(
+    updateStoreDto: UpdateStoreMetaDto,
+    storeDeliveryData: CreateDeliveryDto,
+    storeExtraFeaturesData: CreateStoreExtraFeaturesDto[],
+  ): Promise<any> {
+    const prevStore = await this.findByStoreId(+updateStoreDto.id);
+    if (prevStore) {
+      throw new BadRequestException('Store number already exists.');
+    }
+    const strFeatures = updateStoreDto.storeFeatures.map((item) => {
+      const { feature } = item;
+      return { feature };
+    });
+    const payload = {
+      ...updateStoreDto,
+      storeFeatures: strFeatures,
+    };
+    const storeToSave = await this.storeRepository.create(payload);
+    const store = await this.storeRepository.save(storeToSave);
+
+    if (updateStoreDto.isActive) {
+      const storeStatus = await this.storeStatusRepository.create({
+        isActive: updateStoreDto.isActive,
+        store,
+      });
+      await this.storeStatusRepository.save(storeStatus);
+    }
+    if (storeDeliveryData) {
+      const delivery = await this.storeDeliveryRepository.create(
+        storeDeliveryData,
+      );
+      delivery.store = store;
+      await this.storeDeliveryRepository.save(delivery);
+    }
+
+    if (storeExtraFeaturesData) {
+      const action = storeExtraFeaturesData.map(async (o) => {
+        const obj = await this.storeExtraFeaturesRepository.create(o);
+        obj.store = store;
+        await this.storeExtraFeaturesRepository.save(obj);
+      });
+      await Promise.all(action);
+    }
+    const createStore = await this.getStore(store.id, false, null);
+    return createStore;
+  }
+
+  setStatus = async (storeId: number, isActive: number) => {
+    const store = await this.findById(storeId);
+    if (!store) {
+      throw new BadRequestException('Store not found.');
+    }
+
+    const storeStatusDetails = await this.storeStatusRepository.findOne({
+      where: { store },
+    });
+    if (storeStatusDetails) {
+      await this.storeStatusRepository.update(
+        { id: storeStatusDetails.id },
+        { isActive },
+      );
+    } else {
+      const statusDetailCreate = this.storeStatusRepository.create({
+        isActive,
+        store,
+      });
+      await this.storeStatusRepository.save(statusDetailCreate);
+    }
+    return this.storeStatusRepository.findOne({
+      where: { store },
+    });
+  };
+
+  async getStoreStatus(storeId: number): Promise<any> {
+    const store = await this.findById(storeId);
+    console.log('store', store);
+    if (store) {
+      const storeStatusDetails = await this.storeStatusRepository.findOne({
+        where: { store },
+      });
+      console.log('storeStatusDetails', storeStatusDetails);
+      return storeStatusDetails;
+    } else {
+      return null;
+    }
+  }
+
   async updateStore(
     id: number,
     updateStoreDto: UpdateStoreMetaDto,
@@ -666,6 +758,56 @@ export class StoreService {
 
     const updatedStore = await this.getStore(store.id, false, null);
     return updatedStore;
+  }
+
+  async deleteStore(storeId: number) {
+    try {
+      const store = await this.storeRepository.findOne(storeId);
+      const extraFeatures = await this.storeExtraFeaturesRepository.find({
+        where: { store },
+      });
+      const deliveryCharges =  await this.storeDeliveryRepository.findOne({
+        where: { store },
+      });
+      const storeStatus =  await this.storeStatusRepository.findOne({
+        where: { store },
+      });
+      if (!store) {
+        return new NotFoundException('store not found');
+      }
+      if(extraFeatures && extraFeatures.length > 0){
+        const extraFeaturesIds = [];
+        extraFeatures.forEach(extraFeatures => {
+          extraFeaturesIds.push(extraFeatures.id);
+        })
+        await this.storeExtraFeaturesRepository.delete(extraFeaturesIds);
+      }
+      if(store?.storeFeatures && store?.storeFeatures.length > 0){
+        const featureIds = [];
+        store.storeFeatures.forEach(feature => {
+          featureIds.push(feature.id);
+        })
+        await this.deleteStoreFeatures(featureIds);
+      }
+      if(deliveryCharges){
+        await this.storeDeliveryRepository.delete(deliveryCharges.id);
+      }
+      if(storeStatus){
+        await this.storeStatusRepository.delete(storeStatus.id);
+      }
+      if(store?.storeFeatures && store?.storeFeatures.length > 0){
+        const featureIds = [];
+        store.storeFeatures.forEach(feature => {
+          featureIds.push(feature.id);
+        })
+        await this.deleteStoreFeatures(featureIds);
+      }
+      
+      await this.storeRepository.delete(store.id);
+      return 'store deleted';
+    } catch (err) {
+      throw new BadRequestException(err.message);
+    }
   }
 
   async deleteStoreFeatures(idArr: number[]) {
@@ -767,10 +909,14 @@ export class StoreService {
         },
       });
     }
+
+    const storeStatus = await this.getStoreStatus(storeId);
+
     Object.assign(storeResponse, {
       deliveryFee: delivery,
       extraFeature: extraFeature,
       favorite: isFavorite,
+      ...(storeStatus && { storeStatus: storeStatus.isActive }),
     });
 
     return storeResponse;
@@ -1003,14 +1149,12 @@ export class StoreService {
   ) {
     try {
       const holidayInfoList = [];
-      const prevholiday = await this.storeHolidayHrsRepository.findOne(
-        {
-          where: {
-            startDate: holidayHour.startDate,
-          },
-        }
-      );
-      if(prevholiday?.id && (prevholiday.id !== holidayHour.id)){
+      const prevholiday = await this.storeHolidayHrsRepository.findOne({
+        where: {
+          startDate: holidayHour.startDate,
+        },
+      });
+      if (prevholiday?.id && prevholiday.id !== holidayHour.id) {
         throw new BadRequestException('Holiday already exists.');
       }
       if (holidayHour.id) {

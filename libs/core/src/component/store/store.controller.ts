@@ -25,6 +25,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiExtraModels,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiQuery,
@@ -43,7 +44,9 @@ import { StoreService } from './store.service';
 import { CreateDto } from './dto/create.dto';
 import { HolidayHours } from './entities/holidayHrs.entity';
 import { RequestUser } from '@beerstore/core/decorators/request-user';
-import { User } from 'src/component/user/entity/user.entity';
+import { RolesEnum, User } from 'src/component/user/entity/user.entity';
+import { Roles } from 'src/decorators/roles.decorator';
+import RolesGuard from 'src/guards/role.guard';
 @ApiTags('store')
 @Controller('store')
 @ApiBearerAuth()
@@ -288,6 +291,44 @@ export class StoreController {
     }
   }
 
+  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
+  @UseGuards(JwtAccessGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('/add')
+  async addStore(@Body() query: UpdateStoreMetaDto) {
+    const { extraFeature, deliveryFee } = query;
+    delete query.extraFeature;
+    delete query.deliveryFee;
+    try {
+      const store = await this.storeService.addStore(
+        query,
+        deliveryFee,
+        extraFeature,
+      );
+      return store;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @Roles(RolesEnum.superadmin, RolesEnum.ithelpdesk)
+  @Post('status/:id')
+  async setUserStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { isActive: number },
+  ) {
+    try {
+      const { isActive } = body;
+      const user = await this.storeService.setStatus(id, isActive);
+      return user;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   @ApiUnauthorizedResponse({ description: 'UnauthorizedResponse' })
   @UseGuards(JwtAccessGuard)
   @Get('/:storeId/storeFeatures')
@@ -377,6 +418,19 @@ export class StoreController {
   ) {
     return this.storeService.addfavoriteStore(storeId, customerId);
   }
+
+  @ApiUnauthorizedResponse({ description: 'UnauthorizedResponse' })
+  @ApiNoContentResponse()
+  @ApiNotFoundResponse()
+  @UseGuards(JwtAccessGuard)
+  @HttpCode(HttpStatus.OK)
+  @Delete(':storeId')
+  async deleteStore(
+    @Param('storeId', ParseIntPipe) storeId: number
+  ) {
+    return this.storeService.deleteStore(storeId);
+  }
+
 
   @ApiUnauthorizedResponse({ description: 'UnauthorizedResponse' })
   @ApiNoContentResponse()

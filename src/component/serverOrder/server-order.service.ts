@@ -893,7 +893,7 @@ export class ServerOrderService {
       const orderToSave = await this.serverOrderRepository.preload(serverOrder);
 
       const response = await Promise.all([
-        { ...(updateBeerGuy && this.updateBeerGuyOrder(bigCommOrder)) },
+        // { ...(updateBeerGuy && this.updateBeerGuyOrder(bigCommOrder)) },
         this.serverOrderRepository.save(orderToSave),
         this.orderHistoryService.create(createOrderHistoryDto),
       ]);
@@ -1307,7 +1307,7 @@ export class ServerOrderService {
               billingAddressFormFields.order_type === 'delivery'
                 ? billingAddressFormFields.delivery_address
                 : billingAddressFormFields.current_store_address,
-            deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
+            deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time.toUpperCase(),
             // subTotal: serverOrderDetails.productTotal || 0,
             // subTotal: (parseFloat(orderDetailsFromBigCom.subtotal_inc_tax)).toFixed(2)|| "0.00",
             subTotal: subTotal.toFixed(2) || '0.00',
@@ -1491,13 +1491,10 @@ export class ServerOrderService {
       undefined,
       null,
     )
-    console.log('productDetails', productDetails);
     let productSkews = {};
     productDetails?.data?.forEach((details) => {
-      console.log('testing', details.id, details.sku.split('_')[0]);
       productSkews[details.id] = details.sku.split('_')[0]
     });
-    console.log('productSkews', productSkews);
 
     sequence.forEach(product => {
       const skuStr = product.sku;
