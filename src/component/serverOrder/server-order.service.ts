@@ -893,9 +893,9 @@ export class ServerOrderService {
       const orderToSave = await this.serverOrderRepository.preload(serverOrder);
 
       const response = await Promise.all([
-        // { ...(updateBeerGuy && this.updateBeerGuyOrder(bigCommOrder)) },
         this.serverOrderRepository.save(orderToSave),
         this.orderHistoryService.create(createOrderHistoryDto),
+        // { ...(updateBeerGuy && this.updateBeerGuyOrder(bigCommOrder)) },
       ]);
 
       try {

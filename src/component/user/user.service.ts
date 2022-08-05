@@ -84,10 +84,10 @@ export class UserService {
         Object.assign(value, { firstName: `%${search}%` });
         where.push('lastName like :lastName');
         Object.assign(value, { lastName: `%${search}%` });
-        where.push(`CONCAT(firstName, ' ' ,lastName)like :name`);
+        where.push(`CONCAT(firstName, ' ' ,lastName) like :name`);
         Object.assign(value, { name: `%${search}%` });
-        where.push('User.id like :employeeid');
-        Object.assign(value, { employeeid: `%${search}%` });
+        // where.push('User.id like :employeeid');
+        // Object.assign(value, { employeeid: `%${search}%` });
         where.push('UserStores.storeId like :storeId');
         Object.assign(value, { storeId: `%${search}%` });
         queryString = where.join(' OR ');
