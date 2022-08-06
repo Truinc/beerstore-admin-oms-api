@@ -84,10 +84,10 @@ export class UserService {
         Object.assign(value, { firstName: `%${search}%` });
         where.push('lastName like :lastName');
         Object.assign(value, { lastName: `%${search}%` });
-        where.push(`CONCAT(firstName, ' ' ,lastName)like :name`);
+        where.push(`CONCAT(firstName, ' ' ,lastName) like :name`);
         Object.assign(value, { name: `%${search}%` });
-        where.push('User.id like :employeeid');
-        Object.assign(value, { employeeid: `%${search}%` });
+        // where.push('User.id like :employeeid');
+        // Object.assign(value, { employeeid: `%${search}%` });
         where.push('UserStores.storeId like :storeId');
         Object.assign(value, { storeId: `%${search}%` });
         queryString = where.join(' OR ');
@@ -210,7 +210,7 @@ export class UserService {
         where: [{ username: body.username }],
       });
 
-      if (alreadyRegister.id !== id) {
+      if (alreadyRegister && alreadyRegister.id !== id) {
         throw new BadRequestException('Employee ID already exists.');
       }
 
@@ -474,8 +474,9 @@ export class UserService {
       isActive,
       ...(isActive === 1 && { loginAttempts: 0 }),
     };
-    await this.patch(userId, body);
-    return this.usersRepository.findOne({ id: userId });
+    const updatedUser = await this.patch(userId, body);
+    return updatedUser;
+    // return this.usersRepository.findOne({ id: userId });
   };
   // getAllUserStores = (userId: number, storeId: number, assignType: string) => {
   //   this.userStoresRepository.create({

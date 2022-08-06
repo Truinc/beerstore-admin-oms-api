@@ -12,7 +12,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { StoreFavorite } from './entities/storeFavorite.entity';
 import { HolidayHours } from './entities/holidayHrs.entity';
 import { HolidayInfo } from './entities/holidayInfo.entity';
-
+import { StoreStatus } from './entities/storeStatus.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -24,6 +24,7 @@ import { HolidayInfo } from './entities/holidayInfo.entity';
       StoreFavorite,
       HolidayHours,
       HolidayInfo,
+      StoreStatus
     ]),
     HttpModule,
     ConfigModule,
