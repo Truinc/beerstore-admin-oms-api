@@ -124,6 +124,7 @@ export class ServerOrderController {
     @Query('searchToDate') searchToDate: string,
     @Query('orderType') orderType: string,
     @Query('storeId') storeId: string,
+    @Query('vector') vector: string,
   ) {
     const { take, skip, sort } = paginationDto;
     return this.serverOrderService.findAllServerOrder(
@@ -136,6 +137,7 @@ export class ServerOrderController {
       sort,
       searchText,
       orderType,
+      vector,
     );
   }
 

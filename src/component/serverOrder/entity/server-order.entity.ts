@@ -102,6 +102,14 @@ export class ServerOrder {
   // })
   // fulfillmentTime: string;
 
+  @ApiProperty({ type: Date })
+  @Column({
+    type: 'datetime2',
+    default: null,
+    nullable: true,
+  })
+  intransitDate: Date;
+
   @ApiProperty({ type: String })
   @Column({
     type: 'datetime2',
