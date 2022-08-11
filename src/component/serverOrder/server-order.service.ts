@@ -114,28 +114,45 @@ export class ServerOrderService {
       table.andWhere('ServerOrder.orderType = :orderType', { orderType });
     }
 
-    if(vector){
-      table.andWhere('ServerOrder.orderVector = :orderVector', { orderType: vector });
-    }
-
-    if (searchFromDate === searchToDate) {
-      const fromDate = searchFromDate;
-      const toDate = `${searchFromDate} 23:59:59`;
-      table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
-        fromDate,
-        toDate,
+    if (vector) {
+      table.andWhere('ServerOrder.orderVector = :orderVector', {
+        orderType: vector,
       });
-    } else {
-      const toDate = `${searchToDate} 23:59:59`;
-      table.andWhere(
-        'ServerOrder.orderDate BETWEEN :searchFromDate AND :toDate',
-        {
-          searchFromDate,
-          toDate,
-        },
-      );
     }
 
+    // this.orderStatusDate(+orderStatus),
+    
+    // if (searchFromDate === searchToDate) {
+      //   const fromDate = searchFromDate;
+      //   console.log('searchFromDate', searchFromDate);
+      //   const toDate = `${searchFromDate} 23:59:59`;
+      //   table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
+        //     fromDate,
+        //     toDate,
+        //   });
+        // } else {
+          //   const toDate = `${searchToDate} 23:59:59`;
+          //   table.andWhere(
+            //     'ServerOrder.orderDate BETWEEN :searchFromDate AND :toDate',
+            //     {
+              //       searchFromDate,
+              //       toDate,
+              //     },
+              //   );
+              // }
+              
+    const orderStatus = status[2] ? '8' : status;
+    table.andWhere(
+      this.orderStatusDate(+orderStatus),
+      {
+        fromDate: searchFromDate,
+        toDate:
+          searchFromDate === searchToDate
+            ? `${searchFromDate} 23:59:59`
+            : `${searchToDate} 23:59:59`,
+      },
+    );
+    
     if (storeId) {
       table.andWhere('ServerOrder.storeId = :storeId', {
         storeId,
@@ -345,9 +362,8 @@ export class ServerOrderService {
     }
 
     if (min_date_created && max_date_created) {
-      const orderStatus = status_id || 11;
       serverOrderQuery.andWhere(
-        this.orderStatusDate(+orderStatus),
+        'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
         {
           fromDate: min_date_created,
           toDate: moment(min_date_created).isSame(max_date_created)

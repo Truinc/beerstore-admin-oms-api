@@ -214,6 +214,46 @@ export class BeerCategoryService {
     return res;
   }
 
+  async findAllBrewers(): Promise<BeerResponseType> {
+    let categories = [];
+    let filter = '';
+      filter = `${filter}&name:like=producer`;
+    let loopstatus = true;
+    let page = 1;
+    while (loopstatus) {
+      const data = await lastValueFrom(
+        this.httpService
+          .get<{ data: BeerCategory[] }>(
+            `${this.configService.get('bigcom').url}/stores/${
+              this.configService.get('bigcom').store
+            }/v3/catalog/categories?limit=250&page=${page}&is_visible=true${filter}`,
+            {
+              headers: {
+                'x-auth-token': this.configService.get('bigcom').access_token,
+              },
+            },
+          )
+          .pipe(
+            map((response): BeerResponseType => {
+              if (response.data && response.data.data) {
+                return response.data.data;
+              }
+              return [];
+            }),
+            catchError((err) => {
+              throw new BadGatewayException(err.message);
+            }),
+          ),
+      );
+      page++;
+      if (data.length <= 0) {
+        loopstatus = false;
+      }
+      categories = categories.concat(data);
+    }
+    return categories;
+  }
+
   async findAll(
     search: string,
     category: string,
