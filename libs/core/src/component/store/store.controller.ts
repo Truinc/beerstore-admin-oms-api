@@ -488,7 +488,6 @@ export class StoreController {
     return await this.storeService.deleteHoliday(parentId);
   }
 
-  @ApiPaginatedResponse(HolidayHours)
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
   @UseGuards(JwtAccessGuard)
   @HttpCode(HttpStatus.OK)
