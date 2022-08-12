@@ -92,6 +92,7 @@ export class ServerOrderService {
     sort?: object,
     search?: string,
     orderType?: string,
+    vector?: string,
   ): Promise<object> {
     const table = this.serverOrderRepository
       .createQueryBuilder('ServerOrder')
@@ -113,24 +114,45 @@ export class ServerOrderService {
       table.andWhere('ServerOrder.orderType = :orderType', { orderType });
     }
 
-    if (searchFromDate === searchToDate) {
-      const fromDate = searchFromDate;
-      const toDate = `${searchFromDate} 23:59:59`;
-      table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
-        fromDate,
-        toDate,
+    if (vector) {
+      table.andWhere('ServerOrder.orderVector = :orderVector', {
+        orderType: vector,
       });
-    } else {
-      const toDate = `${searchToDate} 23:59:59`;
-      table.andWhere(
-        'ServerOrder.orderDate BETWEEN :searchFromDate AND :toDate',
-        {
-          searchFromDate,
-          toDate,
-        },
-      );
     }
 
+    // this.orderStatusDate(+orderStatus),
+    
+    // if (searchFromDate === searchToDate) {
+      //   const fromDate = searchFromDate;
+      //   console.log('searchFromDate', searchFromDate);
+      //   const toDate = `${searchFromDate} 23:59:59`;
+      //   table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
+        //     fromDate,
+        //     toDate,
+        //   });
+        // } else {
+          //   const toDate = `${searchToDate} 23:59:59`;
+          //   table.andWhere(
+            //     'ServerOrder.orderDate BETWEEN :searchFromDate AND :toDate',
+            //     {
+              //       searchFromDate,
+              //       toDate,
+              //     },
+              //   );
+              // }
+              
+    const orderStatus = status[2] ? '8' : status;
+    table.andWhere(
+      this.orderStatusDate(+orderStatus),
+      {
+        fromDate: searchFromDate,
+        toDate:
+          searchFromDate === searchToDate
+            ? `${searchFromDate} 23:59:59`
+            : `${searchToDate} 23:59:59`,
+      },
+    );
+    
     if (storeId) {
       table.andWhere('ServerOrder.storeId = :storeId', {
         storeId,
@@ -340,25 +362,15 @@ export class ServerOrderService {
     }
 
     if (min_date_created && max_date_created) {
-      if (moment(min_date_created).isSame(max_date_created)) {
-        const fromDate = min_date_created;
-        const toDate = moment(max_date_created).endOf('day').format();
-        serverOrderQuery.andWhere(
-          'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-          {
-            fromDate,
-            toDate,
-          },
-        );
-      } else {
-        serverOrderQuery.andWhere(
-          'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-          {
-            fromDate: min_date_created,
-            toDate: max_date_created,
-          },
-        );
-      }
+      serverOrderQuery.andWhere(
+        'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
+        {
+          fromDate: min_date_created,
+          toDate: moment(min_date_created).isSame(max_date_created)
+            ? moment(max_date_created).endOf('day').format()
+            : max_date_created,
+        },
+      );
     }
 
     if (vector) {
@@ -633,8 +645,8 @@ export class ServerOrderService {
           utmCampaign: null,
           utmTerm: null,
           utmContent: null,
-          tbsArticleId: product?.sku?.split("_")?.[0] || '',
-          tbsProductId: product?.product?.data?.sku?.split("_")?.[0]|| '',
+          tbsArticleId: product?.sku?.split('_')?.[0] || '',
+          tbsProductId: product?.product?.data?.sku?.split('_')?.[0] || '',
         };
       });
       const timeSplit =
@@ -871,8 +883,11 @@ export class ServerOrderService {
 
         await this.ordersService.updateOrder(`${id}`, orderDetails);
         serverOrder.grandTotal =
-          +createOrderDto.productTotal + +orderDetails.shipping_cost_inc_tax - +totalDiscount;
-        serverOrder.productTotal = +createOrderDto.productTotal - +totalDiscount;
+          +createOrderDto.productTotal +
+          +orderDetails.shipping_cost_inc_tax -
+          +totalDiscount;
+        serverOrder.productTotal =
+          +createOrderDto.productTotal - +totalDiscount;
         serverOrder.deliveryFee = +orderDetails.shipping_cost_ex_tax;
         serverOrder.deliveryFeeHST =
           +orderDetails.shipping_cost_inc_tax -
@@ -893,9 +908,9 @@ export class ServerOrderService {
       const orderToSave = await this.serverOrderRepository.preload(serverOrder);
 
       const response = await Promise.all([
-        // { ...(updateBeerGuy && this.updateBeerGuyOrder(bigCommOrder)) },
         this.serverOrderRepository.save(orderToSave),
         this.orderHistoryService.create(createOrderHistoryDto),
+        // { ...(updateBeerGuy && this.updateBeerGuyOrder(bigCommOrder)) },
       ]);
 
       try {
@@ -1111,6 +1126,10 @@ export class ServerOrderService {
         await this.ordersService.updateOrder(orderId, {
           status_id: 3,
         });
+        prevOrder = {
+          ...prevOrder,
+          intransitDate: moment().toDate(),
+        };
       } else {
         await this.ordersService.updateOrder(orderId, createOrderDto);
       }
@@ -1307,7 +1326,8 @@ export class ServerOrderService {
               billingAddressFormFields.order_type === 'delivery'
                 ? billingAddressFormFields.delivery_address
                 : billingAddressFormFields.current_store_address,
-            deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time.toUpperCase(),
+            deliveryEstimatedTime:
+              billingAddressFormFields.pick_delivery_time.toUpperCase(),
             // subTotal: serverOrderDetails.productTotal || 0,
             // subTotal: (parseFloat(orderDetailsFromBigCom.subtotal_inc_tax)).toFixed(2)|| "0.00",
             subTotal: subTotal.toFixed(2) || '0.00',
@@ -1474,11 +1494,11 @@ export class ServerOrderService {
     let products = [];
     let productSequence;
     let orderProduct;
-    
+
     const productIds = [];
-    sequence.forEach(product => {
+    sequence.forEach((product) => {
       productIds.push(product.product_id);
-    })
+    });
 
     const productDetails = await this.beerService.findAll(
       undefined,
@@ -1490,27 +1510,27 @@ export class ServerOrderService {
       undefined,
       undefined,
       null,
-    )
+    );
     let productSkews = {};
     productDetails?.data?.forEach((details) => {
-      productSkews[details.id] = details.sku.split('_')[0]
+      productSkews[details.id] = details.sku.split('_')[0];
     });
 
-    sequence.forEach(product => {
+    sequence.forEach((product) => {
       const skuStr = product.sku;
-      const sku =  skuStr.split('_')[0];
+      const sku = skuStr.split('_')[0];
       // productIds.push(product.product_id);
       productSequence = product.sequence;
-      if(Array.isArray(productSequence) && productSequence.length > 0 ){
-        if (productSequence[0]?.sale){
+      if (Array.isArray(productSequence) && productSequence.length > 0) {
+        if (productSequence[0]?.sale) {
           const variant = productSequence[0]?.sale?.variant;
-          if(variant){
-            const currentPrice = variant?.price_info?.value?.current_price
+          if (variant) {
+            const currentPrice = variant?.price_info?.value?.current_price;
             orderProduct = {
               tbs_product_id: productSkews[product.product_id] || '',
               tbs_article_id: sku,
               price: currentPrice?.total_price,
-              hst: currentPrice?.tax[0].tax_amount || 0.00,
+              hst: currentPrice?.tax[0].tax_amount || 0.0,
               isSale: variant?.price_info?.value?.on_sale !== 'N',
               name: variant?.variant_info?.label,
               deposit: currentPrice.deposit,
@@ -1518,11 +1538,13 @@ export class ServerOrderService {
             };
           }
         }
-         if(productSequence[0]?.sub){
-           const { variant, quantity } = productSequence[0]?.sub || { quantity: 0};
-           if(variant){
+        if (productSequence[0]?.sub) {
+          const { variant, quantity } = productSequence[0]?.sub || {
+            quantity: 0,
+          };
+          if (variant) {
             const currentPrice = variant?.price_info?.value?.current_price;
-            const taxAmount = currentPrice?.tax[0].tax_amount || 0.00;
+            const taxAmount = currentPrice?.tax[0].tax_amount || 0.0;
             orderProduct.sub = {
               tbs_article_id: sku,
               tbs_product_id: productSkews[product.product_id] || '',
@@ -1531,9 +1553,9 @@ export class ServerOrderService {
               deposit: (quantity * +currentPrice.deposit).toFixed(2),
               quantity,
             };
-           }
-         } 
-         products.push(orderProduct);
+          }
+        }
+        products.push(orderProduct);
       }
     });
 
@@ -1550,7 +1572,6 @@ export class ServerOrderService {
       dob,
       salutation,
     } = JSON.parse(formFieldsObj.value);
-
 
     const payload = {
       tbs_shopping_cart_id: checkout_id,
@@ -1575,7 +1596,7 @@ export class ServerOrderService {
       payment_type: payment_method === 'cash' ? 'cash' : 'Credit/Debit',
       address: delivery_address,
       addr2: '',
-      buzzer, 
+      buzzer,
       intersection: '',
       location_extra: customer_message,
       hst_amount: total_tax,
@@ -1583,7 +1604,6 @@ export class ServerOrderService {
       dob,
       salutation,
     };
-    console.log('testing21312', JSON.stringify(payload));
 
     const params = new URLSearchParams({
       api_key: this.configService.get('thebeerguy').key,
@@ -1607,5 +1627,23 @@ export class ServerOrderService {
     );
     console.log('beerguy update order', updateOrderRes);
     return updateOrderRes;
+  };
+
+  orderStatusDate = (orderStatus: number) => {
+    switch (orderStatus) {
+      case 11:
+        return 'ServerOrder.orderDate BETWEEN :fromDate AND :toDate';
+      case 10:
+        return `ServerOrder.completedDateTime BETWEEN :fromDate AND :toDate`;
+      case 8:
+      case 9:
+        return 'ServerOrder.pickUpReadyDateTime BETWEEN :fromDate AND :toDate';
+      case 5:
+        return `ServerOrder.cancellationDate BETWEEN :fromDate AND :toDate`;
+      case 3:
+        return `ServerOrder.intransitDate BETWEEN :fromDate AND :toDate`;
+      default:
+        'ServerOrder.orderDate BETWEEN :fromDate AND :toDate';
+    }
   };
 }
