@@ -149,7 +149,7 @@ export class UserService {
         table.take(take);
       }
       const response = await table.getManyAndCount();
-      console.log('response ------- >>', response);
+      // console.log('response ------- >>', response);
       const [items, total] = response;
       return {
         total,
@@ -264,7 +264,7 @@ export class UserService {
       await this.usersRepository.save({
         ...user,
         ...userObj,
-        ...(managerData && { manager: managerData.username }),
+        ...(managerData ? { manager: managerData.username } : { manager: null }),
         usersStores: userStoresList,
       });
 
