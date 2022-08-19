@@ -55,7 +55,7 @@ const OrderstatusText = {
   10: 'completed',
   8: 'awaiting pickup',
   3: 'partial shipped',
-  // 9: 'awaiting shipment'
+  9: 'awaiting shipment'
 };
 @Injectable()
 export class ServerOrderService {
@@ -92,6 +92,7 @@ export class ServerOrderService {
     sort?: object,
     search?: string,
     orderType?: string,
+    vector?: string,
   ): Promise<object> {
     const table = this.serverOrderRepository
       .createQueryBuilder('ServerOrder')
@@ -113,24 +114,45 @@ export class ServerOrderService {
       table.andWhere('ServerOrder.orderType = :orderType', { orderType });
     }
 
-    if (searchFromDate === searchToDate) {
-      const fromDate = searchFromDate;
-      const toDate = `${searchFromDate} 23:59:59`;
-      table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
-        fromDate,
-        toDate,
+    if (vector) {
+      table.andWhere('ServerOrder.orderVector = :orderVector', {
+        orderType: vector,
       });
-    } else {
-      const toDate = `${searchToDate} 23:59:59`;
-      table.andWhere(
-        'ServerOrder.orderDate BETWEEN :searchFromDate AND :toDate',
-        {
-          searchFromDate,
-          toDate,
-        },
-      );
     }
 
+    // this.orderStatusDate(+orderStatus),
+    
+    // if (searchFromDate === searchToDate) {
+      //   const fromDate = searchFromDate;
+      //   console.log('searchFromDate', searchFromDate);
+      //   const toDate = `${searchFromDate} 23:59:59`;
+      //   table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
+        //     fromDate,
+        //     toDate,
+        //   });
+        // } else {
+          //   const toDate = `${searchToDate} 23:59:59`;
+          //   table.andWhere(
+            //     'ServerOrder.orderDate BETWEEN :searchFromDate AND :toDate',
+            //     {
+              //       searchFromDate,
+              //       toDate,
+              //     },
+              //   );
+              // }
+              
+    const orderStatus = status[2] ? '8' : status;
+    table.andWhere(
+      this.orderStatusDate(+orderStatus),
+      {
+        fromDate: searchFromDate,
+        toDate:
+          searchFromDate === searchToDate
+            ? `${searchFromDate} 23:59:59`
+            : `${searchToDate} 23:59:59`,
+      },
+    );
+    
     if (storeId) {
       table.andWhere('ServerOrder.storeId = :storeId', {
         storeId,
@@ -340,25 +362,15 @@ export class ServerOrderService {
     }
 
     if (min_date_created && max_date_created) {
-      if (moment(min_date_created).isSame(max_date_created)) {
-        const fromDate = min_date_created;
-        const toDate = moment(max_date_created).endOf('day').format();
-        serverOrderQuery.andWhere(
-          'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-          {
-            fromDate,
-            toDate,
-          },
-        );
-      } else {
-        serverOrderQuery.andWhere(
-          'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-          {
-            fromDate: min_date_created,
-            toDate: max_date_created,
-          },
-        );
-      }
+      serverOrderQuery.andWhere(
+        'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
+        {
+          fromDate: min_date_created,
+          toDate: moment(min_date_created).isSame(max_date_created)
+            ? moment(max_date_created).endOf('day').format()
+            : max_date_created,
+        },
+      );
     }
 
     if (vector) {
@@ -532,11 +544,11 @@ export class ServerOrderService {
             )
           : null,
         salutation: billingAddressFormFields.salutation,
-        customerType: CustomerTypeEnum.Email,
-        ccType: transactionDetails?.card?.card_type || null,
-        cardNumber: +transactionDetails?.card?.last_four || null,
-        cardAmount: +transactionDetails?.amount || 0,
-        authCode: +transactionDetails?.auth_code || null,
+        customerType: CustomerTypeEnum.Email, // todo hardecoded need to fetch data
+        ccType: billingAddressFormFields?.order_type === 'delivery' ? transactionDetails?.card?.card_type: null,
+        cardNumber: billingAddressFormFields?.order_type === 'delivery' ? +transactionDetails?.card?.last_four: null,
+        cardAmount: billingAddressFormFields?.order_type === 'delivery' ? +transactionDetails?.amount: 0,
+        authCode: billingAddressFormFields?.order_type === 'delivery' ? +transactionDetails?.auth_code: null,
       };
 
       // console.log('customerDetails', customerDetails);
@@ -597,19 +609,6 @@ export class ServerOrderService {
         if (variantData.sale_price !== variantData.price) {
           saleSavings += variantData.price - variantData.sale_price;
         }
-        // mailProductsArr.push({
-        //   imageUrl: imageUrl || '',
-        //   name: product.name,
-        //   displayValue: product?.product_options[0]?.display_value,
-        //   quantity: +product.quantity,
-        //   productSubTotal:
-        //     variantData.sale_price === variantData.price
-        //       ? (variantData.price * product.quantity).toFixed(2)
-        //       : (variantData.sale_price * product.quantity).toFixed(2),
-        //   price: (variantData.price).toFixed(2) || 0,
-        //   salePrice: (variantData.sale_price).toFixed(2) || 0,
-        //   onSale: variantData.sale_price === variantData.price ? false : true,
-        // });
 
         productTotal += +product.total_inc_tax;
         return {
@@ -633,8 +632,8 @@ export class ServerOrderService {
           utmCampaign: null,
           utmTerm: null,
           utmContent: null,
-          tbsArticleId: product?.sku?.split("_")?.[0] || '',
-          tbsProductId: product?.product?.data?.sku?.split("_")?.[0]|| '',
+          tbsArticleId: product?.sku?.split('_')?.[0] || '',
+          tbsProductId: product?.product?.data?.sku?.split('_')?.[0] || '',
         };
       });
       const timeSplit =
@@ -795,7 +794,6 @@ export class ServerOrderService {
     checkoutId?: string,
   ): Promise<any> {
     try {
-      // console.log('testing32423', createOrderDto, serverOrderData);
       let updateBeerGuy = false;
       // const serverOrder = await this.serverOrderDetail(id);
       const orderRes = await Promise.all([
@@ -856,8 +854,7 @@ export class ServerOrderService {
             refundQuote,
           );
           paymentRefund.payments[0].amount = quotesRes.data.total_refund_amount;
-          await this.ordersService.refundHandler(id, paymentRefund);
-          // update beer guy for partial order
+          const refundHandler = await this.ordersService.refundHandler(id, paymentRefund);
           if (serverOrder.orderType === 'delivery') {
             updateBeerGuy = true;
           }
@@ -871,8 +868,11 @@ export class ServerOrderService {
 
         await this.ordersService.updateOrder(`${id}`, orderDetails);
         serverOrder.grandTotal =
-          +createOrderDto.productTotal + +orderDetails.shipping_cost_inc_tax - +totalDiscount;
-        serverOrder.productTotal = +createOrderDto.productTotal - +totalDiscount;
+          +createOrderDto.productTotal +
+          +orderDetails.shipping_cost_inc_tax -
+          +totalDiscount;
+        serverOrder.productTotal =
+          +createOrderDto.productTotal - +totalDiscount;
         serverOrder.deliveryFee = +orderDetails.shipping_cost_ex_tax;
         serverOrder.deliveryFeeHST =
           +orderDetails.shipping_cost_inc_tax -
@@ -1111,6 +1111,10 @@ export class ServerOrderService {
         await this.ordersService.updateOrder(orderId, {
           status_id: 3,
         });
+        prevOrder = {
+          ...prevOrder,
+          intransitDate: moment().toDate(),
+        };
       } else {
         await this.ordersService.updateOrder(orderId, createOrderDto);
       }
@@ -1183,10 +1187,6 @@ export class ServerOrderService {
         // let productFromdb;
         let productDetail;
         let subTotal = 0.0;
-        // console.log(
-        //   '!!!!data!!!!',
-        //   serverOrderDetails?.serverOrderProductDetails,
-        // );
         serverOrderDetails?.serverOrderProductDetails.forEach((details) => {
           const ele = data.find(
             (product) => +product.id === +details.productId,
@@ -1208,9 +1208,7 @@ export class ServerOrderService {
           // console.log('packupDiscount-->', packupDiscount);
           let variantData = ele.variants.find((x) => {
             return x.id === productDetail.variant_id;
-            // return x.id === productFromdb.variantId;
           });
-          // console.log('variantData!!', variantData);
           // console.log('productDetail', productDetail, variantData);
           const actualQuantity =
             +productDetail.quantity - +productDetail.quantity_refunded;
@@ -1298,7 +1296,10 @@ export class ServerOrderService {
             ),
             storeContact: billingAddressFormFields?.store_contact || '',
             orderType: billingAddressFormFields.order_type,
-            paymentMethod: orderDetailsFromBigCom?.payment_method,
+            paymentMethod:
+              orderDetailsFromBigCom?.payment_method === 'Cash'
+                ? 'Cash'
+                : 'Credit/Debit',
             totalCost: grandTotal,
             deliverydate: moment(
               billingAddressFormFields.pick_delivery_date_text,
@@ -1307,9 +1308,8 @@ export class ServerOrderService {
               billingAddressFormFields.order_type === 'delivery'
                 ? billingAddressFormFields.delivery_address
                 : billingAddressFormFields.current_store_address,
-            deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time.toUpperCase(),
-            // subTotal: serverOrderDetails.productTotal || 0,
-            // subTotal: (parseFloat(orderDetailsFromBigCom.subtotal_inc_tax)).toFixed(2)|| "0.00",
+            deliveryEstimatedTime:
+              billingAddressFormFields.pick_delivery_time.toUpperCase(),
             subTotal: subTotal.toFixed(2) || '0.00',
             deliveryCharge:
               parseFloat(orderDetailsFromBigCom.shipping_cost_ex_tax).toFixed(
@@ -1318,9 +1318,6 @@ export class ServerOrderService {
             deliveryFeeHST:
               parseFloat(orderDetailsFromBigCom.shipping_cost_tax).toFixed(2) ||
               '0.00',
-            // deliveryCharge: serverOrderDetails.deliveryFee || 0,
-            // deliveryFeeHST: serverOrderDetails.deliveryFeeHST || 0,
-            // grandTotal: serverOrderDetails.grandTotal || 0,
             grandTotal,
             totalSavings: (saleSavings + +totalPackupSaving).toFixed(2),
             saleSavings: saleSavings.toFixed(2),
@@ -1456,7 +1453,7 @@ export class ServerOrderService {
   };
 
   updateBeerGuyOrder = async (bigCommOrder: any) => {
-    console.log('orderId', bigCommOrder);
+    // console.log('orderId', bigCommOrder);
     const {
       id,
       customer_id,
@@ -1474,11 +1471,11 @@ export class ServerOrderService {
     let products = [];
     let productSequence;
     let orderProduct;
-    
+
     const productIds = [];
-    sequence.forEach(product => {
+    sequence.forEach((product) => {
       productIds.push(product.product_id);
-    })
+    });
 
     const productDetails = await this.beerService.findAll(
       undefined,
@@ -1490,27 +1487,27 @@ export class ServerOrderService {
       undefined,
       undefined,
       null,
-    )
+    );
     let productSkews = {};
     productDetails?.data?.forEach((details) => {
-      productSkews[details.id] = details.sku.split('_')[0]
+      productSkews[details.id] = details.sku.split('_')[0];
     });
 
-    sequence.forEach(product => {
+    sequence.forEach((product) => {
       const skuStr = product.sku;
-      const sku =  skuStr.split('_')[0];
+      const sku = skuStr.split('_')[0];
       // productIds.push(product.product_id);
       productSequence = product.sequence;
-      if(Array.isArray(productSequence) && productSequence.length > 0 ){
-        if (productSequence[0]?.sale){
+      if (Array.isArray(productSequence) && productSequence.length > 0) {
+        if (productSequence[0]?.sale) {
           const variant = productSequence[0]?.sale?.variant;
-          if(variant){
-            const currentPrice = variant?.price_info?.value?.current_price
+          if (variant) {
+            const currentPrice = variant?.price_info?.value?.current_price;
             orderProduct = {
               tbs_product_id: productSkews[product.product_id] || '',
               tbs_article_id: sku,
               price: currentPrice?.total_price,
-              hst: currentPrice?.tax[0].tax_amount || 0.00,
+              hst: currentPrice?.tax[0].tax_amount || 0.0,
               isSale: variant?.price_info?.value?.on_sale !== 'N',
               name: variant?.variant_info?.label,
               deposit: currentPrice.deposit,
@@ -1518,11 +1515,13 @@ export class ServerOrderService {
             };
           }
         }
-         if(productSequence[0]?.sub){
-           const { variant, quantity } = productSequence[0]?.sub || { quantity: 0};
-           if(variant){
+        if (productSequence[0]?.sub) {
+          const { variant, quantity } = productSequence[0]?.sub || {
+            quantity: 0,
+          };
+          if (variant) {
             const currentPrice = variant?.price_info?.value?.current_price;
-            const taxAmount = currentPrice?.tax[0].tax_amount || 0.00;
+            const taxAmount = currentPrice?.tax[0].tax_amount || 0.0;
             orderProduct.sub = {
               tbs_article_id: sku,
               tbs_product_id: productSkews[product.product_id] || '',
@@ -1531,9 +1530,9 @@ export class ServerOrderService {
               deposit: (quantity * +currentPrice.deposit).toFixed(2),
               quantity,
             };
-           }
-         } 
-         products.push(orderProduct);
+          }
+        }
+        products.push(orderProduct);
       }
     });
 
@@ -1550,7 +1549,6 @@ export class ServerOrderService {
       dob,
       salutation,
     } = JSON.parse(formFieldsObj.value);
-
 
     const payload = {
       tbs_shopping_cart_id: checkout_id,
@@ -1575,7 +1573,7 @@ export class ServerOrderService {
       payment_type: payment_method === 'cash' ? 'cash' : 'Credit/Debit',
       address: delivery_address,
       addr2: '',
-      buzzer, 
+      buzzer,
       intersection: '',
       location_extra: customer_message,
       hst_amount: total_tax,
@@ -1583,7 +1581,6 @@ export class ServerOrderService {
       dob,
       salutation,
     };
-    console.log('testing21312', JSON.stringify(payload));
 
     const params = new URLSearchParams({
       api_key: this.configService.get('thebeerguy').key,
@@ -1607,5 +1604,23 @@ export class ServerOrderService {
     );
     console.log('beerguy update order', updateOrderRes);
     return updateOrderRes;
+  };
+
+  orderStatusDate = (orderStatus: number) => {
+    switch (orderStatus) {
+      case 11:
+        return 'ServerOrder.orderDate BETWEEN :fromDate AND :toDate';
+      case 10:
+        return `ServerOrder.completedDateTime BETWEEN :fromDate AND :toDate`;
+      case 8:
+      case 9:
+        return 'ServerOrder.pickUpReadyDateTime BETWEEN :fromDate AND :toDate';
+      case 5:
+        return `ServerOrder.cancellationDate BETWEEN :fromDate AND :toDate`;
+      case 3:
+        return `ServerOrder.intransitDate BETWEEN :fromDate AND :toDate`;
+      default:
+        'ServerOrder.orderDate BETWEEN :fromDate AND :toDate';
+    }
   };
 }

@@ -33,6 +33,13 @@ export class BeerCategoryController {
   //   return this.beerCategoryService.create(createBeerCategoryDto);
   // }
 
+  @UseGuards(JwtAccessGuard)
+  @HttpCode(HttpStatus.OK)
+  @Get('/brewers')
+  getBrewers(){
+    return this.beerCategoryService.findAllBrewers();
+  }
+
   @ApiQuery({
     required: false,
     name: 'search',
