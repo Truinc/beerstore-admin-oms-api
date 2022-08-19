@@ -545,10 +545,10 @@ export class ServerOrderService {
           : null,
         salutation: billingAddressFormFields.salutation,
         customerType: CustomerTypeEnum.Email, // todo hardecoded need to fetch data
-        ccType: billingAddressFormFields?.order_type === 'delivery' ? transactionDetails?.card?.card_type: null,
-        cardNumber: billingAddressFormFields?.order_type === 'delivery' ? +transactionDetails?.card?.last_four: null,
+        ccType: billingAddressFormFields?.order_type === 'delivery' ? transactionDetails?.card?.card_type: '',
+        cardNumber: billingAddressFormFields?.order_type === 'delivery' ? +transactionDetails?.card?.last_four: 0,
         cardAmount: billingAddressFormFields?.order_type === 'delivery' ? +transactionDetails?.amount: 0,
-        authCode: billingAddressFormFields?.order_type === 'delivery' ? +transactionDetails?.auth_code: null,
+        authCode: billingAddressFormFields?.order_type === 'delivery' ? +transactionDetails?.auth_code: 0,
       };
 
       // console.log('customerDetails', customerDetails);
