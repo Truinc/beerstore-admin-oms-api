@@ -544,11 +544,11 @@ export class ServerOrderService {
             )
           : null,
         salutation: billingAddressFormFields.salutation,
-        customerType: CustomerTypeEnum.Email, // todo hardecoded need to fetch data
-        ccType: billingAddressFormFields?.order_type === 'delivery' ? transactionDetails?.card?.card_type: null,
-        cardNumber: billingAddressFormFields?.order_type === 'delivery' ? +transactionDetails?.card?.last_four: null,
-        cardAmount: billingAddressFormFields?.order_type === 'delivery' ? +transactionDetails?.amount: 0,
-        authCode: billingAddressFormFields?.order_type === 'delivery' ? +transactionDetails?.auth_code: null,
+        customerType: CustomerTypeEnum.Email,
+        ccType: transactionDetails?.card?.card_type || null,
+        cardNumber: +transactionDetails?.card?.last_four || null,
+        cardAmount: +transactionDetails?.amount || 0,
+        authCode: +transactionDetails?.auth_code || null,
       };
 
       // console.log('customerDetails', customerDetails);
