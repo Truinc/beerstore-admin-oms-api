@@ -9,6 +9,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import * as momentTz from 'moment-timezone';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Brackets, Between } from 'typeorm';
 import { CreateOrderHistoryDto } from '../order-history/dto/create-order-history.dto';
@@ -54,7 +55,7 @@ const OrderstatusText = {
   10: 'completed',
   8: 'awaiting pickup',
   3: 'partial shipped',
-  // 9: 'awaiting shipment'
+  9: 'awaiting shipment'
 };
 @Injectable()
 export class ServerOrderService {
@@ -91,6 +92,7 @@ export class ServerOrderService {
     sort?: object,
     search?: string,
     orderType?: string,
+    vector?: string,
   ): Promise<object> {
     const table = this.serverOrderRepository
       .createQueryBuilder('ServerOrder')
@@ -112,25 +114,46 @@ export class ServerOrderService {
       table.andWhere('ServerOrder.orderType = :orderType', { orderType });
     }
 
-    if (searchFromDate === searchToDate) {
-      const fromDate = searchFromDate;
-      const toDate = `${searchFromDate} 23:59:59`;
-      table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
-        fromDate,
-        toDate,
+    if (vector) {
+      table.andWhere('ServerOrder.orderVector = :orderVector', {
+        orderType: vector,
       });
-    } else {
-      const toDate = `${searchToDate} 23:59:59`;
-      table.andWhere(
-        'ServerOrder.orderDate BETWEEN :searchFromDate AND :toDate',
-        {
-          searchFromDate,
-          toDate,
-        },
-      );
     }
 
-    if(storeId){
+    // this.orderStatusDate(+orderStatus),
+    
+    // if (searchFromDate === searchToDate) {
+      //   const fromDate = searchFromDate;
+      //   console.log('searchFromDate', searchFromDate);
+      //   const toDate = `${searchFromDate} 23:59:59`;
+      //   table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
+        //     fromDate,
+        //     toDate,
+        //   });
+        // } else {
+          //   const toDate = `${searchToDate} 23:59:59`;
+          //   table.andWhere(
+            //     'ServerOrder.orderDate BETWEEN :searchFromDate AND :toDate',
+            //     {
+              //       searchFromDate,
+              //       toDate,
+              //     },
+              //   );
+              // }
+              
+    const orderStatus = status[2] ? '8' : status;
+    table.andWhere(
+      this.orderStatusDate(+orderStatus),
+      {
+        fromDate: searchFromDate,
+        toDate:
+          searchFromDate === searchToDate
+            ? `${searchFromDate} 23:59:59`
+            : `${searchToDate} 23:59:59`,
+      },
+    );
+    
+    if (storeId) {
       table.andWhere('ServerOrder.storeId = :storeId', {
         storeId,
       });
@@ -339,25 +362,15 @@ export class ServerOrderService {
     }
 
     if (min_date_created && max_date_created) {
-      if (moment(min_date_created).isSame(max_date_created)) {
-        const fromDate = min_date_created;
-        const toDate = moment(max_date_created).endOf('day').format();
-        serverOrderQuery.andWhere(
-          'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-          {
-            fromDate,
-            toDate,
-          },
-        );
-      } else {
-        serverOrderQuery.andWhere(
-          'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-          {
-            fromDate: min_date_created,
-            toDate: max_date_created,
-          },
-        );
-      }
+      serverOrderQuery.andWhere(
+        'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
+        {
+          fromDate: min_date_created,
+          toDate: moment(min_date_created).isSame(max_date_created)
+            ? moment(max_date_created).endOf('day').format()
+            : max_date_created,
+        },
+      );
     }
 
     if (vector) {
@@ -443,7 +456,6 @@ export class ServerOrderService {
     try {
       const createPostFeed = await this.postFeedRepository.create(postFeed);
       const response = await this.postFeedRepository.save(createPostFeed);
-      // console.log('response', response);
       return this.postFeedRepository.findOne(response.id);
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -492,6 +504,13 @@ export class ServerOrderService {
         orderDetails?.billing_address?.form_fields[0]?.value,
       );
 
+      this.orderHistoryService.create({
+        orderId: `${orderDetails.id}`,
+        orderStatus: 11,
+        name: 'Order Queue',
+        identifier: '',
+      });
+
       const deliveryDetails = {
         orderId: `${orderDetails.id}`,
         deliveryId: null,
@@ -519,17 +538,20 @@ export class ServerOrderService {
         name: `${orderDetails.billing_address.first_name} ${orderDetails.billing_address.last_name}`,
         email: orderDetails.billing_address.email,
         postalCode: orderDetails.billing_address.zip,
-        dob: billingAddressFormFields.dob ? moment(billingAddressFormFields.dob, 'DD-MM-YYYY').format(
-          'YYYY-MM-DD') : null,
+        dob: billingAddressFormFields.dob
+          ? moment(billingAddressFormFields.dob, 'DD-MM-YYYY').format(
+              'YYYY-MM-DD',
+            )
+          : null,
         salutation: billingAddressFormFields.salutation,
-        customerType: CustomerTypeEnum.Email,
-        ccType: transactionDetails?.card?.card_type || null,
-        cardNumber: +transactionDetails?.card?.last_four || null,
-        cardAmount: +transactionDetails?.amount || 0,
-        authCode: +transactionDetails?.auth_code || null,
+        customerType: CustomerTypeEnum.Email, // todo hardecoded need to fetch data
+        ccType: billingAddressFormFields?.order_type === 'delivery' ? transactionDetails?.card?.card_type: '',
+        cardNumber: billingAddressFormFields?.order_type === 'delivery' ? +transactionDetails?.card?.last_four: 0,
+        cardAmount: billingAddressFormFields?.order_type === 'delivery' ? +transactionDetails?.amount: 0,
+        authCode: billingAddressFormFields?.order_type === 'delivery' ? +transactionDetails?.auth_code: 0,
       };
 
-      console.log('customerDetails', customerDetails);
+      // console.log('customerDetails', customerDetails);
 
       let singleUnits = 0;
       let twoSixUnits = 0;
@@ -582,24 +604,11 @@ export class ServerOrderService {
         let variantData = product.product.data.variants.find(
           (x) => x.id === product.variant_id,
         );
-        console.log('variantData', variantData);
+        // console.log('variantData', variantData);
         //calculating the sale price
         if (variantData.sale_price !== variantData.price) {
           saleSavings += variantData.price - variantData.sale_price;
         }
-        // mailProductsArr.push({
-        //   imageUrl: imageUrl || '',
-        //   name: product.name,
-        //   displayValue: product?.product_options[0]?.display_value,
-        //   quantity: +product.quantity,
-        //   productSubTotal:
-        //     variantData.sale_price === variantData.price
-        //       ? (variantData.price * product.quantity).toFixed(2)
-        //       : (variantData.sale_price * product.quantity).toFixed(2),
-        //   price: (variantData.price).toFixed(2) || 0,
-        //   salePrice: (variantData.sale_price).toFixed(2) || 0,
-        //   onSale: variantData.sale_price === variantData.price ? false : true,
-        // });
 
         productTotal += +product.total_inc_tax;
         return {
@@ -623,22 +632,38 @@ export class ServerOrderService {
           utmCampaign: null,
           utmTerm: null,
           utmContent: null,
+          tbsArticleId: product?.sku?.split('_')?.[0] || '',
+          tbsProductId: product?.product?.data?.sku?.split('_')?.[0] || '',
         };
       });
       const timeSplit =
         billingAddressFormFields.pick_delivery_time.split('-') || '';
       const orderDeliveryDate =
         billingAddressFormFields.pick_delivery_date_text;
-      const fulfillmentDate = moment(
+      // const fulfillmentDate = moment(
+      //   `${orderDeliveryDate} ${timeSplit[0]}`,
+      //   'YYYY-MM-DD HH:mm A',
+      // ).format('YYYY-MM-DD HH:mm:ss');
+
+      const fulfillmentDate = momentTz(
         `${orderDeliveryDate} ${timeSplit[0]}`,
         'YYYY-MM-DD HH:mm A',
-      ).format('YYYY-MM-DD HH:mm:ss');
+      )
+        .tz(this.configService.get('timezone').zone)
+        .format('YYYY-MM-DD HH:mm:ss');
+
+      let staffNotes = JSON.parse(orderDetails.staff_notes);
+      let totalDiscount = 0;
+      staffNotes.forEach((notes) => {
+        totalDiscount += +notes.packup_discount;
+      });
       const serverOrderParsed = {
         orderId: `${orderDetails.id}`,
         storeId: `${billingAddressFormFields.store_id}`,
         orderType:
-        billingAddressFormFields.source === 'kiosk' ? 'kiosk' : 
-          billingAddressFormFields.order_type === 'pickup'
+          billingAddressFormFields.source === 'kiosk'
+            ? 'kiosk'
+            : billingAddressFormFields.order_type === 'pickup'
             ? billingAddressFormFields.pickup_type
             : billingAddressFormFields.order_type,
         orderStatus: orderDetails.status_id,
@@ -653,7 +678,7 @@ export class ServerOrderService {
         transactionId: serverOrder.transactionId || null,
         orderVector: billingAddressFormFields.source,
         partialOrder: false,
-        productTotal: productTotal,
+        productTotal: productTotal - totalDiscount,
         deliveryFee: Number(
           parseFloat(orderDetails.shipping_cost_ex_tax).toFixed(2),
         ),
@@ -663,15 +688,19 @@ export class ServerOrderService {
         grandTotal:
           productTotal +
           Number(parseFloat(orderDetails.shipping_cost_ex_tax).toFixed(2)) +
-          Number(parseFloat(orderDetails.shipping_cost_tax).toFixed(2)),
+          Number(parseFloat(orderDetails.shipping_cost_tax).toFixed(2)) -
+          +totalDiscount,
         volumeTotalHL,
         singleUnits: singleUnits,
         packUnits2_6: twoSixUnits,
         packUnits8_18: eightEighteenUnits,
         packUnits_24Plus: twentyFourPlusUnits,
-        submittedDateTime: moment
-          .utc(orderDetails.date_created)
-          .format('YYYY-MM-DD hh:mm:ss'),
+        // submittedDateTime: moment
+        //   .utc(orderDetails.date_created)
+        //   .format('YYYY-MM-DD hh:mm:ss'),
+        submittedDateTime: momentTz(orderDetails.date_created)
+          .tz(this.configService.get('timezone').zone)
+          .format('YYYY-MM-DD HH:mm:ss'),
         openDateTime: null,
         pickUpReadyDateTime: null,
         completedByEmpId: null,
@@ -693,39 +722,10 @@ export class ServerOrderService {
           serverOrderProductDetails: productsArr,
         }),
       );
-    console.log('tesitng213123', billingAddressFormFields.source);
-    let staffNotes = JSON.parse(orderDetails.staff_notes);
-    if(billingAddressFormFields.source !== 'kiosk'){
-
-      const serverOrder = await this.serverOrderDetail(orderDetails.id);
-    // this.mailService.orderCreated({
-    //   to: customerDetails.email,
-    //   orderDetails: {
-    //     customerName: customerDetails.name,
-    //     orderNumber: +serverOrder.orderId,
-    //     orderDate: moment(serverOrderParsed.orderDate).format('MMMM D, YYYY'),
-    //     paymentMethod: orderDetails.payment_method,
-    //     totalCost: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
-    //     deliverydate: moment(
-    //       billingAddressFormFields.pick_delivery_date_text,
-    //     ).format('MMMM D, YYYY'),
-    //     deliveryLocation: deliveryDetails.deliveryAddress,
-    //     deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
-    //     subTotal: `${(serverOrderParsed.productTotal).toFixed(2)}` || "0.00",
-    //     deliveryCharge: (serverOrderParsed.deliveryFee).toFixed(2) || "0.00",
-    //     deliveryFeeHST: (serverOrderParsed.deliveryFeeHST).toFixed(2) || "0.00",
-    //     grandTotal: (serverOrderParsed.grandTotal).toFixed(2) || "0.00",
-    //     totalSavings: staffNotes.reduce(
-    //       (previousValue, currentValue) =>
-    //         previousValue + +currentValue.packup_discount,
-    //       0,
-    //     ),
-    //     saleSavings: (saleSavings).toFixed(2),
-    //   },
-    //   orderProductDetails: mailProductsArr,
-    // });
-    this.sendMailOnStatusChange(`${orderDetails.id}`,serverOrder, 11 );
-  }
+      if (billingAddressFormFields.source !== 'kiosk') {
+        const serverOrder = await this.serverOrderDetail(orderDetails.id);
+        this.sendMailOnStatusChange(`${orderDetails.id}`, serverOrder, 11);
+      }
       return 'Order placed';
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -759,22 +759,6 @@ export class ServerOrderService {
     return this.findOne(id);
   }
 
-  // async updateServerOrderStatus(
-  //   id: number,
-  //   orderStatus: number,
-  //   partial: string,
-  // ): Promise<ServerOrder> {
-  //   const order = await this.findOne(id);
-  //   if (!order) {
-  //     throw new NotFoundException('Order not found');
-  //   }
-  //   await this.serverOrderRepository.update(order.id, {
-  //     orderStatus,
-  //     // partial,
-  //   });
-  //   return this.findOne(id);
-  // }
-
   async serverOrderDetail(orderId: number): Promise<ServerOrder> {
     const serverOrder = await this.serverOrderRepository.findOne(
       {
@@ -803,17 +787,24 @@ export class ServerOrderService {
     id: number,
     createOrderHistoryDto: CreateOrderHistoryDto,
     orderStatus: number,
-    createOrderDto: CreateOrderDto,
+    orderDetails: CreateOrderDto,
     refundOrder: RefundOrderDto,
-    // serverOrder: UpdateOrderDto,
+    createOrderDto: UpdateOrderDto,
     partial?: string,
     checkoutId?: string,
   ): Promise<any> {
     try {
-      console.log('testing32423', createOrderDto, refundOrder);
-      const serverOrder = await this.serverOrderDetail(id);
+      let updateBeerGuy = false;
+      // const serverOrder = await this.serverOrderDetail(id);
+      const orderRes = await Promise.all([
+        this.serverOrderDetail(id),
+        this.ordersService.getOrder(`${id}`),
+      ]);
+      const serverOrder = orderRes[0];
+      const bigCommOrder = orderRes[1];
       serverOrder.orderStatus = orderStatus;
       serverOrder.partialOrder = partial !== '0';
+
       const refundQuote = {
         items: [],
         tax_adjustment_amount: 0,
@@ -838,6 +829,10 @@ export class ServerOrderService {
                   item_type: 'PRODUCT',
                   quantity: product.refundQty,
                 });
+                if (+product.originalQty - +product.refundQty == 0) {
+                  serverOrder.serverOrderProductDetails[_idx].itemTotal = 0.0;
+                  serverOrder.serverOrderProductDetails[_idx].itemHLTotal = 0.0;
+                }
               }
             }
           });
@@ -858,20 +853,37 @@ export class ServerOrderService {
             id,
             refundQuote,
           );
-          console.log('quotesRes', JSON.stringify(quotesRes));
           paymentRefund.payments[0].amount = quotesRes.data.total_refund_amount;
-          console.log('paymentTesting', paymentRefund);
-          const refundedOrder = await this.ordersService.refundHandler(
-            id,
-            paymentRefund,
-          );
-          console.log('refundedAmount', JSON.stringify(refundedOrder));
-          console.log('serverOrder', serverOrder);
-          // serverOrder.grandTotal =
-          // serverOrder.productTotal =
+          const refundHandler = await this.ordersService.refundHandler(id, paymentRefund);
+          if (serverOrder.orderType === 'delivery') {
+            updateBeerGuy = true;
+          }
         }
-        console.log('createOrderDto1234567', createOrderDto);
-        await this.ordersService.updateOrder(`${id}`, createOrderDto);
+
+        let staffNotes = JSON.parse(orderDetails?.staff_notes);
+        let totalDiscount = 0;
+        staffNotes?.forEach((notes) => {
+          totalDiscount += +notes.packup_discount;
+        });
+
+        await this.ordersService.updateOrder(`${id}`, orderDetails);
+        serverOrder.grandTotal =
+          +createOrderDto.productTotal +
+          +orderDetails.shipping_cost_inc_tax -
+          +totalDiscount;
+        serverOrder.productTotal =
+          +createOrderDto.productTotal - +totalDiscount;
+        serverOrder.deliveryFee = +orderDetails.shipping_cost_ex_tax;
+        serverOrder.deliveryFeeHST =
+          +orderDetails.shipping_cost_inc_tax -
+          +orderDetails.shipping_cost_ex_tax;
+        serverOrder.refundedAmount = +orderDetails.refunded_amount || 0;
+        serverOrder.refunded = +orderDetails.refunded_amount > 0;
+        serverOrder.volumeTotalHL = createOrderDto.volumeTotalHL;
+        serverOrder.singleUnits = createOrderDto.singleUnits;
+        serverOrder.packUnits2_6 = createOrderDto.packUnits2_6;
+        serverOrder.packUnits8_18 = createOrderDto.packUnits8_18;
+        serverOrder.packUnits_24Plus = createOrderDto.packUnits_24Plus;
       } else if (serverOrder?.orderStatus === 3) {
         await this.ordersService.updateOrder(`${id}`, {
           status_id: 3,
@@ -879,9 +891,11 @@ export class ServerOrderService {
       }
 
       const orderToSave = await this.serverOrderRepository.preload(serverOrder);
+
       const response = await Promise.all([
         this.serverOrderRepository.save(orderToSave),
         this.orderHistoryService.create(createOrderHistoryDto),
+        // { ...(updateBeerGuy && this.updateBeerGuyOrder(bigCommOrder)) },
       ]);
 
       try {
@@ -894,7 +908,7 @@ export class ServerOrderService {
             +orderStatus,
             serverOrder.orderType,
           );
-          }
+        }
       } catch (err) {}
       this.sendMailOnStatusChange(id?.toString(), serverOrder, orderStatus);
       return response[0];
@@ -907,7 +921,7 @@ export class ServerOrderService {
   async handleBeerGuy(updateOrder: BeerGuyUpdateDto): Promise<ServerOrder> {
     try {
       const serverOrder = {
-        orderStatus: +updateOrder.orderId,
+        orderStatus: +updateOrder.orderStatus,
         cancellationReason: updateOrder?.cancellationReason || '',
         cancellationBy: updateOrder?.cancellationBy || '',
         cancellationDate: updateOrder.cancellationDate || null,
@@ -915,8 +929,8 @@ export class ServerOrderService {
       const orderHistory = {
         orderId: updateOrder.orderId,
         orderStatus: updateOrder.orderStatus,
-        name: updateOrder.driverName || '',
-        identifier: 'The Beer Guy',
+        name: updateOrder.driverName || 'The Beer Guy',
+        identifier: '',
       };
       const orderDetails = {
         status_id: updateOrder.orderStatus,
@@ -1000,7 +1014,6 @@ export class ServerOrderService {
             cancellationBy.toLowerCase() === 'customer' ? '' : identifier,
         }),
       ]);
-      console.log('res', resp);
       this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus);
       try {
         if (checkoutId && orderType !== 'kiosk') {
@@ -1097,6 +1110,10 @@ export class ServerOrderService {
         await this.ordersService.updateOrder(orderId, {
           status_id: 3,
         });
+        prevOrder = {
+          ...prevOrder,
+          intransitDate: moment().toDate(),
+        };
       } else {
         await this.ordersService.updateOrder(orderId, createOrderDto);
       }
@@ -1137,7 +1154,6 @@ export class ServerOrderService {
       let productIds = serverOrderDetails.serverOrderProductDetails
         .map((x) => `${x.productId}`)
         .join(',');
-      // console.log('testing123', productIds);
       requests.push(this.ordersService.getOrder(orderId));
       requests.push(this.ordersService.getOrderProducts(orderId));
       requests.push(
@@ -1162,58 +1178,63 @@ export class ServerOrderService {
       let billingAddressFormFields = JSON.parse(
         orderDetailsFromBigCom?.billing_address?.form_fields[0]?.value,
       );
-      if(billingAddressFormFields.source !== 'kiosk'){
+      if (billingAddressFormFields.source !== 'kiosk') {
         let staffNotes = JSON.parse(orderDetailsFromBigCom.staff_notes);
-        console.log('staffNotes', staffNotes);
         let mailProductsArr = [];
         let saleSavings = 0;
         // let totalRefundedAmount = 0;
         // let productFromdb;
         let productDetail;
         let subTotal = 0.0;
-        console.log('!!!!data!!!!', serverOrderDetails?.serverOrderProductDetails);
         serverOrderDetails?.serverOrderProductDetails.forEach((details) => {
-          const ele = data.find(product => +product.id === +details.productId);
+          const ele = data.find(
+            (product) => +product.id === +details.productId,
+          );
           // console.log('ele', ele);
           let imageUrl = ele?.custom_fields.find(
             (x) => x.name === 'product_image_1',
           )?.value;
           // productFromdb = serverOrderDetails.serverOrderProductDetails.find(
-            //   (x) => x.productId == ele.id,
-            // );
-            productDetail = orderProductDetails.find(
-              (x) => x.variant_id === details.variantId,
-              );
-          const packupDiscountObj = staffNotes.find(variant => variant.variant_id === productDetail.variant_id);
+          //   (x) => x.productId == ele.id,
+          // );
+          productDetail = orderProductDetails.find(
+            (x) => x.variant_id === details.variantId,
+          );
+          const packupDiscountObj = staffNotes.find(
+            (variant) => variant.variant_id === productDetail.variant_id,
+          );
           const packupDiscount = packupDiscountObj?.packup_discount || 0;
-          console.log('packupDiscount-->', packupDiscount);
+          // console.log('packupDiscount-->', packupDiscount);
           let variantData = ele.variants.find((x) => {
             return x.id === productDetail.variant_id;
-            // return x.id === productFromdb.variantId;
           });
-          // console.log('variantData!!', variantData);
           // console.log('productDetail', productDetail, variantData);
-          const actualQuantity = +productDetail.quantity - +productDetail.quantity_refunded;
+          const actualQuantity =
+            +productDetail.quantity - +productDetail.quantity_refunded;
           if (variantData?.sale_price !== variantData?.price) {
-            saleSavings += (variantData?.price * actualQuantity ) - ( variantData?.sale_price * actualQuantity );
+            saleSavings +=
+              variantData?.price * actualQuantity -
+              variantData?.sale_price * actualQuantity;
           }
           // console.log('testing', saleSavings, variantData);
           // if (productDetail.is_refunded) {
           //   totalRefundedAmount += productDetail.refund_amount;
           // }
           const refundedPrice = +productDetail.quantity * +variantData.price;
-          const productSubTotal = variantData?.sale_price === variantData?.price
-          ? (variantData?.price * actualQuantity).toFixed(2)
-          : (variantData?.sale_price * actualQuantity).toFixed(2) || 0.00;
-          
-          const salesSubTotal =  (variantData?.sale_price * actualQuantity).toFixed(2) || 0.00;
-          const maxSubTotal = (variantData?.price * actualQuantity).toFixed(2) || 0.00;
-          const packupSubTotal = +salesSubTotal -  +packupDiscount;
+          const productSubTotal =
+            variantData?.sale_price === variantData?.price
+              ? (variantData?.price * actualQuantity).toFixed(2)
+              : (variantData?.sale_price * actualQuantity).toFixed(2) || 0.0;
+
+          const salesSubTotal =
+            (variantData?.sale_price * actualQuantity).toFixed(2) || 0.0;
+          const maxSubTotal =
+            (variantData?.price * actualQuantity).toFixed(2) || 0.0;
+          const packupSubTotal = +salesSubTotal - +packupDiscount;
           const nameString = ele.name.split('~');
-  
+
           const name = nameString[0].replace(/-/g, ' ')?.toUpperCase();
-  
-  
+
           // console.log('mailProductsArr', {
           //   imageUrl: imageUrl || '',
           //   name,
@@ -1229,7 +1250,7 @@ export class ServerOrderService {
           //   refundedQty: (productDetail?.quantity_refunded).toFixed(2)  || 0.00,
           //   refundedAmt: (refundedPrice).toFixed(2) || 0.00,
           // })
-          if(packupDiscount){
+          if (packupDiscount) {
             subTotal = subTotal + +packupSubTotal;
           } else {
             subTotal = subTotal + +productSubTotal;
@@ -1237,28 +1258,33 @@ export class ServerOrderService {
           mailProductsArr.push({
             imageUrl: imageUrl || '',
             name,
-            displayValue: productDetail?.product_options[0]?.display_value || '',
+            displayValue:
+              productDetail?.product_options[0]?.display_value || '',
             quantity: +productDetail.quantity,
             productSubTotal,
             packupDiscount,
             packupSubTotal: packupSubTotal.toFixed(2),
-            price: (variantData.price).toFixed(2) || 0.00,
-            salePrice: (variantData?.sale_price).toFixed(2) || 0.00,
-            onSale: variantData?.sale_price === variantData.price ? false : true,
-            isRefunded: (productDetail.quantity - +productDetail?.quantity_refunded) === 0,
-            refundedQty: productDetail?.quantity_refunded  || 0,
-            refundedAmt: (refundedPrice).toFixed(2) || 0.00,
+            price: variantData.price.toFixed(2) || 0.0,
+            salePrice: (variantData?.sale_price).toFixed(2) || 0.0,
+            onSale:
+              variantData?.sale_price === variantData.price ? false : true,
+            isRefunded:
+              productDetail.quantity - +productDetail?.quantity_refunded === 0,
+            refundedQty: productDetail?.quantity_refunded || 0,
+            refundedAmt: refundedPrice.toFixed(2) || 0.0,
           });
         });
-  
-        console.log('mailProductsArr', mailProductsArr);
+
+        // console.log('mailProductsArr', mailProductsArr);
         const totalPackupSaving = staffNotes.reduce(
           (previousValue, currentValue) =>
             previousValue + +currentValue.packup_discount,
           0,
         );
-        const grandTotal =  (+subTotal + +orderDetailsFromBigCom.shipping_cost_inc_tax ).toFixed(2);
-       
+        const grandTotal = (
+          +subTotal + +orderDetailsFromBigCom.shipping_cost_inc_tax
+        ).toFixed(2);
+
         let mailPayload = {
           to: serverOrderDetails.serverOrderCustomerDetails.email,
           orderDetails: {
@@ -1269,7 +1295,10 @@ export class ServerOrderService {
             ),
             storeContact: billingAddressFormFields?.store_contact || '',
             orderType: billingAddressFormFields.order_type,
-            paymentMethod: orderDetailsFromBigCom?.payment_method,
+            paymentMethod:
+              orderDetailsFromBigCom?.payment_method === 'Cash'
+                ? 'Cash'
+                : 'Credit/Debit',
             totalCost: grandTotal,
             deliverydate: moment(
               billingAddressFormFields.pick_delivery_date_text,
@@ -1278,9 +1307,8 @@ export class ServerOrderService {
               billingAddressFormFields.order_type === 'delivery'
                 ? billingAddressFormFields.delivery_address
                 : billingAddressFormFields.current_store_address,
-            deliveryEstimatedTime: billingAddressFormFields.pick_delivery_time,
-            // subTotal: serverOrderDetails.productTotal || 0,
-            // subTotal: (parseFloat(orderDetailsFromBigCom.subtotal_inc_tax)).toFixed(2)|| "0.00",
+            deliveryEstimatedTime:
+              billingAddressFormFields.pick_delivery_time.toUpperCase(),
             subTotal: subTotal.toFixed(2) || '0.00',
             deliveryCharge:
               parseFloat(orderDetailsFromBigCom.shipping_cost_ex_tax).toFixed(
@@ -1289,9 +1317,6 @@ export class ServerOrderService {
             deliveryFeeHST:
               parseFloat(orderDetailsFromBigCom.shipping_cost_tax).toFixed(2) ||
               '0.00',
-            // deliveryCharge: serverOrderDetails.deliveryFee || 0,
-            // deliveryFeeHST: serverOrderDetails.deliveryFeeHST || 0,
-            // grandTotal: serverOrderDetails.grandTotal || 0,
             grandTotal,
             totalSavings: (saleSavings + +totalPackupSaving).toFixed(2),
             saleSavings: saleSavings.toFixed(2),
@@ -1312,10 +1337,10 @@ export class ServerOrderService {
             orderDetails: {
               ...mailPayload.orderDetails,
               refundedAmt: grandTotal,
-            }
+            },
           });
         }
-  
+
         if (+orderStatus === 11) {
           this.mailService.orderCreated(mailPayload);
         }
@@ -1323,11 +1348,11 @@ export class ServerOrderService {
         if (+orderStatus === 10) {
           this.mailService.orderCompleted(mailPayload);
         }
-  
+
         if (+orderStatus === 3) {
           this.mailService.orderInTransit(mailPayload);
         }
-  
+
         // console.log(
         //   'orderType',
         //   billingAddressFormFields.order_type,
@@ -1424,5 +1449,177 @@ export class ServerOrderService {
     );
     console.log('beerguy cancel order', cancelOrderRes);
     return cancelOrderRes;
+  };
+
+  updateBeerGuyOrder = async (bigCommOrder: any) => {
+    // console.log('orderId', bigCommOrder);
+    const {
+      id,
+      customer_id,
+      billing_address,
+      customer_message,
+      total_inc_tax,
+      base_shipping_cost,
+      shipping_cost_tax,
+      payment_method,
+      total_tax,
+    } = bigCommOrder;
+    const formFieldsObj = billing_address.form_fields[0];
+    const sequenceArr = billing_address.form_fields[1].value;
+    const sequence = JSON.parse(sequenceArr);
+    let products = [];
+    let productSequence;
+    let orderProduct;
+
+    const productIds = [];
+    sequence.forEach((product) => {
+      productIds.push(product.product_id);
+    });
+
+    const productDetails = await this.beerService.findAll(
+      undefined,
+      undefined,
+      productIds.toString(),
+      undefined,
+      undefined,
+      'variants,custom_fields,images,primary_image',
+      undefined,
+      undefined,
+      null,
+    );
+    let productSkews = {};
+    productDetails?.data?.forEach((details) => {
+      productSkews[details.id] = details.sku.split('_')[0];
+    });
+
+    sequence.forEach((product) => {
+      const skuStr = product.sku;
+      const sku = skuStr.split('_')[0];
+      // productIds.push(product.product_id);
+      productSequence = product.sequence;
+      if (Array.isArray(productSequence) && productSequence.length > 0) {
+        if (productSequence[0]?.sale) {
+          const variant = productSequence[0]?.sale?.variant;
+          if (variant) {
+            const currentPrice = variant?.price_info?.value?.current_price;
+            orderProduct = {
+              tbs_product_id: productSkews[product.product_id] || '',
+              tbs_article_id: sku,
+              price: currentPrice?.total_price,
+              hst: currentPrice?.tax[0].tax_amount || 0.0,
+              isSale: variant?.price_info?.value?.on_sale !== 'N',
+              name: variant?.variant_info?.label,
+              deposit: currentPrice.deposit,
+              quantity: productSequence[0]?.sale?.quantity || 0,
+            };
+          }
+        }
+        if (productSequence[0]?.sub) {
+          const { variant, quantity } = productSequence[0]?.sub || {
+            quantity: 0,
+          };
+          if (variant) {
+            const currentPrice = variant?.price_info?.value?.current_price;
+            const taxAmount = currentPrice?.tax[0].tax_amount || 0.0;
+            orderProduct.sub = {
+              tbs_article_id: sku,
+              tbs_product_id: productSkews[product.product_id] || '',
+              price: (quantity * +currentPrice.total_price).toFixed(2),
+              hst: (quantity * taxAmount).toFixed(2),
+              deposit: (quantity * +currentPrice.deposit).toFixed(2),
+              quantity,
+            };
+          }
+        }
+        products.push(orderProduct);
+      }
+    });
+
+    const {
+      store_id,
+      checkout_id,
+      delivery_phone,
+      order_email,
+      pick_delivery_date_text,
+      pick_delivery_time,
+      order_type,
+      delivery_address,
+      buzzer,
+      dob,
+      salutation,
+    } = JSON.parse(formFieldsObj.value);
+
+    const payload = {
+      tbs_shopping_cart_id: checkout_id,
+      tbs_purchase_id: id,
+      tbs_customer_id: customer_id,
+      tbs_location_id: store_id,
+      beer_xpress_location_id: store_id,
+      name: `${billing_address.first_name} ${billing_address.last_name}`,
+      products,
+      phone: delivery_phone,
+      email: order_email,
+      purchase_extra: customer_message,
+      schedule_date: pick_delivery_date_text,
+      schedule_time: pick_delivery_time,
+      order_type,
+      cell: delivery_phone,
+      total_price: total_inc_tax,
+      delivery_fee: base_shipping_cost,
+      delivery_hst: shipping_cost_tax,
+      delivery_payment_type_id: 2,
+      order_type_id: 2,
+      payment_type: payment_method === 'cash' ? 'cash' : 'Credit/Debit',
+      address: delivery_address,
+      addr2: '',
+      buzzer,
+      intersection: '',
+      location_extra: customer_message,
+      hst_amount: total_tax,
+      deposit_amount: '',
+      dob,
+      salutation,
+    };
+
+    const params = new URLSearchParams({
+      api_key: this.configService.get('thebeerguy').key,
+    });
+    const updateOrderRes = await lastValueFrom(
+      this.httpService
+        .post<{ result: string; output: string }>(
+          `${
+            this.configService.get('thebeerguy').url
+          }/purchase/update/?${params.toString()}`,
+          payload,
+        )
+        .pipe(
+          map((response) => response.data),
+          catchError((err) => {
+            const message = err.message;
+            console.log('err-message', message);
+            throw new UnprocessableEntityException(message);
+          }),
+        ),
+    );
+    console.log('beerguy update order', updateOrderRes);
+    return updateOrderRes;
+  };
+
+  orderStatusDate = (orderStatus: number) => {
+    switch (orderStatus) {
+      case 11:
+        return 'ServerOrder.orderDate BETWEEN :fromDate AND :toDate';
+      case 10:
+        return `ServerOrder.completedDateTime BETWEEN :fromDate AND :toDate`;
+      case 8:
+      case 9:
+        return 'ServerOrder.pickUpReadyDateTime BETWEEN :fromDate AND :toDate';
+      case 5:
+        return `ServerOrder.cancellationDate BETWEEN :fromDate AND :toDate`;
+      case 3:
+        return `ServerOrder.intransitDate BETWEEN :fromDate AND :toDate`;
+      default:
+        'ServerOrder.orderDate BETWEEN :fromDate AND :toDate';
+    }
   };
 }

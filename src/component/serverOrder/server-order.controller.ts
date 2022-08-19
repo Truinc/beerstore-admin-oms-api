@@ -111,7 +111,7 @@ export class ServerOrderController {
     RolesEnum.customerservicerep,
     RolesEnum.storemanager,
     RolesEnum.reportingadmin,
-    RolesEnum.ithelpdesk
+    RolesEnum.ithelpdesk,
   )
   @HttpCode(HttpStatus.OK)
   @Get()
@@ -124,6 +124,7 @@ export class ServerOrderController {
     @Query('searchToDate') searchToDate: string,
     @Query('orderType') orderType: string,
     @Query('storeId') storeId: string,
+    @Query('vector') vector: string,
   ) {
     const { take, skip, sort } = paginationDto;
     return this.serverOrderService.findAllServerOrder(
@@ -136,6 +137,7 @@ export class ServerOrderController {
       sort,
       searchText,
       orderType,
+      vector,
     );
   }
 
@@ -146,7 +148,7 @@ export class ServerOrderController {
     RolesEnum.customerservicerep,
     RolesEnum.storemanager,
     RolesEnum.reportingadmin,
-    RolesEnum.ithelpdesk
+    RolesEnum.ithelpdesk,
   )
   @Post('/post-feed')
   async createPostFeed(@Body() createPostFeed: CreatePostFeedDto) {
@@ -163,7 +165,7 @@ export class ServerOrderController {
     RolesEnum.customerservicerep,
     RolesEnum.storemanager,
     RolesEnum.reportingadmin,
-    RolesEnum.ithelpdesk
+    RolesEnum.ithelpdesk,
   )
   @HttpCode(HttpStatus.OK)
   @Get('/details/:id/store/:storeId')
@@ -171,10 +173,7 @@ export class ServerOrderController {
     @Param('id', ParseIntPipe) id: number,
     @Param('storeId', ParseIntPipe) storeId: number,
   ) {
-    const order = await this.serverOrderService.completeDetail(
-      id,
-      storeId
-    );
+    const order = await this.serverOrderService.completeDetail(id, storeId);
     if (!order) {
       throw new NotFoundException('order not found');
     }
@@ -205,7 +204,7 @@ export class ServerOrderController {
     RolesEnum.customerservicerep,
     RolesEnum.storemanager,
     RolesEnum.reportingadmin,
-    RolesEnum.ithelpdesk
+    RolesEnum.ithelpdesk,
   )
   @HttpCode(HttpStatus.OK)
   @Post('/cancel-order/:id')
@@ -227,7 +226,7 @@ export class ServerOrderController {
     RolesEnum.customerservicerep,
     RolesEnum.storemanager,
     RolesEnum.reportingadmin,
-    RolesEnum.ithelpdesk
+    RolesEnum.ithelpdesk,
   )
   @HttpCode(HttpStatus.OK)
   @Get('/:id')
@@ -258,7 +257,7 @@ export class ServerOrderController {
     RolesEnum.customerservicerep,
     RolesEnum.storemanager,
     RolesEnum.reportingadmin,
-    RolesEnum.ithelpdesk
+    RolesEnum.ithelpdesk,
   )
   @HttpCode(HttpStatus.OK)
   @Patch('/finish-order/:id')
@@ -280,7 +279,7 @@ export class ServerOrderController {
       customerProof,
       checkoutId,
     } = data;
-    console.log('data', data);
+    // console.log('data', data);
     const response = await this.serverOrderService.updateOrder(
       `${serverOrderId}`,
       orderDetails,
@@ -292,44 +291,44 @@ export class ServerOrderController {
     return response;
   }
 
-  @ApiOkResponse({ description: '204. Success', type: Order })
-  @ApiNotFoundResponse({ description: 'order not found' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-  @UseGuards(JwtAccessGuard)
-  @Roles(
-    RolesEnum.superadmin,
-    RolesEnum.customerservicerep,
-    RolesEnum.storemanager,
-    RolesEnum.reportingadmin,
-    RolesEnum.ithelpdesk
-  )
-  @HttpCode(HttpStatus.OK)
-  @Patch('/:id')
-  async updateServerOrder(
-    @Param('id', ParseIntPipe) serverOrderId: number,
-    @Body()
-    data: {
-      orderStatus: number;
-      orderHistory: CreateOrderHistoryDto;
-      orderDetails: CreateOrderDto;
-      refundOrder: RefundOrderDto;
-      serverOrder: UpdateOrderDto;
-      partial?: string;
-      checkoutId?: string;
-    },
-  ): Promise<any> {
-    const { orderHistory, orderStatus, orderDetails,refundOrder , partial, checkoutId, serverOrder } =
-      data;
-    const response = await this.serverOrderService.updateOrderDetails(
-      serverOrderId,
-      orderHistory,
-      orderStatus,
-      orderDetails,
-      refundOrder,
-      // serverOrder,
-      partial,
-      checkoutId,
-    );
-    return response;
+    @ApiOkResponse({ description: '204. Success', type: Order })
+    @ApiNotFoundResponse({ description: 'order not found' })
+    @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
+    @UseGuards(JwtAccessGuard)
+    @Roles(
+      RolesEnum.superadmin,
+      RolesEnum.customerservicerep,
+      RolesEnum.storemanager,
+      RolesEnum.reportingadmin,
+      RolesEnum.ithelpdesk
+    )
+    @HttpCode(HttpStatus.OK)
+    @Patch('/:id')
+    async updateServerOrder(
+      @Param('id', ParseIntPipe) serverOrderId: number,
+      @Body()
+      data: {
+        checkoutId?: string;
+        createOrderDto: UpdateOrderDto;
+        orderDetails: CreateOrderDto;
+        orderHistory: CreateOrderHistoryDto;
+        orderStatus: number;
+        partial?: string;
+        refundOrder: RefundOrderDto;     
+      },
+    ): Promise<any> {
+      const { orderHistory, orderStatus, orderDetails,refundOrder , partial, checkoutId, createOrderDto } =
+        data;
+      const response = await this.serverOrderService.updateOrderDetails(
+        serverOrderId,
+        orderHistory,
+        +orderStatus,
+        orderDetails,
+        refundOrder,
+        createOrderDto,
+        partial,
+        checkoutId,
+      );
+      return response;
+    }
   }
-}

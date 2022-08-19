@@ -64,24 +64,23 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() createUserDto: CreateUserDto, @Req() request: HttpRequest & { user: User }) {
-    try {
-      const {
-        user: { role },
-      } = request || { role: '' };
-      const { role: userRole } = createUserDto;
-      if (role) {
-        if (userRole !== 'superadmin' && role === 'superAdmin') {
-          throw new BadRequestException(
-            `Yor are not authorized to create superadmin account`,
-          );
-        }
+  async create(
+    @Body() createUserDto: CreateUserDto,
+    @Req() request: HttpRequest & { user: User },
+  ) {
+    const {
+      user: { role },
+    } = request || { role: '' };
+    const { role: userRole } = createUserDto;
+    if (role) {
+      if (userRole !== 'superadmin' && role === 'superAdmin') {
+        throw new BadRequestException(
+          `Yor are not authorized to create superadmin account.`,
+        );
       }
-      const user = await this.userService.create(createUserDto);
-      return user;
-    } catch (error) {
-      throw new InternalServerErrorException(error.message);
     }
+    const user = await this.userService.create(createUserDto);
+    return user;
   }
 
   @ApiPaginatedResponse(User)
@@ -131,7 +130,6 @@ export class UserController {
     }
     return user;
   }
-
 
   @ApiOkResponse({ description: '204. Success', type: User })
   @ApiNotFoundResponse({ description: 'user not found' })
@@ -246,7 +244,6 @@ export class UserController {
     }
   }
 
-  
   @ApiNoContentResponse({ description: '200. Success', type: User })
   @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
   @UseGuards(JwtAccessGuard, RolesGuard)

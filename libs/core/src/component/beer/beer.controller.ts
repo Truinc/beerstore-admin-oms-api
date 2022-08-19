@@ -165,7 +165,7 @@ export class BeerController {
     );
   }
 
-  @ApiParam({ required: false, name: 'customerId', example: 0 })
+  @ApiParam({ required: true, name: 'customerId', example: 0 })
   // @UseInterceptors(CacheInterceptor)
   // @CacheTTL(300)
   @Get(':sku/data-light/:customerId')

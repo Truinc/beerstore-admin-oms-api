@@ -29,12 +29,12 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const { username, email } = createUserDto;
+    const { username } = createUserDto;
     const alreadyRegister = await this.usersRepository.findOne({
-      where: [{ username }, { email }],
+      where: [{ username }],
     });
     if (alreadyRegister) {
-      throw new BadRequestException('Username/email already exists.');
+      throw new BadRequestException('Employee ID already exists.');
     }
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     const createdUser = await this.usersRepository.create({
@@ -84,10 +84,10 @@ export class UserService {
         Object.assign(value, { firstName: `%${search}%` });
         where.push('lastName like :lastName');
         Object.assign(value, { lastName: `%${search}%` });
-        where.push(`CONCAT(firstName, ' ' ,lastName)like :name`);
+        where.push(`CONCAT(firstName, ' ' ,lastName) like :name`);
         Object.assign(value, { name: `%${search}%` });
-        where.push('User.id like :employeeid');
-        Object.assign(value, { employeeid: `%${search}%` });
+        // where.push('User.id like :employeeid');
+        // Object.assign(value, { employeeid: `%${search}%` });
         where.push('UserStores.storeId like :storeId');
         Object.assign(value, { storeId: `%${search}%` });
         queryString = where.join(' OR ');
@@ -149,7 +149,7 @@ export class UserService {
         table.take(take);
       }
       const response = await table.getManyAndCount();
-      console.log('response ------- >>', response);
+      // console.log('response ------- >>', response);
       const [items, total] = response;
       return {
         total,
@@ -206,6 +206,14 @@ export class UserService {
         return new NotFoundException('user not found');
       }
 
+      const alreadyRegister = await this.usersRepository.findOne({
+        where: [{ username: body.username }],
+      });
+
+      if (alreadyRegister && alreadyRegister.id !== id) {
+        throw new BadRequestException('Employee ID already exists.');
+      }
+
       // let hashedPassword = '';
       let managerData;
       const { baseStoreId, optionalStoreIds, manager, ...userObj } = body || {
@@ -256,7 +264,7 @@ export class UserService {
       await this.usersRepository.save({
         ...user,
         ...userObj,
-        ...(managerData && { manager: managerData.username }),
+        ...(managerData ? { manager: managerData.username } : { manager: null }),
         usersStores: userStoresList,
       });
 
@@ -466,8 +474,9 @@ export class UserService {
       isActive,
       ...(isActive === 1 && { loginAttempts: 0 }),
     };
-    await this.patch(userId, body);
-    return this.usersRepository.findOne({ id: userId });
+    const updatedUser = await this.patch(userId, body);
+    return updatedUser;
+    // return this.usersRepository.findOne({ id: userId });
   };
   // getAllUserStores = (userId: number, storeId: number, assignType: string) => {
   //   this.userStoresRepository.create({
