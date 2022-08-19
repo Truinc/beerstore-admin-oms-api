@@ -55,7 +55,7 @@ const OrderstatusText = {
   10: 'completed',
   8: 'awaiting pickup',
   3: 'partial shipped',
-  // 9: 'awaiting shipment'
+  9: 'awaiting shipment'
 };
 @Injectable()
 export class ServerOrderService {
@@ -544,11 +544,11 @@ export class ServerOrderService {
             )
           : null,
         salutation: billingAddressFormFields.salutation,
-        customerType: CustomerTypeEnum.Email,
-        ccType: transactionDetails?.card?.card_type || null,
-        cardNumber: +transactionDetails?.card?.last_four || null,
-        cardAmount: +transactionDetails?.amount || 0,
-        authCode: +transactionDetails?.auth_code || null,
+        customerType: CustomerTypeEnum.Email, // todo hardecoded need to fetch data
+        ccType: billingAddressFormFields?.order_type === 'delivery' ? transactionDetails?.card?.card_type: null,
+        cardNumber: billingAddressFormFields?.order_type === 'delivery' ? +transactionDetails?.card?.last_four: null,
+        cardAmount: billingAddressFormFields?.order_type === 'delivery' ? +transactionDetails?.amount: 0,
+        authCode: billingAddressFormFields?.order_type === 'delivery' ? +transactionDetails?.auth_code: null,
       };
 
       // console.log('customerDetails', customerDetails);
@@ -609,19 +609,6 @@ export class ServerOrderService {
         if (variantData.sale_price !== variantData.price) {
           saleSavings += variantData.price - variantData.sale_price;
         }
-        // mailProductsArr.push({
-        //   imageUrl: imageUrl || '',
-        //   name: product.name,
-        //   displayValue: product?.product_options[0]?.display_value,
-        //   quantity: +product.quantity,
-        //   productSubTotal:
-        //     variantData.sale_price === variantData.price
-        //       ? (variantData.price * product.quantity).toFixed(2)
-        //       : (variantData.sale_price * product.quantity).toFixed(2),
-        //   price: (variantData.price).toFixed(2) || 0,
-        //   salePrice: (variantData.sale_price).toFixed(2) || 0,
-        //   onSale: variantData.sale_price === variantData.price ? false : true,
-        // });
 
         productTotal += +product.total_inc_tax;
         return {
@@ -807,7 +794,6 @@ export class ServerOrderService {
     checkoutId?: string,
   ): Promise<any> {
     try {
-      // console.log('testing32423', createOrderDto, serverOrderData);
       let updateBeerGuy = false;
       // const serverOrder = await this.serverOrderDetail(id);
       const orderRes = await Promise.all([
@@ -868,8 +854,7 @@ export class ServerOrderService {
             refundQuote,
           );
           paymentRefund.payments[0].amount = quotesRes.data.total_refund_amount;
-          await this.ordersService.refundHandler(id, paymentRefund);
-          // update beer guy for partial order
+          const refundHandler = await this.ordersService.refundHandler(id, paymentRefund);
           if (serverOrder.orderType === 'delivery') {
             updateBeerGuy = true;
           }
@@ -1029,7 +1014,6 @@ export class ServerOrderService {
             cancellationBy.toLowerCase() === 'customer' ? '' : identifier,
         }),
       ]);
-      // console.log('res', resp);
       this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus);
       try {
         if (checkoutId && orderType !== 'kiosk') {
@@ -1202,10 +1186,6 @@ export class ServerOrderService {
         // let productFromdb;
         let productDetail;
         let subTotal = 0.0;
-        // console.log(
-        //   '!!!!data!!!!',
-        //   serverOrderDetails?.serverOrderProductDetails,
-        // );
         serverOrderDetails?.serverOrderProductDetails.forEach((details) => {
           const ele = data.find(
             (product) => +product.id === +details.productId,
@@ -1227,9 +1207,7 @@ export class ServerOrderService {
           // console.log('packupDiscount-->', packupDiscount);
           let variantData = ele.variants.find((x) => {
             return x.id === productDetail.variant_id;
-            // return x.id === productFromdb.variantId;
           });
-          // console.log('variantData!!', variantData);
           // console.log('productDetail', productDetail, variantData);
           const actualQuantity =
             +productDetail.quantity - +productDetail.quantity_refunded;
@@ -1317,7 +1295,10 @@ export class ServerOrderService {
             ),
             storeContact: billingAddressFormFields?.store_contact || '',
             orderType: billingAddressFormFields.order_type,
-            paymentMethod: orderDetailsFromBigCom?.payment_method,
+            paymentMethod:
+              orderDetailsFromBigCom?.payment_method === 'Cash'
+                ? 'Cash'
+                : 'Credit/Debit',
             totalCost: grandTotal,
             deliverydate: moment(
               billingAddressFormFields.pick_delivery_date_text,
@@ -1328,8 +1309,6 @@ export class ServerOrderService {
                 : billingAddressFormFields.current_store_address,
             deliveryEstimatedTime:
               billingAddressFormFields.pick_delivery_time.toUpperCase(),
-            // subTotal: serverOrderDetails.productTotal || 0,
-            // subTotal: (parseFloat(orderDetailsFromBigCom.subtotal_inc_tax)).toFixed(2)|| "0.00",
             subTotal: subTotal.toFixed(2) || '0.00',
             deliveryCharge:
               parseFloat(orderDetailsFromBigCom.shipping_cost_ex_tax).toFixed(
@@ -1338,9 +1317,6 @@ export class ServerOrderService {
             deliveryFeeHST:
               parseFloat(orderDetailsFromBigCom.shipping_cost_tax).toFixed(2) ||
               '0.00',
-            // deliveryCharge: serverOrderDetails.deliveryFee || 0,
-            // deliveryFeeHST: serverOrderDetails.deliveryFeeHST || 0,
-            // grandTotal: serverOrderDetails.grandTotal || 0,
             grandTotal,
             totalSavings: (saleSavings + +totalPackupSaving).toFixed(2),
             saleSavings: saleSavings.toFixed(2),
@@ -1476,7 +1452,7 @@ export class ServerOrderService {
   };
 
   updateBeerGuyOrder = async (bigCommOrder: any) => {
-    console.log('orderId', bigCommOrder);
+    // console.log('orderId', bigCommOrder);
     const {
       id,
       customer_id,
