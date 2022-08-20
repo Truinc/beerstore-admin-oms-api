@@ -617,7 +617,7 @@ export class ServerOrderService {
           variantId: product.variant_id,
           lineItem: index + 1,
           itemSKU: product.sku,
-          itemDescription: '',
+          itemDescription,
           brewer,
           category,
           quantity: product.quantity,
