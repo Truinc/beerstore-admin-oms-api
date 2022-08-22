@@ -94,6 +94,16 @@ export class ServerOrderService {
     orderType?: string,
     vector?: string,
   ): Promise<object> {
+
+    const x = new Date();
+    const offset = -x.getTimezoneOffset();
+    console.log(
+      (offset >= 0 ? '+' : '-') +
+        parseInt(`${offset / 60}`) +
+        ':' +
+        (offset % 60),
+    );
+
     const table = this.serverOrderRepository
       .createQueryBuilder('ServerOrder')
       .leftJoinAndSelect(
