@@ -121,38 +121,35 @@ export class ServerOrderService {
     }
 
     // this.orderStatusDate(+orderStatus),
-    
+
     // if (searchFromDate === searchToDate) {
-      //   const fromDate = searchFromDate;
-      //   console.log('searchFromDate', searchFromDate);
-      //   const toDate = `${searchFromDate} 23:59:59`;
-      //   table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
-        //     fromDate,
-        //     toDate,
-        //   });
-        // } else {
-          //   const toDate = `${searchToDate} 23:59:59`;
-          //   table.andWhere(
-            //     'ServerOrder.orderDate BETWEEN :searchFromDate AND :toDate',
-            //     {
-              //       searchFromDate,
-              //       toDate,
-              //     },
-              //   );
-              // }
-              
+    //   const fromDate = searchFromDate;
+    //   console.log('searchFromDate', searchFromDate);
+    //   const toDate = `${searchFromDate} 23:59:59`;
+    //   table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
+    //     fromDate,
+    //     toDate,
+    //   });
+    // } else {
+    //   const toDate = `${searchToDate} 23:59:59`;
+    //   table.andWhere(
+    //     'ServerOrder.orderDate BETWEEN :searchFromDate AND :toDate',
+    //     {
+    //       searchFromDate,
+    //       toDate,
+    //     },
+    //   );
+    // }
+
     const orderStatus = status[2] ? '8' : status;
-    table.andWhere(
-      this.orderStatusDate(+orderStatus),
-      {
-        fromDate: searchFromDate,
-        toDate:
-          searchFromDate === searchToDate
-            ? `${searchFromDate} 23:59:59`
-            : `${searchToDate} 23:59:59`,
-      },
-    );
-    
+    table.andWhere(this.orderStatusDate(+orderStatus), {
+      fromDate: searchFromDate,
+      toDate:
+        searchFromDate === searchToDate
+          ? `${searchFromDate} 23:59:59`
+          : `${searchToDate} 23:59:59`,
+    });
+
     if (storeId) {
       table.andWhere('ServerOrder.storeId = :storeId', {
         storeId,
@@ -280,11 +277,12 @@ export class ServerOrderService {
         .where('ServerOrderProductDetails.brewer = :brewer', { brewer })
         .select('DISTINCT(ServerOrderProductDetails.orderId)', 'id')
         .getRawMany();
-
       if (orderIds.length > 0) {
         table.where('ServerOrder.orderId IN (:...ids) ', {
           ids: orderIds.map((x) => x.id),
         });
+      } else {
+        return [];
       }
     }
 
@@ -313,18 +311,55 @@ export class ServerOrderService {
     }
 
     if (min_date_created && max_date_created) {
-      if (moment(min_date_created).isSame(max_date_created)) {
-        const fromDate = min_date_created;
-        const toDate = moment(max_date_created).endOf('day').format();
-        table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
-          fromDate,
-          toDate,
-        });
-      } else {
-        table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
-          fromDate: min_date_created,
-          toDate: max_date_created,
-        });
+      const fromDate = moment(min_date_created).startOf('day').format();
+      const toDate = moment(max_date_created).endOf('day').format();
+      if (min_date_created && max_date_created) {
+        if (status_id) {
+          table.andWhere(`${this.orderStatusDate(+status_id)}`, {
+            fromDate,
+            toDate,
+          });
+        } else {
+          table.andWhere(
+            new Brackets((qb) => {
+              qb.where(
+                'ServerOrder.completedDateTime BETWEEN :compFromDate AND :compToDate',
+                {
+                  compFromDate: fromDate,
+                  compToDate: toDate,
+                },
+              )
+                .orWhere(
+                  'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
+                  {
+                    fromDate,
+                    toDate,
+                  },
+                )
+                .orWhere(
+                  'ServerOrder.pickUpReadyDateTime BETWEEN :pickfromDate AND :picktoDate',
+                  {
+                    pickfromDate: fromDate,
+                    picktoDate: toDate,
+                  },
+                )
+                .orWhere(
+                  'ServerOrder.cancellationDate BETWEEN :cancelfromDate AND :canceltoDate',
+                  {
+                    cancelfromDate: fromDate,
+                    canceltoDate: toDate,
+                  },
+                )
+                .orWhere(
+                  'ServerOrder.intransitDate BETWEEN :transitfromDate AND :transittoDate',
+                  {
+                    transitfromDate: fromDate,
+                    transittoDate: toDate,
+                  },
+                );
+            }),
+          );
+        }
       }
     }
 
@@ -353,8 +388,28 @@ export class ServerOrderService {
       serverOrderQuery.andWhere('ServerOrder.orderStatus = :orderStatus', {
         orderStatus: status_id,
       });
+      if (cancelledby === 'customer') {
+        serverOrderQuery.andWhere(
+          'ServerOrder.cancelledByCustomer = :cancelStatus',
+          {
+            cancelStatus: 1,
+          },
+        );
+      } else if (cancelledby === 'store') {
+        serverOrderQuery.andWhere(
+          'ServerOrder.cancelledByDriver = :driverStatus',
+          {
+            driverStatus: 0,
+          },
+        );
+        serverOrderQuery.andWhere(
+          'ServerOrder.cancelledByCustomer = :customerStatus',
+          {
+            customerStatus: 0,
+          },
+        );
+      }
     }
-
     if (store_id) {
       serverOrderQuery.andWhere('ServerOrder.storeId = :storeId', {
         storeId: store_id,
@@ -362,15 +417,56 @@ export class ServerOrderService {
     }
 
     if (min_date_created && max_date_created) {
-      serverOrderQuery.andWhere(
-        'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-        {
-          fromDate: min_date_created,
-          toDate: moment(min_date_created).isSame(max_date_created)
-            ? moment(max_date_created).endOf('day').format()
-            : max_date_created,
-        },
-      );
+      const fromDate = moment(min_date_created).startOf('day').format();
+      const toDate = moment(max_date_created).endOf('day').format();
+      if (min_date_created && max_date_created) {
+        if (status_id) {
+          serverOrderQuery.andWhere(`${this.orderStatusDate(+status_id)}`, {
+            fromDate,
+            toDate,
+          });
+        } else {
+          serverOrderQuery.andWhere(
+            new Brackets((qb) => {
+              qb.where(
+                'ServerOrder.completedDateTime BETWEEN :compFromDate AND :compToDate',
+                {
+                  compFromDate: fromDate,
+                  compToDate: toDate,
+                },
+              )
+                .orWhere(
+                  'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
+                  {
+                    fromDate,
+                    toDate,
+                  },
+                )
+                .orWhere(
+                  'ServerOrder.pickUpReadyDateTime BETWEEN :pickfromDate AND :picktoDate',
+                  {
+                    pickfromDate: fromDate,
+                    picktoDate: toDate,
+                  },
+                )
+                .orWhere(
+                  'ServerOrder.cancellationDate BETWEEN :cancelfromDate AND :canceltoDate',
+                  {
+                    cancelfromDate: fromDate,
+                    canceltoDate: toDate,
+                  },
+                )
+                .orWhere(
+                  'ServerOrder.intransitDate BETWEEN :transitfromDate AND :transittoDate',
+                  {
+                    transitfromDate: fromDate,
+                    transittoDate: toDate,
+                  },
+                );
+            }),
+          );
+        }
+      }
     }
 
     if (vector) {
@@ -380,29 +476,31 @@ export class ServerOrderService {
     }
 
     const ids = (await serverOrderQuery.getRawMany()).map((x) => x.id);
+    console.log('ids', ids);
 
-    const query = this.serverOrderProductDetailsRepository.createQueryBuilder(
-      'ServerOrderProductDetails',
-    );
-
-    if (ids.length > 0) {
-      query.where('ServerOrderProductDetails.orderId IN (:...ids)', { ids });
-    }
-
-    query
-      .leftJoinAndSelect(
-        'ServerOrderProductDetails.serverOrder',
-        'serverOrderDetails',
-      )
-      .leftJoinAndSelect(
-        'serverOrderDetails.serverOrderCustomerDetails',
-        'serverOrderCustomer',
+    if (ids.length <= 0) {
+      return [];
+    } else {
+      const query = this.serverOrderProductDetailsRepository.createQueryBuilder(
+        'ServerOrderProductDetails',
       );
-    if (brewer) {
-      query.andWhere('ServerOrderProductDetails.brewer = :brewer', { brewer });
+      query
+        .where('ServerOrderProductDetails.orderId IN (:...ids)', { ids })
+        .leftJoinAndSelect(
+          'ServerOrderProductDetails.serverOrder',
+          'serverOrderDetails',
+        )
+        .leftJoinAndSelect(
+          'serverOrderDetails.serverOrderCustomerDetails',
+          'serverOrderCustomer',
+        );
+      if (brewer) {
+        query.andWhere('ServerOrderProductDetails.brewer = :brewer', {
+          brewer,
+        });
+      }
+      return query.getMany();
     }
-
-    return query.getMany();
   }
 
   async completeDetail(orderId: number, storeId: number) {
@@ -503,7 +601,12 @@ export class ServerOrderService {
       const billingAddressFormFields = JSON.parse(
         orderDetails?.billing_address?.form_fields[0]?.value,
       );
-
+      let customerType;
+      if (orderDetails?.customer_id) {
+         customerType = await this.getCustomerType(
+          orderDetails.customer_id,
+        );
+      }
       this.orderHistoryService.create({
         orderId: `${orderDetails.id}`,
         orderStatus: 11,
@@ -544,7 +647,7 @@ export class ServerOrderService {
             )
           : null,
         salutation: billingAddressFormFields.salutation,
-        customerType: CustomerTypeEnum.Email,
+        customerType: customerType?.userType || '',
         ccType: transactionDetails?.card?.card_type || null,
         cardNumber: +transactionDetails?.card?.last_four || null,
         cardAmount: +transactionDetails?.amount || 0,
@@ -854,7 +957,10 @@ export class ServerOrderService {
             refundQuote,
           );
           paymentRefund.payments[0].amount = quotesRes.data.total_refund_amount;
-          const refundHandler = await this.ordersService.refundHandler(id, paymentRefund);
+          const refundHandler = await this.ordersService.refundHandler(
+            id,
+            paymentRefund,
+          );
           if (serverOrder.orderType === 'delivery') {
             updateBeerGuy = true;
           }
@@ -1422,6 +1528,39 @@ export class ServerOrderService {
     );
     return sendpush;
   };
+
+  getCustomerType = async (customerId: number) => {
+    const customerType = await lastValueFrom(
+      this.httpService
+        .get(
+          `${
+            this.configService.get('beerstoreApp').url
+          }/auth/checkCustomerType/${customerId}`,
+          {
+            headers: {
+              Authorization:
+                'Bearer ' + this.configService.get('beerstoreApp').token,
+            },
+          },
+        )
+        .pipe(
+          map((response) => response.data),
+          catchError((err) => {
+            if (
+              err &&
+              err.response &&
+              err.response.status &&
+              err.response.status === 404
+            ) {
+              throw new NotFoundException(err.message);
+            }
+            throw new BadRequestException(err.message);
+          }),
+        ),
+    );
+    return customerType;
+  };
+
   cancelBeerGuyOrder = async (orderId: string, cancelReason: string) => {
     const payload = {
       tbs_purchase_id: orderId,
