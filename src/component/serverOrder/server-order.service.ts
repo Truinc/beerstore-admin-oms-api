@@ -214,6 +214,12 @@ export class ServerOrderService {
     }
 
     const [items, total] = await table.getManyAndCount();
+    // const newItems = items.map(order => {
+    //   return {
+    //     ...order,
+    //     orderDate: 
+    //   }
+    // })
     return {
       total,
       take,
@@ -781,9 +787,14 @@ export class ServerOrderService {
             : billingAddressFormFields.order_type,
         orderStatus: orderDetails.status_id,
         fulfillmentDate,
-        orderDate: moment
-          .utc(orderDetails.date_created)
-          .format('YYYY-MM-DD hh:mm:ss'),
+        // orderDate: moment
+        //   .utc(orderDetails.date_created)
+        //   .format('YYYY-MM-DD hh:mm:ss'),
+        orderDate: momentTz(
+          orderDetails.date_created
+        )
+          .tz(this.configService.get('timezone').zone)
+          .format('YYYY-MM-DD HH:mm:ss'),  
         cancellationDate: null,
         cancellationBy: null,
         cancellationReason: null,
