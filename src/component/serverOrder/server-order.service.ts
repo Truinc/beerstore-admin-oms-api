@@ -759,17 +759,22 @@ export class ServerOrderService {
         billingAddressFormFields.pick_delivery_time.split('-') || '';
       const orderDeliveryDate =
         billingAddressFormFields.pick_delivery_date_text;
-      // const fulfillmentDate = moment(
+      
+      //   const fulfillmentDate = moment(
       //   `${orderDeliveryDate} ${timeSplit[0]}`,
       //   'YYYY-MM-DD HH:mm A',
       // ).format('YYYY-MM-DD HH:mm:ss');
 
-      const fulfillmentDate = momentTz(
-        `${orderDeliveryDate} ${timeSplit[0]}`,
-        'YYYY-MM-DD HH:mm A',
-      )
-        .tz(this.configService.get('timezone').zone)
-        .format('YYYY-MM-DD HH:mm:ss');
+      const fulfillmentDate = moment
+        .utc(`${orderDeliveryDate} ${timeSplit[0]}`)
+        .format('YYYY-MM-DD hh:mm:ss');
+
+      // const fulfillmentDate = momentTz(
+      //   `${orderDeliveryDate} ${timeSplit[0]}`,
+      //   'YYYY-MM-DD HH:mm A',
+      // )
+      //   .tz(this.configService.get('timezone').zone)
+      //   .format('YYYY-MM-DD HH:mm:ss');
 
       let staffNotes = JSON.parse(orderDetails.staff_notes);
       let totalDiscount = 0;
@@ -787,14 +792,9 @@ export class ServerOrderService {
             : billingAddressFormFields.order_type,
         orderStatus: orderDetails.status_id,
         fulfillmentDate,
-        // orderDate: moment
-        //   .utc(orderDetails.date_created)
-        //   .format('YYYY-MM-DD hh:mm:ss'),
-        orderDate: momentTz(
-          orderDetails.date_created
-        )
-          .tz(this.configService.get('timezone').zone)
-          .format('YYYY-MM-DD HH:mm:ss'),  
+        orderDate: moment
+          .utc(orderDetails.date_created)
+          .format('YYYY-MM-DD hh:mm:ss'), 
         cancellationDate: null,
         cancellationBy: null,
         cancellationReason: null,
