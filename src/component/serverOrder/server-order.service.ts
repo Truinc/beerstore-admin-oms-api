@@ -95,15 +95,6 @@ export class ServerOrderService {
     vector?: string,
   ): Promise<object> {
 
-    const x = new Date();
-    const offset = -x.getTimezoneOffset();
-    console.log(
-      (offset >= 0 ? '+' : '-') +
-        parseInt(`${offset / 60}`) +
-        ':' +
-        (offset % 60),
-    );
-
     const table = this.serverOrderRepository
       .createQueryBuilder('ServerOrder')
       .leftJoinAndSelect(
@@ -793,7 +784,7 @@ export class ServerOrderService {
         fulfillmentDate,
         orderDate: moment
           .utc(orderDetails.date_created)
-          .format('YYYY-MM-DD hh:mm:ss'), 
+          .format('YYYY-MM-DD HH:mm:ss'), 
         cancellationDate: null,
         cancellationBy: null,
         cancellationReason: null,
@@ -933,7 +924,9 @@ export class ServerOrderService {
         tax_adjustment_amount: 0,
       };
       if (+serverOrder.orderStatus === +8 || +serverOrder.orderStatus === +9) {
-        serverOrder.pickUpReadyDateTime = moment().toDate();
+        serverOrder.pickUpReadyDateTime = momentTz()
+          .tz(this.configService.get('timezone').zone)
+          .toDate();
       }
 
       if (serverOrder?.orderStatus !== 3) {
@@ -1225,12 +1218,14 @@ export class ServerOrderService {
         //completed
         prevOrder = {
           ...prevOrder,
-          completedDateTime: moment().toDate(),
+          completedDateTime: momentTz().tz(this.configService.get('timezone').zone).toDate(),
         };
       } else if (+serverOrder.orderStatus === 8) {
         prevOrder = {
           ...prevOrder,
-          pickUpReadyDateTime: moment().toDate(),
+          pickUpReadyDateTime: momentTz()
+            .tz(this.configService.get('timezone').zone)
+            .toDate(),
         };
       }
       if (+serverOrder.orderStatus === 3) {
@@ -1239,7 +1234,9 @@ export class ServerOrderService {
         });
         prevOrder = {
           ...prevOrder,
-          intransitDate: moment().toDate(),
+          intransitDate: momentTz()
+            .tz(this.configService.get('timezone').zone)
+            .toDate(),
         };
       } else {
         await this.ordersService.updateOrder(orderId, createOrderDto);
