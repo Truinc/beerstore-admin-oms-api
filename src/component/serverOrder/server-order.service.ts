@@ -766,16 +766,14 @@ export class ServerOrderService {
       //   'YYYY-MM-DD HH:mm A',
       // ).format('YYYY-MM-DD HH:mm:ss');
 
-      const fulfillmentDate = moment
-        .utc(`${orderDeliveryDate} ${timeSplit[0]}`)
-        .format('YYYY-MM-DD hh:mm:ss');
-
-      // const fulfillmentDate = momentTz(
-      //   `${orderDeliveryDate} ${timeSplit[0]}`,
-      //   'YYYY-MM-DD HH:mm A',
-      // )
-      //   .tz(this.configService.get('timezone').zone)
+      // const fulfillmentDate = moment
+      //   .utc(`${orderDeliveryDate} ${timeSplit[0]}`)
       //   .format('YYYY-MM-DD HH:mm:ss');
+
+      const fulfillmentDate = momentTz(
+        `${orderDeliveryDate} ${timeSplit[0]}`,
+        'YYYY-MM-DD HH:mm A',
+      ).format('YYYY-MM-DD HH:mm:ss');
 
       let staffNotes = JSON.parse(orderDetails.staff_notes);
       let totalDiscount = 0;
