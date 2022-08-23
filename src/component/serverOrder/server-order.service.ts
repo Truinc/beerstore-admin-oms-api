@@ -212,19 +212,20 @@ export class ServerOrderService {
     if (take) {
       table.take(take);
     }
-
     const [items, total] = await table.getManyAndCount();
-    // const newItems = items.map(order => {
-    //   return {
-    //     ...order,
-    //     orderDate: 
-    //   }
-    // })
+    const parsedItems = items.map((item) => {
+      return {
+        ...item,
+        orderDate: momentTz(item.orderDate).tz(
+          this.configService.get('timezone').zone,
+        ).format("YYYY/MM/DD - HH:mm"),
+      };
+    });
     return {
       total,
       take,
       skip,
-      items,
+      items: parsedItems,
     };
   }
 
