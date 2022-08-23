@@ -809,12 +809,12 @@ export class ServerOrderService {
         packUnits2_6: twoSixUnits,
         packUnits8_18: eightEighteenUnits,
         packUnits_24Plus: twentyFourPlusUnits,
-        // submittedDateTime: moment
-        //   .utc(orderDetails.date_created)
-        //   .format('YYYY-MM-DD hh:mm:ss'),
-        submittedDateTime: momentTz(orderDetails.date_created)
-          .tz(this.configService.get('timezone').zone)
-          .format('YYYY-MM-DD HH:mm:ss'),
+        submittedDateTime: moment
+          .utc(orderDetails.date_created)
+          .format('YYYY-MM-DD hh:mm:ss'),
+        // submittedDateTime: momentTz(orderDetails.date_created)
+        //   .tz(this.configService.get('timezone').zone)
+        //   .format('YYYY-MM-DD HH:mm:ss'),
         openDateTime: null,
         pickUpReadyDateTime: null,
         completedByEmpId: null,
@@ -924,9 +924,7 @@ export class ServerOrderService {
         tax_adjustment_amount: 0,
       };
       if (+serverOrder.orderStatus === +8 || +serverOrder.orderStatus === +9) {
-        serverOrder.pickUpReadyDateTime = momentTz()
-          .tz(this.configService.get('timezone').zone)
-          .toDate();
+        serverOrder.pickUpReadyDateTime = moment.utc().format();
       }
 
       if (serverOrder?.orderStatus !== 3) {
@@ -1043,7 +1041,7 @@ export class ServerOrderService {
         orderStatus: +updateOrder.orderStatus,
         cancellationReason: updateOrder?.cancellationReason || '',
         cancellationBy: updateOrder?.cancellationBy || '',
-        cancellationDate: updateOrder.cancellationDate || null,
+        cancellationDate: moment.utc().format(),
       };
       const orderHistory = {
         orderId: updateOrder.orderId,
@@ -1116,7 +1114,7 @@ export class ServerOrderService {
       const serverOrder = resp[1];
       serverOrder.orderStatus = +orderStatus;
       serverOrder.cancellationBy = cancellationBy;
-      serverOrder.cancellationDate = cancellationDate;
+      serverOrder.cancellationDate = moment.utc().format();
       serverOrder.cancellationReason = cancellationReason;
       serverOrder.cancellationNote = cancellationNote || '';
       serverOrder.cancelledByCustomer =
@@ -1218,14 +1216,12 @@ export class ServerOrderService {
         //completed
         prevOrder = {
           ...prevOrder,
-          completedDateTime: momentTz().tz(this.configService.get('timezone').zone).toDate(),
+          completedDateTime: moment.utc().format(),
         };
       } else if (+serverOrder.orderStatus === 8) {
         prevOrder = {
           ...prevOrder,
-          pickUpReadyDateTime: momentTz()
-            .tz(this.configService.get('timezone').zone)
-            .toDate(),
+          pickUpReadyDateTime: moment.utc().format(),
         };
       }
       if (+serverOrder.orderStatus === 3) {
@@ -1234,9 +1230,7 @@ export class ServerOrderService {
         });
         prevOrder = {
           ...prevOrder,
-          intransitDate: momentTz()
-            .tz(this.configService.get('timezone').zone)
-            .toDate(),
+          intransitDate: moment.utc().format(),
         };
       } else {
         await this.ordersService.updateOrder(orderId, createOrderDto);

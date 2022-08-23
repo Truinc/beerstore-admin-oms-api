@@ -108,7 +108,7 @@ export class ServerOrder {
     default: null,
     nullable: true,
   })
-  intransitDate: Date;
+  intransitDate: string;
 
   @ApiProperty({ type: String })
   @Column({
@@ -250,10 +250,10 @@ export class ServerOrder {
   submittedDateTime: Date;
 
   @Column({ type: 'datetime2', default: null, nullable: true })
-  openDateTime: Date;
+  openDateTime: String;
 
   @Column({ type: 'datetime2', default: null, nullable: true })
-  pickUpReadyDateTime: Date;
+  pickUpReadyDateTime: String;
 
   @Column({
     default: null,
@@ -262,13 +262,13 @@ export class ServerOrder {
   completedByEmpId: number;
 
   @Column({ type: 'datetime2', default: null, nullable: true })
-  completedDateTime: Date;
+  completedDateTime: string;
 
   @Column({ default: null })
   idChecked: string;
 
   @Column({ type: 'datetime2', default: null, nullable: true })
-  requestedPickUpTime: Date;
+  requestedPickUpTime: string;
 
   @Column({ type: 'nvarchar', length: 50, default: null })
   browserVersion: string;
