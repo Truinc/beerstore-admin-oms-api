@@ -376,7 +376,58 @@ export class ServerOrderService {
         orderVector: vector,
       });
     }
-    return table.getMany();
+    const orders = await table.getMany();
+    const parsedOrders =  orders.map(order => {
+      return {
+        ...order,
+        orderDate: order?.orderDate
+          ? momentTz(order.orderDate).tz(
+              this.configService.get('timezone').zone,
+            )
+          : '',
+        cancellationDate: order?.cancellationDate
+          ? momentTz(order.cancellationDate).tz(
+              this.configService.get('timezone').zone,
+            )
+          : '',
+          createdDate: order?.createdDate
+          ? momentTz(order.createdDate).tz(
+              this.configService.get('timezone').zone,
+            )
+          : '',
+        openDateTime: order?.openDateTime
+          ? momentTz(order.openDateTime).tz(
+              this.configService.get('timezone').zone,
+            )
+          : '',
+        submittedDateTime: order?.submittedDateTime
+        ? momentTz(order.submittedDateTime).tz(
+            this.configService.get('timezone').zone,
+          )
+        : '', 
+        pickUpReadyDateTime: order?.pickUpReadyDateTime
+        ? momentTz(order.pickUpReadyDateTime).tz(
+            this.configService.get('timezone').zone,
+          )
+        : '', 
+        completedDateTime: order?.completedDateTime
+        ? momentTz(order.completedDateTime).tz(
+            this.configService.get('timezone').zone,
+          )
+        : '',
+        requestedPickUpTime: order?.requestedPickUpTime
+        ? momentTz(order.requestedPickUpTime).tz(
+            this.configService.get('timezone').zone,
+          )
+        : '',
+        intransitDate: order?.intransitDate
+        ? momentTz(order.intransitDate).tz(
+            this.configService.get('timezone').zone,
+          )
+        : '',
+      };
+    });
+    return parsedOrders;
   }
 
   private async generateOrderReportData(
@@ -484,7 +535,6 @@ export class ServerOrderService {
     }
 
     const ids = (await serverOrderQuery.getRawMany()).map((x) => x.id);
-    console.log('ids', ids);
 
     if (ids.length <= 0) {
       return [];
@@ -809,12 +859,12 @@ export class ServerOrderService {
         packUnits2_6: twoSixUnits,
         packUnits8_18: eightEighteenUnits,
         packUnits_24Plus: twentyFourPlusUnits,
-        // submittedDateTime: moment
-        //   .utc(orderDetails.date_created)
-        //   .format('YYYY-MM-DD hh:mm:ss'),
-        submittedDateTime: momentTz(orderDetails.date_created)
-          .tz(this.configService.get('timezone').zone)
-          .format('YYYY-MM-DD HH:mm:ss'),
+        submittedDateTime: moment
+          .utc(orderDetails.date_created)
+          .format('YYYY-MM-DD hh:mm:ss'),
+        // submittedDateTime: momentTz(orderDetails.date_created)
+        //   .tz(this.configService.get('timezone').zone)
+        //   .format('YYYY-MM-DD HH:mm:ss'),
         openDateTime: null,
         pickUpReadyDateTime: null,
         completedByEmpId: null,
@@ -842,6 +892,7 @@ export class ServerOrderService {
       }
       return 'Order placed';
     } catch (err) {
+      console.log('err', err.message);
       throw new BadRequestException(err.message);
     }
   }
@@ -924,9 +975,7 @@ export class ServerOrderService {
         tax_adjustment_amount: 0,
       };
       if (+serverOrder.orderStatus === +8 || +serverOrder.orderStatus === +9) {
-        serverOrder.pickUpReadyDateTime = momentTz()
-          .tz(this.configService.get('timezone').zone)
-          .toDate();
+        serverOrder.pickUpReadyDateTime = moment.utc().format();
       }
 
       if (serverOrder?.orderStatus !== 3) {
@@ -1043,7 +1092,7 @@ export class ServerOrderService {
         orderStatus: +updateOrder.orderStatus,
         cancellationReason: updateOrder?.cancellationReason || '',
         cancellationBy: updateOrder?.cancellationBy || '',
-        cancellationDate: updateOrder.cancellationDate || null,
+        cancellationDate: moment.utc().format(),
       };
       const orderHistory = {
         orderId: updateOrder.orderId,
@@ -1116,7 +1165,7 @@ export class ServerOrderService {
       const serverOrder = resp[1];
       serverOrder.orderStatus = +orderStatus;
       serverOrder.cancellationBy = cancellationBy;
-      serverOrder.cancellationDate = cancellationDate;
+      serverOrder.cancellationDate = moment.utc().format();
       serverOrder.cancellationReason = cancellationReason;
       serverOrder.cancellationNote = cancellationNote || '';
       serverOrder.cancelledByCustomer =
@@ -1217,14 +1266,12 @@ export class ServerOrderService {
         //completed
         prevOrder = {
           ...prevOrder,
-          completedDateTime: momentTz().tz(this.configService.get('timezone').zone).toDate(),
+          completedDateTime: moment.utc().format(),
         };
       } else if (+serverOrder.orderStatus === 8) {
         prevOrder = {
           ...prevOrder,
-          pickUpReadyDateTime: momentTz()
-            .tz(this.configService.get('timezone').zone)
-            .toDate(),
+          pickUpReadyDateTime: moment.utc().format(),
         };
       }
       if (+serverOrder.orderStatus === 3) {
@@ -1233,9 +1280,7 @@ export class ServerOrderService {
         });
         prevOrder = {
           ...prevOrder,
-          intransitDate: momentTz()
-            .tz(this.configService.get('timezone').zone)
-            .toDate(),
+          intransitDate: moment.utc().format(),
         };
       } else {
         await this.ordersService.updateOrder(orderId, createOrderDto);
