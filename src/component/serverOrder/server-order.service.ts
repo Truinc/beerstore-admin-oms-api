@@ -378,52 +378,55 @@ export class ServerOrderService {
     }
     const orders = await table.getMany();
     const parsedOrders =  orders.map(order => {
+      // console.log('order', order.orderId, order?.orderDate, momentTz(order.orderDate).tz(
+      //   this.configService.get('timezone').zone,
+      // ).format("YYYY/MM/DD - HH:mm"));
       return {
         ...order,
         orderDate: order?.orderDate
           ? momentTz(order.orderDate).tz(
               this.configService.get('timezone').zone,
-            )
+            ).format('YYYY-MM-DD HH:mm A')
           : '',
         cancellationDate: order?.cancellationDate
           ? momentTz(order.cancellationDate).tz(
               this.configService.get('timezone').zone,
-            )
+            ).format('YYYY-MM-DD HH:mm A')
           : '',
           createdDate: order?.createdDate
           ? momentTz(order.createdDate).tz(
               this.configService.get('timezone').zone,
-            )
+            ).format('YYYY-MM-DD HH:mm A')
           : '',
         openDateTime: order?.openDateTime
           ? momentTz(order.openDateTime).tz(
               this.configService.get('timezone').zone,
-            )
+            ).format('YYYY-MM-DD HH:mm A')
           : '',
         submittedDateTime: order?.submittedDateTime
         ? momentTz(order.submittedDateTime).tz(
             this.configService.get('timezone').zone,
-          )
+          ).format('YYYY-MM-DD HH:mm A')
         : '', 
         pickUpReadyDateTime: order?.pickUpReadyDateTime
         ? momentTz(order.pickUpReadyDateTime).tz(
             this.configService.get('timezone').zone,
-          )
+          ).format('YYYY-MM-DD HH:mm A')
         : '', 
         completedDateTime: order?.completedDateTime
         ? momentTz(order.completedDateTime).tz(
             this.configService.get('timezone').zone,
-          )
+          ).format('YYYY-MM-DD HH:mm A')
         : '',
         requestedPickUpTime: order?.requestedPickUpTime
         ? momentTz(order.requestedPickUpTime).tz(
             this.configService.get('timezone').zone,
-          )
+          ).format('YYYY-MM-DD HH:mm A')
         : '',
         intransitDate: order?.intransitDate
         ? momentTz(order.intransitDate).tz(
             this.configService.get('timezone').zone,
-          )
+          ).format('YYYY-MM-DD HH:mm A')
         : '',
       };
     });
