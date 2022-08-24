@@ -247,13 +247,13 @@ export class ServerOrder {
   packUnits_24Plus: number;
 
   @Column({ type: 'datetime2', default: null })
-  submittedDateTime: Date;
+  submittedDateTime: string;
 
   @Column({ type: 'datetime2', default: null, nullable: true })
-  openDateTime: String;
+  openDateTime: string;
 
   @Column({ type: 'datetime2', default: null, nullable: true })
-  pickUpReadyDateTime: String;
+  pickUpReadyDateTime: string;
 
   @Column({
     default: null,
