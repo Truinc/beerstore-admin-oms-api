@@ -574,7 +574,63 @@ export class ServerOrderService {
           brewer,
         });
       }
-      return query.getMany();
+      // return query.getMany();
+      const orders = await query.getMany();
+      const parsedOrders =  orders.map(order => {
+        const serverOrderData = order?.serverOrder;
+        return {
+          ...order,
+          serverOrder: {
+            ...order.serverOrder,
+            orderDate: serverOrderData?.orderDate
+            ? momentTz(serverOrderData?.orderDate).tz(
+              this.configService.get('timezone').zone,
+            ).format("YYYY-MM-DD hh:mm A")
+            : '',
+          cancellationDate: serverOrderData?.cancellationDate
+            ? momentTz(serverOrderData?.cancellationDate).tz(
+                this.configService.get('timezone').zone,
+              ).format("YYYY-MM-DD hh:mm A")
+            : '',
+            createdDate: serverOrderData?.createdDate
+            ? momentTz(serverOrderData.createdDate).tz(
+                this.configService.get('timezone').zone,
+              ).format("YYYY-MM-DD hh:mm A")
+            : '',
+          openDateTime: serverOrderData?.openDateTime
+            ? momentTz(serverOrderData.openDateTime).tz(
+                this.configService.get('timezone').zone,
+              ).format("YYYY-MM-DD hh:mm A")
+            : '',
+          submittedDateTime: serverOrderData?.submittedDateTime
+          ? momentTz(serverOrderData.submittedDateTime).tz(
+              this.configService.get('timezone').zone,
+            ).format("YYYY-MM-DD hh:mm A")
+          : '', 
+          pickUpReadyDateTime: serverOrderData?.pickUpReadyDateTime
+          ? momentTz(serverOrderData.pickUpReadyDateTime).tz(
+              this.configService.get('timezone').zone,
+            ).format("YYYY-MM-DD hh:mm A")
+          : '', 
+          completedDateTime: serverOrderData?.completedDateTime
+          ? momentTz(serverOrderData.completedDateTime).tz(
+              this.configService.get('timezone').zone,
+            ).format("YYYY-MM-DD hh:mm A")
+          : '',
+          requestedPickUpTime: serverOrderData?.requestedPickUpTime
+          ? momentTz(serverOrderData.requestedPickUpTime).tz(
+              this.configService.get('timezone').zone,
+            ).format("YYYY-MM-DD hh:mm A")
+          : '',
+          intransitDate: serverOrderData?.intransitDate
+          ? momentTz(serverOrderData.intransitDate).tz(
+              this.configService.get('timezone').zone,
+            ).format("YYYY-MM-DD hh:mm A")
+          : '',
+          }
+        } 
+      });
+      return parsedOrders;
     }
   }
 
