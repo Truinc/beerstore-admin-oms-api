@@ -319,55 +319,61 @@ export class ServerOrderService {
     }
 
     if (min_date_created && max_date_created) {
-      const fromDate = moment(min_date_created).startOf('day').format();
-      const toDate = moment(max_date_created).endOf('day').format();
+      const minDate = moment.utc(min_date_created).format('YYYY-MM-DD');
+      const maxDate = moment.utc(max_date_created).format('YYYY-MM-DD');
+      const fromDate =  moment.utc(`${minDate} 00:00:00`, 'YYYY-MM-DD HH:mm:ss').tz(this.configService.get('timezone').zone).format('');
+        const toDate =  moment.utc(`${maxDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss').tz(this.configService.get('timezone').zone).format(''); 
+      console.log('ee', fromDate, toDate);
       if (min_date_created && max_date_created) {
-        if (status_id) {
-          table.andWhere(`${this.orderStatusDate(+status_id)}`, {
-            fromDate,
-            toDate,
-          });
-        } else {
+        // if (status_id) {
           table.andWhere(
-            new Brackets((qb) => {
-              qb.where(
-                'ServerOrder.completedDateTime BETWEEN :compFromDate AND :compToDate',
-                {
-                  compFromDate: fromDate,
-                  compToDate: toDate,
-                },
-              )
-                .orWhere(
-                  'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-                  {
-                    fromDate,
-                    toDate,
-                  },
-                )
-                .orWhere(
-                  'ServerOrder.pickUpReadyDateTime BETWEEN :pickfromDate AND :picktoDate',
-                  {
-                    pickfromDate: fromDate,
-                    picktoDate: toDate,
-                  },
-                )
-                .orWhere(
-                  'ServerOrder.cancellationDate BETWEEN :cancelfromDate AND :canceltoDate',
-                  {
-                    cancelfromDate: fromDate,
-                    canceltoDate: toDate,
-                  },
-                )
-                .orWhere(
-                  'ServerOrder.intransitDate BETWEEN :transitfromDate AND :transittoDate',
-                  {
-                    transitfromDate: fromDate,
-                    transittoDate: toDate,
-                  },
-                );
-            }),
+            `ServerOrder.orderDate BETWEEN :fromDate AND :toDate`,
+            {
+              fromDate,
+              toDate,
+            },
           );
-        }
+        // } else {
+        //   table.andWhere(
+        //     new Brackets((qb) => {
+        //       qb.where(
+        //         'ServerOrder.completedDateTime BETWEEN :compFromDate AND :compToDate',
+        //         {
+        //           compFromDate: fromDate,
+        //           compToDate: toDate,
+        //         },
+        //       )
+        //         .orWhere(
+        //           'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
+        //           {
+        //             fromDate,
+        //             toDate,
+        //           },
+        //         )
+        //         .orWhere(
+        //           'ServerOrder.pickUpReadyDateTime BETWEEN :pickfromDate AND :picktoDate',
+        //           {
+        //             pickfromDate: fromDate,
+        //             picktoDate: toDate,
+        //           },
+        //         )
+        //         .orWhere(
+        //           'ServerOrder.cancellationDate BETWEEN :cancelfromDate AND :canceltoDate',
+        //           {
+        //             cancelfromDate: fromDate,
+        //             canceltoDate: toDate,
+        //           },
+        //         )
+        //         .orWhere(
+        //           'ServerOrder.intransitDate BETWEEN :transitfromDate AND :transittoDate',
+        //           {
+        //             transitfromDate: fromDate,
+        //             transittoDate: toDate,
+        //           },
+        //         );
+        //     }),
+        //   );
+        // }
       }
     }
 
@@ -479,55 +485,61 @@ export class ServerOrderService {
     }
 
     if (min_date_created && max_date_created) {
-      const fromDate = moment(min_date_created).startOf('day').format();
-      const toDate = moment(max_date_created).endOf('day').format();
+      const minDate = moment.utc(min_date_created).format('YYYY-MM-DD');
+      const maxDate = moment.utc(max_date_created).format('YYYY-MM-DD');
+      const fromDate =  moment.utc(`${minDate} 00:00:00`, 'YYYY-MM-DD HH:mm:ss').tz(this.configService.get('timezone').zone).format('');
+        const toDate =  moment.utc(`${maxDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss').tz(this.configService.get('timezone').zone).format(''); 
+      console.log('ee', fromDate, toDate);
       if (min_date_created && max_date_created) {
-        if (status_id) {
-          serverOrderQuery.andWhere(`${this.orderStatusDate(+status_id)}`, {
-            fromDate,
-            toDate,
-          });
-        } else {
+        // if (status_id) {
           serverOrderQuery.andWhere(
-            new Brackets((qb) => {
-              qb.where(
-                'ServerOrder.completedDateTime BETWEEN :compFromDate AND :compToDate',
-                {
-                  compFromDate: fromDate,
-                  compToDate: toDate,
-                },
-              )
-                .orWhere(
-                  'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-                  {
-                    fromDate,
-                    toDate,
-                  },
-                )
-                .orWhere(
-                  'ServerOrder.pickUpReadyDateTime BETWEEN :pickfromDate AND :picktoDate',
-                  {
-                    pickfromDate: fromDate,
-                    picktoDate: toDate,
-                  },
-                )
-                .orWhere(
-                  'ServerOrder.cancellationDate BETWEEN :cancelfromDate AND :canceltoDate',
-                  {
-                    cancelfromDate: fromDate,
-                    canceltoDate: toDate,
-                  },
-                )
-                .orWhere(
-                  'ServerOrder.intransitDate BETWEEN :transitfromDate AND :transittoDate',
-                  {
-                    transitfromDate: fromDate,
-                    transittoDate: toDate,
-                  },
-                );
-            }),
+            `ServerOrder.orderDate BETWEEN :fromDate AND :toDate`,
+            {
+              fromDate,
+              toDate,
+            },
           );
-        }
+        // } else {
+        //   serverOrderQuery.andWhere(
+        //     new Brackets((qb) => {
+        //       qb.where(
+        //         'ServerOrder.completedDateTime BETWEEN :compFromDate AND :compToDate',
+        //         {
+        //           compFromDate: fromDate,
+        //           compToDate: toDate,
+        //         },
+        //       )
+        //         .orWhere(
+        //           'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
+        //           {
+        //             fromDate,
+        //             toDate,
+        //           },
+        //         )
+        //         .orWhere(
+        //           'ServerOrder.pickUpReadyDateTime BETWEEN :pickfromDate AND :picktoDate',
+        //           {
+        //             pickfromDate: fromDate,
+        //             picktoDate: toDate,
+        //           },
+        //         )
+        //         .orWhere(
+        //           'ServerOrder.cancellationDate BETWEEN :cancelfromDate AND :canceltoDate',
+        //           {
+        //             cancelfromDate: fromDate,
+        //             canceltoDate: toDate,
+        //           },
+        //         )
+        //         .orWhere(
+        //           'ServerOrder.intransitDate BETWEEN :transitfromDate AND :transittoDate',
+        //           {
+        //             transitfromDate: fromDate,
+        //             transittoDate: toDate,
+        //           },
+        //         );
+        //     }),
+        //   );
+        // }
       }
     }
 
