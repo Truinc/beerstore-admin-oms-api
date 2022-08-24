@@ -394,47 +394,47 @@ export class ServerOrderService {
         orderDate: order?.orderDate
           ? momentTz(order.orderDate).tz(
             this.configService.get('timezone').zone,
-          ).format("YYYY-MM-DD - hh:mm A")
+          ).format("YYYY-MM-DD hh:mm A")
           : '',
         cancellationDate: order?.cancellationDate
           ? momentTz(order.cancellationDate).tz(
               this.configService.get('timezone').zone,
-            ).format("YYYY-MM-DD - hh:mm A")
+            ).format("YYYY-MM-DD hh:mm A")
           : '',
           createdDate: order?.createdDate
           ? momentTz(order.createdDate).tz(
               this.configService.get('timezone').zone,
-            ).format("YYYY-MM-DD - hh:mm A")
+            ).format("YYYY-MM-DD hh:mm A")
           : '',
         openDateTime: order?.openDateTime
           ? momentTz(order.openDateTime).tz(
               this.configService.get('timezone').zone,
-            ).format("YYYY-MM-DD - hh:mm A")
+            ).format("YYYY-MM-DD hh:mm A")
           : '',
         submittedDateTime: order?.submittedDateTime
         ? momentTz(order.submittedDateTime).tz(
             this.configService.get('timezone').zone,
-          ).format("YYYY-MM-DD - hh:mm A")
+          ).format("YYYY-MM-DD hh:mm A")
         : '', 
         pickUpReadyDateTime: order?.pickUpReadyDateTime
         ? momentTz(order.pickUpReadyDateTime).tz(
             this.configService.get('timezone').zone,
-          ).format("YYYY-MM-DD - hh:mm A")
+          ).format("YYYY-MM-DD hh:mm A")
         : '', 
         completedDateTime: order?.completedDateTime
         ? momentTz(order.completedDateTime).tz(
             this.configService.get('timezone').zone,
-          ).format("YYYY-MM-DD - hh:mm A")
+          ).format("YYYY-MM-DD hh:mm A")
         : '',
         requestedPickUpTime: order?.requestedPickUpTime
         ? momentTz(order.requestedPickUpTime).tz(
             this.configService.get('timezone').zone,
-          ).format("YYYY-MM-DD - hh:mm A")
+          ).format("YYYY-MM-DD hh:mm A")
         : '',
         intransitDate: order?.intransitDate
         ? momentTz(order.intransitDate).tz(
             this.configService.get('timezone').zone,
-          ).format("YYYY-MM-DD - hh:mm A")
+          ).format("YYYY-MM-DD hh:mm A")
         : '',
       };
     });
