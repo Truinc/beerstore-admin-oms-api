@@ -376,7 +376,58 @@ export class ServerOrderService {
         orderVector: vector,
       });
     }
-    return table.getMany();
+    const orders = await table.getMany();
+    const parsedOrders =  orders.map(order => {
+      return {
+        ...order,
+        orderDate: order?.orderDate
+          ? momentTz(order.orderDate).tz(
+              this.configService.get('timezone').zone,
+            )
+          : '',
+        cancellationDate: order?.cancellationDate
+          ? momentTz(order.cancellationDate).tz(
+              this.configService.get('timezone').zone,
+            )
+          : '',
+          createdDate: order?.createdDate
+          ? momentTz(order.createdDate).tz(
+              this.configService.get('timezone').zone,
+            )
+          : '',
+        openDateTime: order?.openDateTime
+          ? momentTz(order.openDateTime).tz(
+              this.configService.get('timezone').zone,
+            )
+          : '',
+        submittedDateTime: order?.submittedDateTime
+        ? momentTz(order.submittedDateTime).tz(
+            this.configService.get('timezone').zone,
+          )
+        : '', 
+        pickUpReadyDateTime: order?.pickUpReadyDateTime
+        ? momentTz(order.pickUpReadyDateTime).tz(
+            this.configService.get('timezone').zone,
+          )
+        : '', 
+        completedDateTime: order?.completedDateTime
+        ? momentTz(order.completedDateTime).tz(
+            this.configService.get('timezone').zone,
+          )
+        : '',
+        requestedPickUpTime: order?.requestedPickUpTime
+        ? momentTz(order.requestedPickUpTime).tz(
+            this.configService.get('timezone').zone,
+          )
+        : '',
+        intransitDate: order?.intransitDate
+        ? momentTz(order.intransitDate).tz(
+            this.configService.get('timezone').zone,
+          )
+        : '',
+      };
+    });
+    return parsedOrders;
   }
 
   private async generateOrderReportData(
@@ -484,7 +535,6 @@ export class ServerOrderService {
     }
 
     const ids = (await serverOrderQuery.getRawMany()).map((x) => x.id);
-    console.log('ids', ids);
 
     if (ids.length <= 0) {
       return [];
@@ -842,6 +892,7 @@ export class ServerOrderService {
       }
       return 'Order placed';
     } catch (err) {
+      console.log('err', err.message);
       throw new BadRequestException(err.message);
     }
   }
