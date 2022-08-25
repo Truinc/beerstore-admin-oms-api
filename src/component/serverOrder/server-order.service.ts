@@ -319,55 +319,61 @@ export class ServerOrderService {
     }
 
     if (min_date_created && max_date_created) {
-      const fromDate = moment(min_date_created).startOf('day').format();
-      const toDate = moment(max_date_created).endOf('day').format();
+      const minDate = moment.utc(min_date_created).format('YYYY-MM-DD');
+      const maxDate = moment.utc(max_date_created).format('YYYY-MM-DD');
+      const fromDate =  moment.utc(`${minDate} 00:00:00`, 'YYYY-MM-DD HH:mm:ss').tz(this.configService.get('timezone').zone).format('');
+        const toDate =  moment.utc(`${maxDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss').tz(this.configService.get('timezone').zone).format(''); 
+      console.log('ee', fromDate, toDate);
       if (min_date_created && max_date_created) {
-        if (status_id) {
-          table.andWhere(`${this.orderStatusDate(+status_id)}`, {
-            fromDate,
-            toDate,
-          });
-        } else {
+        // if (status_id) {
           table.andWhere(
-            new Brackets((qb) => {
-              qb.where(
-                'ServerOrder.completedDateTime BETWEEN :compFromDate AND :compToDate',
-                {
-                  compFromDate: fromDate,
-                  compToDate: toDate,
-                },
-              )
-                .orWhere(
-                  'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-                  {
-                    fromDate,
-                    toDate,
-                  },
-                )
-                .orWhere(
-                  'ServerOrder.pickUpReadyDateTime BETWEEN :pickfromDate AND :picktoDate',
-                  {
-                    pickfromDate: fromDate,
-                    picktoDate: toDate,
-                  },
-                )
-                .orWhere(
-                  'ServerOrder.cancellationDate BETWEEN :cancelfromDate AND :canceltoDate',
-                  {
-                    cancelfromDate: fromDate,
-                    canceltoDate: toDate,
-                  },
-                )
-                .orWhere(
-                  'ServerOrder.intransitDate BETWEEN :transitfromDate AND :transittoDate',
-                  {
-                    transitfromDate: fromDate,
-                    transittoDate: toDate,
-                  },
-                );
-            }),
+            `ServerOrder.orderDate BETWEEN :fromDate AND :toDate`,
+            {
+              fromDate,
+              toDate,
+            },
           );
-        }
+        // } else {
+        //   table.andWhere(
+        //     new Brackets((qb) => {
+        //       qb.where(
+        //         'ServerOrder.completedDateTime BETWEEN :compFromDate AND :compToDate',
+        //         {
+        //           compFromDate: fromDate,
+        //           compToDate: toDate,
+        //         },
+        //       )
+        //         .orWhere(
+        //           'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
+        //           {
+        //             fromDate,
+        //             toDate,
+        //           },
+        //         )
+        //         .orWhere(
+        //           'ServerOrder.pickUpReadyDateTime BETWEEN :pickfromDate AND :picktoDate',
+        //           {
+        //             pickfromDate: fromDate,
+        //             picktoDate: toDate,
+        //           },
+        //         )
+        //         .orWhere(
+        //           'ServerOrder.cancellationDate BETWEEN :cancelfromDate AND :canceltoDate',
+        //           {
+        //             cancelfromDate: fromDate,
+        //             canceltoDate: toDate,
+        //           },
+        //         )
+        //         .orWhere(
+        //           'ServerOrder.intransitDate BETWEEN :transitfromDate AND :transittoDate',
+        //           {
+        //             transitfromDate: fromDate,
+        //             transittoDate: toDate,
+        //           },
+        //         );
+        //     }),
+        //   );
+        // }
       }
     }
 
@@ -378,52 +384,57 @@ export class ServerOrderService {
     }
     const orders = await table.getMany();
     const parsedOrders =  orders.map(order => {
+      // console.log('order', order.orderId, order?.orderDate,
+      // momentTz(order.orderDate).tz(
+      //   this.configService.get('timezone').zone,
+      // ).format("YYYY/MM/DD - hh:mm A")
+      // );
       return {
         ...order,
         orderDate: order?.orderDate
           ? momentTz(order.orderDate).tz(
-              this.configService.get('timezone').zone,
-            )
+            this.configService.get('timezone').zone,
+          ).format("YYYY-MM-DD hh:mm A")
           : '',
         cancellationDate: order?.cancellationDate
           ? momentTz(order.cancellationDate).tz(
               this.configService.get('timezone').zone,
-            )
+            ).format("YYYY-MM-DD hh:mm A")
           : '',
           createdDate: order?.createdDate
           ? momentTz(order.createdDate).tz(
               this.configService.get('timezone').zone,
-            )
+            ).format("YYYY-MM-DD hh:mm A")
           : '',
         openDateTime: order?.openDateTime
           ? momentTz(order.openDateTime).tz(
               this.configService.get('timezone').zone,
-            )
+            ).format("YYYY-MM-DD hh:mm A")
           : '',
         submittedDateTime: order?.submittedDateTime
         ? momentTz(order.submittedDateTime).tz(
             this.configService.get('timezone').zone,
-          )
+          ).format("YYYY-MM-DD hh:mm A")
         : '', 
         pickUpReadyDateTime: order?.pickUpReadyDateTime
         ? momentTz(order.pickUpReadyDateTime).tz(
             this.configService.get('timezone').zone,
-          )
+          ).format("YYYY-MM-DD hh:mm A")
         : '', 
         completedDateTime: order?.completedDateTime
         ? momentTz(order.completedDateTime).tz(
             this.configService.get('timezone').zone,
-          )
+          ).format("YYYY-MM-DD hh:mm A")
         : '',
         requestedPickUpTime: order?.requestedPickUpTime
         ? momentTz(order.requestedPickUpTime).tz(
             this.configService.get('timezone').zone,
-          )
+          ).format("YYYY-MM-DD hh:mm A")
         : '',
         intransitDate: order?.intransitDate
         ? momentTz(order.intransitDate).tz(
             this.configService.get('timezone').zone,
-          )
+          ).format("YYYY-MM-DD hh:mm A")
         : '',
       };
     });
@@ -476,55 +487,61 @@ export class ServerOrderService {
     }
 
     if (min_date_created && max_date_created) {
-      const fromDate = moment(min_date_created).startOf('day').format();
-      const toDate = moment(max_date_created).endOf('day').format();
+      const minDate = moment.utc(min_date_created).format('YYYY-MM-DD');
+      const maxDate = moment.utc(max_date_created).format('YYYY-MM-DD');
+      const fromDate =  moment.utc(`${minDate} 00:00:00`, 'YYYY-MM-DD HH:mm:ss').tz(this.configService.get('timezone').zone).format('');
+        const toDate =  moment.utc(`${maxDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss').tz(this.configService.get('timezone').zone).format(''); 
+      console.log('ee', fromDate, toDate);
       if (min_date_created && max_date_created) {
-        if (status_id) {
-          serverOrderQuery.andWhere(`${this.orderStatusDate(+status_id)}`, {
-            fromDate,
-            toDate,
-          });
-        } else {
+        // if (status_id) {
           serverOrderQuery.andWhere(
-            new Brackets((qb) => {
-              qb.where(
-                'ServerOrder.completedDateTime BETWEEN :compFromDate AND :compToDate',
-                {
-                  compFromDate: fromDate,
-                  compToDate: toDate,
-                },
-              )
-                .orWhere(
-                  'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-                  {
-                    fromDate,
-                    toDate,
-                  },
-                )
-                .orWhere(
-                  'ServerOrder.pickUpReadyDateTime BETWEEN :pickfromDate AND :picktoDate',
-                  {
-                    pickfromDate: fromDate,
-                    picktoDate: toDate,
-                  },
-                )
-                .orWhere(
-                  'ServerOrder.cancellationDate BETWEEN :cancelfromDate AND :canceltoDate',
-                  {
-                    cancelfromDate: fromDate,
-                    canceltoDate: toDate,
-                  },
-                )
-                .orWhere(
-                  'ServerOrder.intransitDate BETWEEN :transitfromDate AND :transittoDate',
-                  {
-                    transitfromDate: fromDate,
-                    transittoDate: toDate,
-                  },
-                );
-            }),
+            `ServerOrder.orderDate BETWEEN :fromDate AND :toDate`,
+            {
+              fromDate,
+              toDate,
+            },
           );
-        }
+        // } else {
+        //   serverOrderQuery.andWhere(
+        //     new Brackets((qb) => {
+        //       qb.where(
+        //         'ServerOrder.completedDateTime BETWEEN :compFromDate AND :compToDate',
+        //         {
+        //           compFromDate: fromDate,
+        //           compToDate: toDate,
+        //         },
+        //       )
+        //         .orWhere(
+        //           'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
+        //           {
+        //             fromDate,
+        //             toDate,
+        //           },
+        //         )
+        //         .orWhere(
+        //           'ServerOrder.pickUpReadyDateTime BETWEEN :pickfromDate AND :picktoDate',
+        //           {
+        //             pickfromDate: fromDate,
+        //             picktoDate: toDate,
+        //           },
+        //         )
+        //         .orWhere(
+        //           'ServerOrder.cancellationDate BETWEEN :cancelfromDate AND :canceltoDate',
+        //           {
+        //             cancelfromDate: fromDate,
+        //             canceltoDate: toDate,
+        //           },
+        //         )
+        //         .orWhere(
+        //           'ServerOrder.intransitDate BETWEEN :transitfromDate AND :transittoDate',
+        //           {
+        //             transitfromDate: fromDate,
+        //             transittoDate: toDate,
+        //           },
+        //         );
+        //     }),
+        //   );
+        // }
       }
     }
 
@@ -557,7 +574,63 @@ export class ServerOrderService {
           brewer,
         });
       }
-      return query.getMany();
+      // return query.getMany();
+      const orders = await query.getMany();
+      const parsedOrders =  orders.map(order => {
+        const serverOrderData = order?.serverOrder;
+        return {
+          ...order,
+          serverOrder: {
+            ...order.serverOrder,
+            orderDate: serverOrderData?.orderDate
+            ? momentTz(serverOrderData?.orderDate).tz(
+              this.configService.get('timezone').zone,
+            ).format("YYYY-MM-DD hh:mm A")
+            : '',
+          cancellationDate: serverOrderData?.cancellationDate
+            ? momentTz(serverOrderData?.cancellationDate).tz(
+                this.configService.get('timezone').zone,
+              ).format("YYYY-MM-DD hh:mm A")
+            : '',
+            createdDate: serverOrderData?.createdDate
+            ? momentTz(serverOrderData.createdDate).tz(
+                this.configService.get('timezone').zone,
+              ).format("YYYY-MM-DD hh:mm A")
+            : '',
+          openDateTime: serverOrderData?.openDateTime
+            ? momentTz(serverOrderData.openDateTime).tz(
+                this.configService.get('timezone').zone,
+              ).format("YYYY-MM-DD hh:mm A")
+            : '',
+          submittedDateTime: serverOrderData?.submittedDateTime
+          ? momentTz(serverOrderData.submittedDateTime).tz(
+              this.configService.get('timezone').zone,
+            ).format("YYYY-MM-DD hh:mm A")
+          : '', 
+          pickUpReadyDateTime: serverOrderData?.pickUpReadyDateTime
+          ? momentTz(serverOrderData.pickUpReadyDateTime).tz(
+              this.configService.get('timezone').zone,
+            ).format("YYYY-MM-DD hh:mm A")
+          : '', 
+          completedDateTime: serverOrderData?.completedDateTime
+          ? momentTz(serverOrderData.completedDateTime).tz(
+              this.configService.get('timezone').zone,
+            ).format("YYYY-MM-DD hh:mm A")
+          : '',
+          requestedPickUpTime: serverOrderData?.requestedPickUpTime
+          ? momentTz(serverOrderData.requestedPickUpTime).tz(
+              this.configService.get('timezone').zone,
+            ).format("YYYY-MM-DD hh:mm A")
+          : '',
+          intransitDate: serverOrderData?.intransitDate
+          ? momentTz(serverOrderData.intransitDate).tz(
+              this.configService.get('timezone').zone,
+            ).format("YYYY-MM-DD hh:mm A")
+          : '',
+          }
+        } 
+      });
+      return parsedOrders;
     }
   }
 
