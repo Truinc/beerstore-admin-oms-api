@@ -319,11 +319,28 @@ export class ServerOrderService {
     }
 
     if (min_date_created && max_date_created) {
+      let offsetHours = 0;
+      try {
+        const offset = moment()
+          .tz(this.configService.get('timezone').zone)
+          .utcOffset();
+        console.log(`Offset in hours: ${offset / 60}`);
+        offsetHours = (offset / 60) * -1;
+      } catch (err) {}
+  
       const minDate = moment.utc(min_date_created).format('YYYY-MM-DD');
       const maxDate = moment.utc(max_date_created).format('YYYY-MM-DD');
-      const fromDate =  moment.utc(`${minDate} 00:00:00`, 'YYYY-MM-DD HH:mm:ss').tz(this.configService.get('timezone').zone).format('');
-        const toDate =  moment.utc(`${maxDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss').tz(this.configService.get('timezone').zone).format(''); 
-      console.log('ee', fromDate, toDate);
+      const fromDate = moment
+        .utc(`${minDate} 00:00:00`, 'YYYY-MM-DD HH:mm:ss')
+        // .tz(this.configService.get('timezone').zone)
+        .add(offsetHours, 'hours')
+        .format('');
+      const toDate = moment
+        .utc(`${maxDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss')
+        // .tz(this.configService.get('timezone').zone)
+        .add(offsetHours, 'hours')
+        .format(''); 
+      console.log('eeee', fromDate, toDate);
       if (min_date_created && max_date_created) {
         // if (status_id) {
           table.andWhere(
