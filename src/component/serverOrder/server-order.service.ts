@@ -332,12 +332,10 @@ export class ServerOrderService {
       const maxDate = moment.utc(max_date_created).format('YYYY-MM-DD');
       const fromDate = moment
         .utc(`${minDate} 00:00:00`, 'YYYY-MM-DD HH:mm:ss')
-        // .tz(this.configService.get('timezone').zone)
         .add(offsetHours, 'hours')
         .format('');
       const toDate = moment
         .utc(`${maxDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss')
-        // .tz(this.configService.get('timezone').zone)
         .add(offsetHours, 'hours')
         .format(''); 
       console.log('eeee', fromDate, toDate);
@@ -516,12 +514,10 @@ export class ServerOrderService {
       const maxDate = moment.utc(max_date_created).format('YYYY-MM-DD');
       const fromDate = moment
         .utc(`${minDate} 00:00:00`, 'YYYY-MM-DD HH:mm:ss')
-        // .tz(this.configService.get('timezone').zone)
         .add(offsetHours, 'hours')
         .format('');
       const toDate = moment
         .utc(`${maxDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss')
-        // .tz(this.configService.get('timezone').zone)
         .add(offsetHours, 'hours')
         .format(''); 
       console.log('eeee', fromDate, toDate);

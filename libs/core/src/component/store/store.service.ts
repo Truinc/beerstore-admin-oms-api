@@ -1204,7 +1204,7 @@ export class StoreService {
     const [result, total] = await this.storeHolidayHrsRepository.findAndCount({
       take,
       skip,
-      ...(sort && { sort }),
+      ...(sort && { order: sort }),
     });
     return {
       items: result,
