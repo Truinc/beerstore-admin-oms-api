@@ -35,7 +35,8 @@ export class MailService {
             context: {
                 orderDetails: data.orderDetails,
                 orderProductDetails: data.orderProductDetails,
-                siteBaseUrl: this.configService.get('mail').site_base_url
+                siteBaseUrl: this.configService.get('mail').site_base_url,
+                prevOrdersLink: this.configService.get('mail').orders_page_url,
             }
         });
     }
@@ -48,7 +49,8 @@ export class MailService {
             context: {
                 orderDetails: data.orderDetails,
                 orderProductDetails: data.orderProductDetails,
-                siteBaseUrl: this.configService.get('mail').site_base_url
+                siteBaseUrl: this.configService.get('mail').site_base_url,
+                prevOrdersLink: this.configService.get('mail').orders_page_url,
             }
         });
     }
@@ -61,7 +63,8 @@ export class MailService {
             context: {
                 orderDetails: data.orderDetails,
                 orderProductDetails: data.orderProductDetails,
-                siteBaseUrl: this.configService.get('mail').site_base_url
+                siteBaseUrl: this.configService.get('mail').site_base_url,
+                prevOrdersLink: this.configService.get('mail').orders_page_url,
             }
         });
     }
@@ -74,7 +77,8 @@ export class MailService {
             context: {
                 orderDetails: data.orderDetails,
                 orderProductDetails: data.orderProductDetails,
-                siteBaseUrl: this.configService.get('mail').site_base_url
+                siteBaseUrl: this.configService.get('mail').site_base_url,
+                prevOrdersLink: this.configService.get('mail').orders_page_url,
             }
         });
     }
@@ -87,7 +91,8 @@ export class MailService {
             context: {
                 orderDetails: data.orderDetails,
                 orderProductDetails: data.orderProductDetails,
-                siteBaseUrl: this.configService.get('mail').site_base_url
+                siteBaseUrl: this.configService.get('mail').site_base_url,
+                prevOrdersLink: this.configService.get('mail').orders_page_url,
             }
         });
     }
@@ -100,7 +105,8 @@ export class MailService {
             context: {
                 orderDetails: data.orderDetails,
                 orderProductDetails: data.orderProductDetails,
-                siteBaseUrl: this.configService.get('mail').site_base_url
+                siteBaseUrl: this.configService.get('mail').site_base_url,
+                prevOrdersLink: this.configService.get('mail').orders_page_url,
             }
         });
     }
