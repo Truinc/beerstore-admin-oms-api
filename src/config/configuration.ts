@@ -97,7 +97,8 @@ export default () => ({
     port: process.env.MAIL_PORT,
     username: process.env.MAIL_USERNAME,
     password: process.env.MAIL_PASSWORD,
-    site_base_url: process.env.SITE_BASE_URL
+    site_base_url: process.env.SITE_BASE_URL,
+    orders_page_url: process.env.MAIL_REDIRECT_LINK,
   },
   timezone: {
     zone: process.env.TIME_ZONE

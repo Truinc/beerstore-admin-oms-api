@@ -95,6 +95,14 @@ export class ServerOrderService {
     vector?: string,
   ): Promise<object> {
 
+    let utcDate = moment.utc().format();
+    console.log(
+      'testing',
+      utcDate,
+      momentTz(utcDate)
+        .tz(this.configService.get('timezone').zone)
+        .format('YYYY/MM/DD - HH:mm'),
+    );
     const table = this.serverOrderRepository
       .createQueryBuilder('ServerOrder')
       .leftJoinAndSelect(
@@ -399,11 +407,13 @@ export class ServerOrderService {
     }
     const orders = await table.getMany();
     const parsedOrders =  orders.map(order => {
-      // console.log('order', order.orderId, order?.orderDate,
-      // momentTz(order.orderDate).tz(
-      //   this.configService.get('timezone').zone,
-      // ).format("YYYY/MM/DD - hh:mm A")
-      // );
+      console.log(
+        'dbOrders',
+        order.orderDate,
+        order.cancellationDate,
+        order.intransitDate,
+        order.completedDateTime,
+      );
       return {
         ...order,
         orderDate: order?.orderDate
@@ -453,6 +463,7 @@ export class ServerOrderService {
         : '',
       };
     });
+    console.log('parsedOrders', parsedOrders);
     return parsedOrders;
   }
 
