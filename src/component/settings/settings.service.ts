@@ -11,10 +11,10 @@ import { ConfigService } from '@nestjs/config';
 const settingsKeys = [
   'disable_store',
   'maintenance_message',
-  'message',
+  // 'message',
   'show_popup',
   'unique_key',
-  // 'warning_message',
+  'warning_message',
 ];
 @Injectable()
 export class SettingsService {
