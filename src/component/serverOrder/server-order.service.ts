@@ -399,11 +399,6 @@ export class ServerOrderService {
     }
     const orders = await table.getMany();
     const parsedOrders =  orders.map(order => {
-      // console.log('order', order.orderId, order?.orderDate,
-      // momentTz(order.orderDate).tz(
-      //   this.configService.get('timezone').zone,
-      // ).format("YYYY/MM/DD - hh:mm A")
-      // );
       return {
         ...order,
         orderDate: order?.orderDate
