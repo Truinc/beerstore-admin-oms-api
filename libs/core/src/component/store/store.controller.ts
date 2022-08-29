@@ -115,7 +115,7 @@ export class StoreController {
     @Query(PaginationInputPipe) paginationDto: PaginationInputDto,
   ) {
     try {
-      console.log('user', user);
+      // console.log('user', user);
       const { take, skip, sort } = paginationDto;
       return this.storeService.storesList(
         location,

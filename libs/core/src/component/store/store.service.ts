@@ -782,26 +782,26 @@ export class StoreService {
         })
         await this.storeExtraFeaturesRepository.delete(extraFeaturesIds);
       }
-      if(store?.storeFeatures && store?.storeFeatures.length > 0){
-        const featureIds = [];
-        store.storeFeatures.forEach(feature => {
-          featureIds.push(feature.id);
-        })
-        await this.deleteStoreFeatures(featureIds);
-      }
+      // if(store?.storeFeatures && store?.storeFeatures.length > 0){
+      //   const featureIds = [];
+      //   store.storeFeatures.forEach(feature => {
+      //     featureIds.push(feature.id);
+      //   })
+      //   await this.deleteStoreFeatures(featureIds);
+      // }
       if(deliveryCharges){
         await this.storeDeliveryRepository.delete(deliveryCharges.id);
       }
       if(storeStatus){
         await this.storeStatusRepository.delete(storeStatus.id);
       }
-      if(store?.storeFeatures && store?.storeFeatures.length > 0){
-        const featureIds = [];
-        store.storeFeatures.forEach(feature => {
-          featureIds.push(feature.id);
-        })
-        await this.deleteStoreFeatures(featureIds);
-      }
+      // if(store?.storeFeatures && store?.storeFeatures.length > 0){
+      //   const featureIds = [];
+      //   store.storeFeatures.forEach(feature => {
+      //     featureIds.push(feature.id);
+      //   })
+      //   await this.deleteStoreFeatures(featureIds);
+      // }
       
       await this.storeRepository.delete(store.id);
       return 'store deleted';
