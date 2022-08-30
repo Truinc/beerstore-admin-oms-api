@@ -1143,12 +1143,14 @@ export class StoreService {
     return { holiday: false, items: [], parent: range };
   }
 
+
   async saveHoliday(
     holidayHour: CreateHolidayHoursDto,
     holidayInfo: CreateHolidayInfoDto[],
   ) {
     try {
       const holidayInfoList = [];
+      const holidayInfoList2 = [];
       const prevholiday = await this.storeHolidayHrsRepository.findOne({
         where: {
           startDate: holidayHour.startDate,
@@ -1163,7 +1165,9 @@ export class StoreService {
       }
       for (const info of holidayInfo) {
         if (Array.isArray(info.storeIdList) && info.storeIdList.length > 0) {
+          let i = 0;
           for (const storeId of info.storeIdList) {
+            i++;
             const obj = new HolidayInfo(
               storeId,
               info.group,
@@ -1173,19 +1177,83 @@ export class StoreService {
               info.closeHours,
               info.message,
             );
-            holidayInfoList.push(obj);
+            if (i <= 262) {
+              holidayInfoList.push(obj);
+            }
+            else {
+              holidayInfoList2.push(obj);
+            }
           }
         }
       }
-      const holiday = await this.storeHolidayHrsRepository.save({
+      // console.log("...holidayHour,holidayInfo: holidayInfoList,",{
+      //   ...holidayHour,
+      //   holidayInfo: holidayInfoList,
+      // })
+      const data = {
         ...holidayHour,
         holidayInfo: holidayInfoList,
+      };
+      const holiday = await this.storeHolidayHrsRepository.save(data);
+      let data2 = holidayInfoList2.map((item) => {
+        item.holidayHour = holiday.id;
+        return item;
       });
-      return holiday;
+
+      const holiday2 = await this.storeHolidayInfoRepository.save(data2, {
+        chunk: 262,
+      });
+      return {...holiday, ...holiday2};
     } catch (error) {
+      console.log(error.message);
       throw new BadRequestException(error.message);
     }
   }
+
+  // async saveHoliday(
+  //   holidayHour: CreateHolidayHoursDto,
+  //   holidayInfo: CreateHolidayInfoDto[],
+  // ) {
+  //   try {
+  //     const holidayInfoList = [];
+  //     const prevholiday = await this.storeHolidayHrsRepository.findOne({
+  //       where: {
+  //         startDate: holidayHour.startDate,
+  //       },
+  //     });
+  //     if (prevholiday?.id && prevholiday.id !== holidayHour.id) {
+  //       throw new BadRequestException('Holiday already exists.');
+  //     }
+  //     if (holidayHour.id) {
+  //       await this.deleteHoliday(holidayHour.id);
+  //       delete holidayHour.id;
+  //     }
+  //     for (const info of holidayInfo) {
+  //       if (Array.isArray(info.storeIdList) && info.storeIdList.length > 0) {
+  //         for (const storeId of info.storeIdList) {
+  //           const obj = new HolidayInfo(
+  //             storeId,
+  //             info.group,
+  //             info.startDate,
+  //             info.holidayName,
+  //             info.openHours,
+  //             info.closeHours,
+  //             info.message,
+  //           );
+  //           holidayInfoList.push(obj);
+  //         }
+  //       }
+  //     }
+  //     const holiday = await this.storeHolidayHrsRepository.save({
+  //       ...holidayHour,
+  //       holidayInfo: holidayInfoList,
+  //     });
+  //     return holiday;
+  //   } catch (error) {
+  //     throw new BadRequestException(error.message);
+  //   }
+  // }
+
 
   async deleteHoliday(id: number) {
     try {
