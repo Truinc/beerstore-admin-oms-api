@@ -1149,7 +1149,6 @@ export class StoreService {
   ) {
     try {
       const holidayInfoList = [];
-      const holidayInfoList2 = [];
       const prevholiday = await this.storeHolidayHrsRepository.findOne({
         where: {
           startDate: holidayHour.startDate,
@@ -1164,9 +1163,7 @@ export class StoreService {
       }
       for (const info of holidayInfo) {
         if (Array.isArray(info.storeIdList) && info.storeIdList.length > 0) {
-          let i = 0;
-          info.storeIdList.forEach((storeId, index) => {
-            i++;
+          info.storeIdList.forEach((storeId) => {
             const obj = new HolidayInfo(
               storeId,
               info.group,
@@ -1176,29 +1173,21 @@ export class StoreService {
               info.closeHours,
               info.message,
             );
-            if (index === 0 && i <= 262) {
               holidayInfoList.push(obj);
-            } else {
-              holidayInfoList2.push(obj);
-            }
           });
         }
       }
-      const data = {
-        ...holidayHour,
-        holidayInfo: holidayInfoList,
-      };
-
-      const holiday = await this.storeHolidayHrsRepository.save(data);
-      let data2 = holidayInfoList2.map((item) => {
-        item.holidayHour = holiday.id;
+    
+      const hldHrs = await this.storeHolidayHrsRepository.save(holidayHour);
+      let hldInfoData = holidayInfoList.map((item) => {
+        item.holidayHour = hldHrs.id;
         return item;
       });
 
-      const holiday2 = await this.storeHolidayInfoRepository.save(data2, {
-        chunk: 262,
+      const hldInfo = await this.storeHolidayInfoRepository.save(hldInfoData, {
+        chunk: 200,
       });
-      return { ...holiday, ...holiday2 };
+      return { ...hldHrs, ...hldInfo };
     } catch (error) {
       console.log(error.message);
       throw new BadRequestException(error.message);
