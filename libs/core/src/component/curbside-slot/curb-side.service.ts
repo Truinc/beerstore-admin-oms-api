@@ -40,6 +40,16 @@ export class CurbSideService {
     return;
   }
 
+  async releaseSlotOnCancel(checkoutId: string): Promise<CurbSide> {
+    const curbSideEntry = await this.curbSideRepository.findOne({
+      checkoutId: checkoutId,
+    });
+    if (curbSideEntry) {
+      await this.curbSideRepository.delete(curbSideEntry.id);
+    }
+    return;
+  }
+
   async delete(id: number) {
     const crubside = await this.curbSideRepository.findOne(id);
     if (crubside) {
@@ -82,26 +92,22 @@ export class CurbSideService {
     checkoutId?: string,
   ) {
     const formattedSlotDate = moment(date).format('YYYY-MM-DD');
-
     const whereStart = {
-      slotStartTime: Between(slot.start, slot.end),
+      slotStartTime: Between(slot.start, slot.end - 1),
       deliveryDate: formattedSlotDate,
       storeId,
     };
-
     const whereEnd = {
       slotEndTime: Between(slot.start + 1, slot.end), // to avoid inclusive nature of between
       deliveryDate: formattedSlotDate,
       storeId,
     };
-
     if (checkoutId) {
       Object.assign(whereStart, { checkoutId: Not(checkoutId) });
       Object.assign(whereEnd, { checkoutId: Not(checkoutId) });
     }
 
     const where = [whereStart, whereEnd];
-
     const rows = await this.curbSideRepository.find({
       where,
     });

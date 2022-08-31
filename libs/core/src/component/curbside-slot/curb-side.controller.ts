@@ -39,7 +39,7 @@ export class CurbSideController {
     required: true,
     name: 'slot',
     type: String,
-    example: '10:00 AM 10:30 AM',
+    example: '10:00 AM - 10:30 AM',
   })
   @ApiBadRequestResponse({
     description: '400. ValidationException',
@@ -66,7 +66,7 @@ export class CurbSideController {
     required: true,
     name: 'slot',
     type: String,
-    example: '10:00 AM 10:30 AM',
+    example: '10:00 AM - 10:30 AM',
   })
   @ApiNoContentResponse()
   @Post('release')
@@ -129,7 +129,7 @@ export class CurbSideController {
     required: true,
     name: 'slot',
     type: String,
-    example: '10:00 AM 10:30 AM',
+    example: '10:00 AM - 10:30 AM',
   })
   @ApiQuery({
     required: true,
