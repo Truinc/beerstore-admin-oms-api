@@ -682,12 +682,12 @@ export class StoreService {
 
   async getStoreStatus(storeId: number): Promise<any> {
     const store = await this.findById(storeId);
-    console.log('store', store);
+    // console.log('store', store);
     if (store) {
       const storeStatusDetails = await this.storeStatusRepository.findOne({
         where: { store },
       });
-      console.log('storeStatusDetails', storeStatusDetails);
+      // console.log('storeStatusDetails', storeStatusDetails);
       return storeStatusDetails;
     } else {
       return null;

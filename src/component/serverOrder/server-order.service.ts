@@ -51,6 +51,7 @@ import {
 import { MailService } from 'src/mail/mail.service';
 import { BeerService } from '@beerstore/core/component/beer/beer.service';
 import { CurbSideService } from '@beerstore/core/component/curbside-slot/curb-side.service';
+import { User } from '../user/entity/user.entity';
 
 const OrderstatusText = {
   5: 'has been cancelled',
@@ -83,6 +84,8 @@ export class ServerOrderService {
     @InjectRepository(PaymentDetails)
     private paymentDetailsRepository: Repository<PaymentDetails>,
     private beerService: BeerService,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
   ) {}
 
   async findAllServerOrder(
@@ -743,10 +746,20 @@ export class ServerOrderService {
   }
 
   async findAllPostFeed(orderId: number) {
-    const postFeed = await this.postFeedRepository.find({
-      where: { orderId },
-    });
-    return postFeed;
+    const data = await this.postFeedRepository
+      .createQueryBuilder('postFeed')
+      .leftJoinAndMapOne(
+        'postFeed.user',
+        User,
+        'user',
+        'user.id= postFeed.userId',
+      )
+      .select(['postFeed'])
+      .addSelect(["user.firstName", "user.lastName"])
+      .where({ orderId })
+      .getMany();
+
+    return data;
   }
 
   async removePostFeed(id: number) {

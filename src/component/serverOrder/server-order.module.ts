@@ -18,6 +18,7 @@ import { ServerOrderProductDetails } from './entity/server-order-product-details
 import { MailModule } from 'src/mail/mail.module';
 import { BeerModule } from '@beerstore/core/component/beer/beer.module';
 import { CurbSideModule } from '@beerstore/core/component/curbside-slot/curb-side.module';
+import { User } from '../user/entity/user.entity';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { CurbSideModule } from '@beerstore/core/component/curbside-slot/curb-sid
       ServerOrderCustomerDetails,
       ServerOrderDeliveryDetails,
       ServerOrderProductDetails,
+      User,
     ]),
   ],
   providers: [ServerOrderService],
