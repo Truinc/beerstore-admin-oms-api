@@ -766,43 +766,43 @@ export class StoreService {
       const extraFeatures = await this.storeExtraFeaturesRepository.find({
         where: { store },
       });
-      const deliveryCharges =  await this.storeDeliveryRepository.findOne({
+      const deliveryCharges = await this.storeDeliveryRepository.findOne({
         where: { store },
       });
-      const storeStatus =  await this.storeStatusRepository.findOne({
+      const storeStatus = await this.storeStatusRepository.findOne({
         where: { store },
       });
       if (!store) {
         return new NotFoundException('store not found');
       }
-      if(extraFeatures && extraFeatures.length > 0){
+      if (extraFeatures && extraFeatures.length > 0) {
         const extraFeaturesIds = [];
-        extraFeatures.forEach(extraFeatures => {
+        extraFeatures.forEach((extraFeatures) => {
           extraFeaturesIds.push(extraFeatures.id);
-        })
+        });
         await this.storeExtraFeaturesRepository.delete(extraFeaturesIds);
       }
-      if(store?.storeFeatures && store?.storeFeatures.length > 0){
-        const featureIds = [];
-        store.storeFeatures.forEach(feature => {
-          featureIds.push(feature.id);
-        })
-        await this.deleteStoreFeatures(featureIds);
-      }
-      if(deliveryCharges){
+      // if(store?.storeFeatures && store?.storeFeatures.length > 0){
+      //   const featureIds = [];
+      //   store.storeFeatures.forEach(feature => {
+      //     featureIds.push(feature.id);
+      //   })
+      //   await this.deleteStoreFeatures(featureIds);
+      // }
+      if (deliveryCharges) {
         await this.storeDeliveryRepository.delete(deliveryCharges.id);
       }
-      if(storeStatus){
+      if (storeStatus) {
         await this.storeStatusRepository.delete(storeStatus.id);
       }
-      if(store?.storeFeatures && store?.storeFeatures.length > 0){
-        const featureIds = [];
-        store.storeFeatures.forEach(feature => {
-          featureIds.push(feature.id);
-        })
-        await this.deleteStoreFeatures(featureIds);
-      }
-      
+      // if(store?.storeFeatures && store?.storeFeatures.length > 0){
+      //   const featureIds = [];
+      //   store.storeFeatures.forEach(feature => {
+      //     featureIds.push(feature.id);
+      //   })
+      //   await this.deleteStoreFeatures(featureIds);
+      // }
+
       await this.storeRepository.delete(store.id);
       return 'store deleted';
     } catch (err) {
@@ -1163,7 +1163,7 @@ export class StoreService {
       }
       for (const info of holidayInfo) {
         if (Array.isArray(info.storeIdList) && info.storeIdList.length > 0) {
-          for (const storeId of info.storeIdList) {
+          info.storeIdList.forEach((storeId) => {
             const obj = new HolidayInfo(
               storeId,
               info.group,
@@ -1173,19 +1173,70 @@ export class StoreService {
               info.closeHours,
               info.message,
             );
-            holidayInfoList.push(obj);
-          }
+              holidayInfoList.push(obj);
+          });
         }
       }
-      const holiday = await this.storeHolidayHrsRepository.save({
-        ...holidayHour,
-        holidayInfo: holidayInfoList,
+    
+      const hldHrs = await this.storeHolidayHrsRepository.save(holidayHour);
+      let hldInfoData = holidayInfoList.map((item) => {
+        item.holidayHour = hldHrs.id;
+        return item;
       });
-      return holiday;
+
+      const hldInfo = await this.storeHolidayInfoRepository.save(hldInfoData, {
+        chunk: 200,
+      });
+      return { ...hldHrs, ...hldInfo };
     } catch (error) {
+      console.log(error.message);
       throw new BadRequestException(error.message);
     }
   }
+
+  // async saveHoliday(
+  //   holidayHour: CreateHolidayHoursDto,
+  //   holidayInfo: CreateHolidayInfoDto[],
+  // ) {
+  //   try {
+  //     const holidayInfoList = [];
+  //     const prevholiday = await this.storeHolidayHrsRepository.findOne({
+  //       where: {
+  //         startDate: holidayHour.startDate,
+  //       },
+  //     });
+  //     if (prevholiday?.id && prevholiday.id !== holidayHour.id) {
+  //       throw new BadRequestException('Holiday already exists.');
+  //     }
+  //     if (holidayHour.id) {
+  //       await this.deleteHoliday(holidayHour.id);
+  //       delete holidayHour.id;
+  //     }
+  //     for (const info of holidayInfo) {
+  //       if (Array.isArray(info.storeIdList) && info.storeIdList.length > 0) {
+  //         for (const storeId of info.storeIdList) {
+  //           const obj = new HolidayInfo(
+  //             storeId,
+  //             info.group,
+  //             info.startDate,
+  //             info.holidayName,
+  //             info.openHours,
+  //             info.closeHours,
+  //             info.message,
+  //           );
+  //           holidayInfoList.push(obj);
+  //         }
+  //       }
+  //     }
+  //     const holiday = await this.storeHolidayHrsRepository.save({
+  //       ...holidayHour,
+  //       holidayInfo: holidayInfoList,
+  //     });
+  //     return holiday;
+  //   } catch (error) {
+  //     throw new BadRequestException(error.message);
+  //   }
+  // }
 
   async deleteHoliday(id: number) {
     try {
@@ -1206,6 +1257,7 @@ export class StoreService {
       skip,
       ...(sort && { order: sort }),
     });
+
     return {
       items: result,
       count: total,
