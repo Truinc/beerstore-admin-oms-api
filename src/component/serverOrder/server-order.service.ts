@@ -214,7 +214,7 @@ export class ServerOrderService {
         ...item,
         orderDate: momentTz(item.orderDate)
           .tz(this.configService.get('timezone').zone)
-          .format('YYYY/MM/DD - hh:mm A'),
+          .format('MM/DD/YYYY - hh:mm A'),
         cancellationDate: item.cancellationDate
           ? momentTz(item.cancellationDate)
               .tz(this.configService.get('timezone').zone)
@@ -616,7 +616,7 @@ export class ServerOrderService {
             orderDate: serverOrderData?.orderDate
               ? momentTz(serverOrderData?.orderDate)
                   .tz(this.configService.get('timezone').zone)
-                  .format('YYYY-MM-DD hh:mm A')
+                  .format('MM/DD/YYYY - hh:mm A')
               : '',
             cancellationDate: serverOrderData?.cancellationDate
               ? momentTz(serverOrderData?.cancellationDate)
