@@ -1313,7 +1313,9 @@ export class ServerOrderService {
       this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus);
       try {
         if (checkoutId && orderType !== 'kiosk') {
-          await this.curbSideService.releaseSlotOnCancel(checkoutId);
+          if (orderType === 'curbside') {
+            await this.curbSideService.releaseSlotOnCancel(checkoutId);
+          }
           this.sendPushNotification(
             this.configService.get('beerstoreApp').title,
             `Your Order #${id} has been cancelled.`,
