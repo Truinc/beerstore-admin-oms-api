@@ -50,12 +50,15 @@ import {
 } from './dto/order-queue.dto';
 import { MailService } from 'src/mail/mail.service';
 import { BeerService } from '@beerstore/core/component/beer/beer.service';
+import { CurbSideService } from '@beerstore/core/component/curbside-slot/curb-side.service';
+import { User } from '../user/entity/user.entity';
+
 const OrderstatusText = {
-  5: 'cancelled',
-  10: 'completed',
-  8: 'awaiting pickup',
-  3: 'partial shipped',
-  9: 'awaiting shipment'
+  5: 'has been cancelled',
+  10: 'was delivered',
+  8: 'is ready for pickup',
+  3: 'is out for delivery',
+  9: 'is ready for shipment',
 };
 @Injectable()
 export class ServerOrderService {
@@ -69,6 +72,7 @@ export class ServerOrderService {
     private bamboraService: BamboraService,
     private storeService: StoreService,
     private orderHistoryService: OrderHistoryService,
+    private curbSideService: CurbSideService,
     @InjectRepository(ServerOrder)
     private serverOrderRepository: Repository<ServerOrder>,
     @InjectRepository(ServerOrderProductDetails)
@@ -80,6 +84,8 @@ export class ServerOrderService {
     @InjectRepository(PaymentDetails)
     private paymentDetailsRepository: Repository<PaymentDetails>,
     private beerService: BeerService,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
   ) {}
 
   async findAllServerOrder(
@@ -94,7 +100,6 @@ export class ServerOrderService {
     orderType?: string,
     vector?: string,
   ): Promise<object> {
-
     const table = this.serverOrderRepository
       .createQueryBuilder('ServerOrder')
       .leftJoinAndSelect(
@@ -207,9 +212,14 @@ export class ServerOrderService {
     const parsedItems = items.map((item) => {
       return {
         ...item,
-        orderDate: momentTz(item.orderDate).tz(
-          this.configService.get('timezone').zone,
-        ).format("YYYY/MM/DD - HH:mm"),
+        orderDate: momentTz(item.orderDate)
+          .tz(this.configService.get('timezone').zone)
+          .format('MM/DD/YYYY - hh:mm A'),
+        cancellationDate: item.cancellationDate
+          ? momentTz(item.cancellationDate)
+              .tz(this.configService.get('timezone').zone)
+              .format('YYYY/MM/DD')
+          : '',
       };
     });
     return {
@@ -327,7 +337,7 @@ export class ServerOrderService {
         console.log(`Offset in hours: ${offset / 60}`);
         offsetHours = (offset / 60) * -1;
       } catch (err) {}
-  
+
       const minDate = moment.utc(min_date_created).format('YYYY-MM-DD');
       const maxDate = moment.utc(max_date_created).format('YYYY-MM-DD');
       const fromDate = moment
@@ -337,17 +347,14 @@ export class ServerOrderService {
       const toDate = moment
         .utc(`${maxDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss')
         .add(offsetHours, 'hours')
-        .format(''); 
+        .format('');
       console.log('eeee', fromDate, toDate);
       if (min_date_created && max_date_created) {
         // if (status_id) {
-          table.andWhere(
-            `ServerOrder.orderDate BETWEEN :fromDate AND :toDate`,
-            {
-              fromDate,
-              toDate,
-            },
-          );
+        table.andWhere(`ServerOrder.orderDate BETWEEN :fromDate AND :toDate`, {
+          fromDate,
+          toDate,
+        });
         // } else {
         //   table.andWhere(
         //     new Brackets((qb) => {
@@ -398,54 +405,54 @@ export class ServerOrderService {
       });
     }
     const orders = await table.getMany();
-    const parsedOrders =  orders.map(order => {
+    const parsedOrders = orders.map((order) => {
       return {
         ...order,
         orderDate: order?.orderDate
-          ? momentTz(order.orderDate).tz(
-            this.configService.get('timezone').zone,
-          ).format("YYYY-MM-DD hh:mm A")
+          ? momentTz(order.orderDate)
+              .tz(this.configService.get('timezone').zone)
+              .format('YYYY-MM-DD hh:mm A')
           : '',
         cancellationDate: order?.cancellationDate
-          ? momentTz(order.cancellationDate).tz(
-              this.configService.get('timezone').zone,
-            ).format("YYYY-MM-DD hh:mm A")
+          ? momentTz(order.cancellationDate)
+              .tz(this.configService.get('timezone').zone)
+              .format('YYYY-MM-DD hh:mm A')
           : '',
-          createdDate: order?.createdDate
-          ? momentTz(order.createdDate).tz(
-              this.configService.get('timezone').zone,
-            ).format("YYYY-MM-DD hh:mm A")
+        createdDate: order?.createdDate
+          ? momentTz(order.createdDate)
+              .tz(this.configService.get('timezone').zone)
+              .format('YYYY-MM-DD hh:mm A')
           : '',
         openDateTime: order?.openDateTime
-          ? momentTz(order.openDateTime).tz(
-              this.configService.get('timezone').zone,
-            ).format("YYYY-MM-DD hh:mm A")
+          ? momentTz(order.openDateTime)
+              .tz(this.configService.get('timezone').zone)
+              .format('YYYY-MM-DD hh:mm A')
           : '',
         submittedDateTime: order?.submittedDateTime
-        ? momentTz(order.submittedDateTime).tz(
-            this.configService.get('timezone').zone,
-          ).format("YYYY-MM-DD hh:mm A")
-        : '', 
+          ? momentTz(order.submittedDateTime)
+              .tz(this.configService.get('timezone').zone)
+              .format('YYYY-MM-DD hh:mm A')
+          : '',
         pickUpReadyDateTime: order?.pickUpReadyDateTime
-        ? momentTz(order.pickUpReadyDateTime).tz(
-            this.configService.get('timezone').zone,
-          ).format("YYYY-MM-DD hh:mm A")
-        : '', 
+          ? momentTz(order.pickUpReadyDateTime)
+              .tz(this.configService.get('timezone').zone)
+              .format('YYYY-MM-DD hh:mm A')
+          : '',
         completedDateTime: order?.completedDateTime
-        ? momentTz(order.completedDateTime).tz(
-            this.configService.get('timezone').zone,
-          ).format("YYYY-MM-DD hh:mm A")
-        : '',
+          ? momentTz(order.completedDateTime)
+              .tz(this.configService.get('timezone').zone)
+              .format('YYYY-MM-DD hh:mm A')
+          : '',
         requestedPickUpTime: order?.requestedPickUpTime
-        ? momentTz(order.requestedPickUpTime).tz(
-            this.configService.get('timezone').zone,
-          ).format("YYYY-MM-DD hh:mm A")
-        : '',
+          ? momentTz(order.requestedPickUpTime)
+              .tz(this.configService.get('timezone').zone)
+              .format('YYYY-MM-DD hh:mm A')
+          : '',
         intransitDate: order?.intransitDate
-        ? momentTz(order.intransitDate).tz(
-            this.configService.get('timezone').zone,
-          ).format("YYYY-MM-DD hh:mm A")
-        : '',
+          ? momentTz(order.intransitDate)
+              .tz(this.configService.get('timezone').zone)
+              .format('YYYY-MM-DD hh:mm A')
+          : '',
       };
     });
     return parsedOrders;
@@ -514,17 +521,17 @@ export class ServerOrderService {
       const toDate = moment
         .utc(`${maxDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss')
         .add(offsetHours, 'hours')
-        .format(''); 
-      console.log('eeee', fromDate, toDate);
+        .format('');
+      // console.log('eeee', fromDate, toDate);
       if (min_date_created && max_date_created) {
         // if (status_id) {
-          serverOrderQuery.andWhere(
-            `ServerOrder.orderDate BETWEEN :fromDate AND :toDate`,
-            {
-              fromDate,
-              toDate,
-            },
-          );
+        serverOrderQuery.andWhere(
+          `ServerOrder.orderDate BETWEEN :fromDate AND :toDate`,
+          {
+            fromDate,
+            toDate,
+          },
+        );
         // } else {
         //   serverOrderQuery.andWhere(
         //     new Brackets((qb) => {
@@ -600,59 +607,59 @@ export class ServerOrderService {
       }
       // return query.getMany();
       const orders = await query.getMany();
-      const parsedOrders =  orders.map(order => {
+      const parsedOrders = orders.map((order) => {
         const serverOrderData = order?.serverOrder;
         return {
           ...order,
           serverOrder: {
             ...order.serverOrder,
             orderDate: serverOrderData?.orderDate
-            ? momentTz(serverOrderData?.orderDate).tz(
-              this.configService.get('timezone').zone,
-            ).format("YYYY-MM-DD hh:mm A")
-            : '',
-          cancellationDate: serverOrderData?.cancellationDate
-            ? momentTz(serverOrderData?.cancellationDate).tz(
-                this.configService.get('timezone').zone,
-              ).format("YYYY-MM-DD hh:mm A")
-            : '',
+              ? momentTz(serverOrderData?.orderDate)
+                  .tz(this.configService.get('timezone').zone)
+                  .format('MM/DD/YYYY - hh:mm A')
+              : '',
+            cancellationDate: serverOrderData?.cancellationDate
+              ? momentTz(serverOrderData?.cancellationDate)
+                  .tz(this.configService.get('timezone').zone)
+                  .format('YYYY-MM-DD hh:mm A')
+              : '',
             createdDate: serverOrderData?.createdDate
-            ? momentTz(serverOrderData.createdDate).tz(
-                this.configService.get('timezone').zone,
-              ).format("YYYY-MM-DD hh:mm A")
-            : '',
-          openDateTime: serverOrderData?.openDateTime
-            ? momentTz(serverOrderData.openDateTime).tz(
-                this.configService.get('timezone').zone,
-              ).format("YYYY-MM-DD hh:mm A")
-            : '',
-          submittedDateTime: serverOrderData?.submittedDateTime
-          ? momentTz(serverOrderData.submittedDateTime).tz(
-              this.configService.get('timezone').zone,
-            ).format("YYYY-MM-DD hh:mm A")
-          : '', 
-          pickUpReadyDateTime: serverOrderData?.pickUpReadyDateTime
-          ? momentTz(serverOrderData.pickUpReadyDateTime).tz(
-              this.configService.get('timezone').zone,
-            ).format("YYYY-MM-DD hh:mm A")
-          : '', 
-          completedDateTime: serverOrderData?.completedDateTime
-          ? momentTz(serverOrderData.completedDateTime).tz(
-              this.configService.get('timezone').zone,
-            ).format("YYYY-MM-DD hh:mm A")
-          : '',
-          requestedPickUpTime: serverOrderData?.requestedPickUpTime
-          ? momentTz(serverOrderData.requestedPickUpTime).tz(
-              this.configService.get('timezone').zone,
-            ).format("YYYY-MM-DD hh:mm A")
-          : '',
-          intransitDate: serverOrderData?.intransitDate
-          ? momentTz(serverOrderData.intransitDate).tz(
-              this.configService.get('timezone').zone,
-            ).format("YYYY-MM-DD hh:mm A")
-          : '',
-          }
-        } 
+              ? momentTz(serverOrderData.createdDate)
+                  .tz(this.configService.get('timezone').zone)
+                  .format('YYYY-MM-DD hh:mm A')
+              : '',
+            openDateTime: serverOrderData?.openDateTime
+              ? momentTz(serverOrderData.openDateTime)
+                  .tz(this.configService.get('timezone').zone)
+                  .format('YYYY-MM-DD hh:mm A')
+              : '',
+            submittedDateTime: serverOrderData?.submittedDateTime
+              ? momentTz(serverOrderData.submittedDateTime)
+                  .tz(this.configService.get('timezone').zone)
+                  .format('YYYY-MM-DD hh:mm A')
+              : '',
+            pickUpReadyDateTime: serverOrderData?.pickUpReadyDateTime
+              ? momentTz(serverOrderData.pickUpReadyDateTime)
+                  .tz(this.configService.get('timezone').zone)
+                  .format('YYYY-MM-DD hh:mm A')
+              : '',
+            completedDateTime: serverOrderData?.completedDateTime
+              ? momentTz(serverOrderData.completedDateTime)
+                  .tz(this.configService.get('timezone').zone)
+                  .format('YYYY-MM-DD hh:mm A')
+              : '',
+            requestedPickUpTime: serverOrderData?.requestedPickUpTime
+              ? momentTz(serverOrderData.requestedPickUpTime)
+                  .tz(this.configService.get('timezone').zone)
+                  .format('YYYY-MM-DD hh:mm A')
+              : '',
+            intransitDate: serverOrderData?.intransitDate
+              ? momentTz(serverOrderData.intransitDate)
+                  .tz(this.configService.get('timezone').zone)
+                  .format('YYYY-MM-DD hh:mm A')
+              : '',
+          },
+        };
       });
       return parsedOrders;
     }
@@ -685,11 +692,27 @@ export class ServerOrderService {
           .where({ orderId })
           .execute();
       }
+
+      const parsedOrderHistory = [];
+      if (
+        resp[3].items &&
+        Array.isArray(resp[3].items) &&
+        resp[3].items.length > 0
+      ) {
+        resp[3].items.forEach((history) => {
+          parsedOrderHistory.push({
+            ...history,
+            updatedDate: momentTz(history.updatedDate)
+              .tz(this.configService.get('timezone').zone)
+              .format('YYYY/MM/DD hh:mm A'),
+          });
+        });
+      }
       return {
         orderDetails: resp[0],
         serverOrder: resp[1] || [],
         orderFeed: resp[2] || [],
-        orderHistory: resp[3]?.items || [],
+        orderHistory: parsedOrderHistory,
         ctmProof: resp[4] || [],
         deliveryCharges: resp[5]?.deliveryFee?.fee || '11.95',
         // ...(tranId !== 'na' && {
@@ -723,10 +746,20 @@ export class ServerOrderService {
   }
 
   async findAllPostFeed(orderId: number) {
-    const postFeed = await this.postFeedRepository.find({
-      where: { orderId },
-    });
-    return postFeed;
+    const data = await this.postFeedRepository
+      .createQueryBuilder('postFeed')
+      .leftJoinAndMapOne(
+        'postFeed.user',
+        User,
+        'user',
+        'user.id= postFeed.userId',
+      )
+      .select(['postFeed'])
+      .addSelect(["user.firstName", "user.lastName"])
+      .where({ orderId })
+      .getMany();
+
+    return data;
   }
 
   async removePostFeed(id: number) {
@@ -758,9 +791,7 @@ export class ServerOrderService {
       );
       let customerType;
       if (orderDetails?.customer_id) {
-         customerType = await this.getCustomerType(
-          orderDetails.customer_id,
-        );
+        customerType = await this.getCustomerType(orderDetails.customer_id);
       }
       this.orderHistoryService.create({
         orderId: `${orderDetails.id}`,
@@ -898,7 +929,7 @@ export class ServerOrderService {
         billingAddressFormFields.pick_delivery_time.split('-') || '';
       const orderDeliveryDate =
         billingAddressFormFields.pick_delivery_date_text;
-      
+
       //   const fulfillmentDate = moment(
       //   `${orderDeliveryDate} ${timeSplit[0]}`,
       //   'YYYY-MM-DD HH:mm A',
@@ -931,7 +962,7 @@ export class ServerOrderService {
         fulfillmentDate,
         orderDate: moment
           .utc(orderDetails.date_created)
-          .format('YYYY-MM-DD HH:mm:ss'), 
+          .format('YYYY-MM-DD HH:mm:ss'),
         cancellationDate: null,
         cancellationBy: null,
         cancellationReason: null,
@@ -1167,7 +1198,7 @@ export class ServerOrderService {
         if (checkoutId && serverOrder?.orderType !== 'kiosk') {
           await this.sendPushNotification(
             this.configService.get('beerstoreApp').title,
-            `Your Order #${id} has been ${OrderstatusText[orderStatus]}.`,
+            `Your Order #${id}${OrderstatusText[orderStatus]}.`,
             checkoutId,
             id.toString(),
             +orderStatus,
@@ -1282,6 +1313,9 @@ export class ServerOrderService {
       this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus);
       try {
         if (checkoutId && orderType !== 'kiosk') {
+          if (orderType === 'curbside') {
+            await this.curbSideService.releaseSlotOnCancel(checkoutId);
+          }
           this.sendPushNotification(
             this.configService.get('beerstoreApp').title,
             `Your Order #${id} has been cancelled.`,
@@ -1291,7 +1325,9 @@ export class ServerOrderService {
             orderType,
           );
         }
-      } catch (err) {}
+      } catch (err) {
+        console.log('err', err.message);
+      }
       return response[0];
     } catch (err) {
       throw new BadRequestException(err.message);
@@ -1392,7 +1428,7 @@ export class ServerOrderService {
         if (checkoutId && prevOrder?.orderType !== 'kiosk') {
           this.sendPushNotification(
             this.configService.get('beerstoreApp').title,
-            `Your Order #${orderId} has been ${
+            `Your Order #${orderId} ${
               OrderstatusText[serverOrder.orderStatus]
             }.`,
             checkoutId,

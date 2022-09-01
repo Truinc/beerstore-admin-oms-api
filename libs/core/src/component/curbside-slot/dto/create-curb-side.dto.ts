@@ -28,7 +28,11 @@ export class CreateCurbSideDto {
   @IsNotEmpty()
   readonly deliveryDate: Date;
 
-  @ApiProperty({ type: 'enum', enum: CurbSideSlot, default: 1 })
+  @ApiProperty({
+    type: 'enum',
+    enum: CurbSideSlot,
+    default: CurbSideSlot.filled,
+  })
   @IsNotEmpty()
   @IsEnum(CurbSideSlot)
   readonly status: CurbSideSlot = CurbSideSlot.filled;
