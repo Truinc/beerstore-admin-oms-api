@@ -27,14 +27,15 @@ export class OrdersService {
     private configService: ConfigService,
     @Inject(forwardRef(() => ServerOrderService))
     private serverOrderService: ServerOrderService,
-  ) { }
+  ) {}
 
   async getOrder(orderId: string): Promise<any> {
     const uri = `v2/orders`;
     const order = await lastValueFrom(
       this.httpService
         .get(
-          `${this.configService.get('bigcom').url}/stores/${this.configService.get('bigcom').store
+          `${this.configService.get('bigcom').url}/stores/${
+            this.configService.get('bigcom').store
           }/${uri}/${orderId}`,
           {
             headers: {
@@ -55,7 +56,8 @@ export class OrdersService {
     const orderProducts = await lastValueFrom(
       this.httpService
         .get(
-          `${this.configService.get('bigcom').url}/stores/${this.configService.get('bigcom').store
+          `${this.configService.get('bigcom').url}/stores/${
+            this.configService.get('bigcom').store
           }/${uri}/${orderId}/products`,
           {
             headers: {
@@ -73,20 +75,24 @@ export class OrdersService {
     return orderProducts;
   }
 
-  async setRefundQuotes(orderId: number, payload: {
-    "items": {
-      "item_id": number,
-      "item_type": string,
-      "quantity": number
-    }[],
-    "tax_adjustment_amount": number
-  }): Promise<any> {
+  async setRefundQuotes(
+    orderId: number,
+    payload: {
+      items: {
+        item_id: number;
+        item_type: string;
+        quantity: number;
+      }[];
+      tax_adjustment_amount: number;
+    },
+  ): Promise<any> {
     const uri = `v3/orders`;
     console.log('values', payload);
     const refundResponse = await lastValueFrom(
       this.httpService
         .post(
-          `${this.configService.get('bigcom').url}/stores/${this.configService.get('bigcom').store
+          `${this.configService.get('bigcom').url}/stores/${
+            this.configService.get('bigcom').store
           }/${uri}/${orderId}/payment_actions/refund_quotes`,
           payload,
           {
@@ -106,24 +112,28 @@ export class OrdersService {
     return refundResponse;
   }
 
-  async refundHandler(orderId: number, payload: {
-    "items": {
-      "item_id": number,
-      "item_type": string,
-      "quantity": number,
-    }[],
-    "tax_adjustment_amount": number,
-    "payments": {
-      "provider_id": string,
-      "amount": number,
-      "offline": boolean
-    }[]
-  }): Promise<any> {
+  async refundHandler(
+    orderId: number,
+    payload: {
+      items: {
+        item_id: number;
+        item_type: string;
+        quantity: number;
+      }[];
+      tax_adjustment_amount: number;
+      payments: {
+        provider_id: string;
+        amount: number;
+        offline: boolean;
+      }[];
+    },
+  ): Promise<any> {
     const uri = `v3/orders`;
     const refundResponse = await lastValueFrom(
       this.httpService
         .post(
-          `${this.configService.get('bigcom').url}/stores/${this.configService.get('bigcom').store
+          `${this.configService.get('bigcom').url}/stores/${
+            this.configService.get('bigcom').store
           }/${uri}/${orderId}/payment_actions/refunds`,
           payload,
           {
@@ -147,7 +157,8 @@ export class OrdersService {
     const addresses = await lastValueFrom(
       this.httpService
         .get(
-          `${this.configService.get('bigcom').url}/stores/${this.configService.get('bigcom').store
+          `${this.configService.get('bigcom').url}/stores/${
+            this.configService.get('bigcom').store
           }/${uri}/${orderId}/shipping_addresses`,
           {
             headers: {
@@ -187,7 +198,8 @@ export class OrdersService {
     const response = lastValueFrom(
       this.httpService
         .put(
-          `${this.configService.get('bigcom').url}/stores/${this.configService.get('bigcom').store
+          `${this.configService.get('bigcom').url}/stores/${
+            this.configService.get('bigcom').store
           }/${uri}/${orderId}`,
           createOrderDto,
           {
@@ -207,8 +219,9 @@ export class OrdersService {
   getAllOrders(query: OrderQuery): Observable<Order[]> {
     const encodedUri = createQuery(query);
     const uri = `v2/orders`;
-    const url = `${this.configService.get('bigcom').url}/stores/${this.configService.get('bigcom').store
-      }/${uri}?${encodedUri}`;
+    const url = `${this.configService.get('bigcom').url}/stores/${
+      this.configService.get('bigcom').store
+    }/${uri}?${encodedUri}`;
     return this.httpService
       .get(url, {
         headers: {
@@ -249,7 +262,8 @@ export class OrdersService {
       const limitedOrders = await lastValueFrom(
         this.httpService
           .get(
-            `${this.configService.get('bigcom').url}/stores/${this.configService.get('bigcom').store
+            `${this.configService.get('bigcom').url}/stores/${
+              this.configService.get('bigcom').store
             }/${uri}?page=${page}&${filter}`,
             {
               headers: {
@@ -303,7 +317,7 @@ export class OrdersService {
       params.max_date_created,
       params.vector,
       params.brewer,
-      params.cancelledby
+      params.cancelledby,
     );
   }
 

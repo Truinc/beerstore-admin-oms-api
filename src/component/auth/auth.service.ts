@@ -97,7 +97,7 @@ export default class AuthService {
   public async login(username: string): Promise<JwtTokensDto> {
     try {
       const user = await this.usersService.findWithUsername(username);
-      console.log('user', user);
+      // console.log('user', user);
       if (!user) {
         throw new UnauthorizedException('Incorrect ID or Password.');
       }

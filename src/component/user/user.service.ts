@@ -1,11 +1,13 @@
+import * as bcrypt from 'bcrypt';
+import * as momentTz from 'moment-timezone';
 import {
   BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { getRepository, Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { RolesEnum, User, userPermissions } from './entity/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -19,6 +21,7 @@ import { SIGNINLOGS } from '@beerstore/core/utils';
 @Injectable()
 export class UserService {
   constructor(
+    private configService: ConfigService,
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
     @InjectRepository(SignInLogs)
     private readonly signInLogsRepository: Repository<SignInLogs>,
@@ -264,7 +267,9 @@ export class UserService {
       await this.usersRepository.save({
         ...user,
         ...userObj,
-        ...(managerData ? { manager: managerData.username } : { manager: null }),
+        ...(managerData
+          ? { manager: managerData.username }
+          : { manager: null }),
         usersStores: userStoresList,
       });
 
@@ -331,7 +336,18 @@ export class UserService {
         id: 'DESC',
       },
     });
-    return signInlogs;
+    const logs = [];
+    if (Array.isArray(signInlogs) && signInlogs.length > 0) {
+      signInlogs.forEach((log) => {
+        logs.push({
+          ...log,
+          updatedDate: momentTz(log.updatedDate)
+            .tz(this.configService.get('timezone').zone)
+            .format('dddd, YYYY-MM-DD, hh:mm A'),
+        });
+      });
+    }
+    return logs;
   }
 
   async getSignInlog(id: number): Promise<SignInLogs> {
