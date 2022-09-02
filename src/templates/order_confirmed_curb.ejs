@@ -519,7 +519,7 @@
                                           </h2>
                                           <p
                                             style="margin:0;font-size:13px;color:#404040;font-family:Arial,Helvetica,sans-serif,Montserrat">
-                                            <%= product.displayValue %>
+                                            <%= product.onSale ? product.salePrice : product.displayValue %>
                                           </p>
                                         </td>
                                         <td
