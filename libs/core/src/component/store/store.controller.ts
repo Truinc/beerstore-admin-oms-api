@@ -396,10 +396,13 @@ export class StoreController {
         code: 'curbside_available',
         feature: 'Curbside Pickup',
       },
-
       {
         code: 'drive_thru_available',
         feature: 'Drive-Thru',
+      },
+      {
+        code: 'kegs',
+        feature: 'Kegs',
       },
       // {
       //   code: 'not_accept_empties',
