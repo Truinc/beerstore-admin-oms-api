@@ -805,11 +805,11 @@ export class ServerOrderService {
         orderDetails?.billing_address?.form_fields[0]?.value,
       );
       let customerType;
-      console.log('customerType', orderDetails?.customer_id);
-      if (orderDetails?.customer_id == 0) {
-        customerType = 'guest';
-      } else if (orderDetails?.customer_id) {
+      try {
         customerType = await this.getCustomerType(orderDetails.customer_id);
+      } catch (err) {
+        customerType = '';
+        console.log('getCustomerType-Err', err.message);
       }
       this.orderHistoryService.create({
         orderId: `${orderDetails.id}`,
@@ -1539,7 +1539,12 @@ export class ServerOrderService {
           // if (productDetail.is_refunded) {
           //   totalRefundedAmount += productDetail.refund_amount;
           // }
-          const refundedPrice = +productDetail.quantity * +variantData.price;
+
+          const refundedPrice =
+            variantData?.sale_price === variantData.price
+              ? +productDetail.quantity * +variantData.price
+              : +productDetail.quantity * +variantData?.sale_price;
+
           const productSubTotal =
             variantData?.sale_price === variantData?.price
               ? (variantData?.price * actualQuantity).toFixed(2)
