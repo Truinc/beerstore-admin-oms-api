@@ -101,7 +101,7 @@ export default () => ({
     orders_page_url: process.env.MAIL_REDIRECT_LINK,
   },
   timezone: {
-    zone: process.env.TIME_ZONE
+    zone: process.env.TIME_ZONE,
   },
   firebase: {
     apiKey: process.env.FIREBASE_APIKEY,
@@ -112,5 +112,10 @@ export default () => ({
     messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
     appId: process.env.FIREBASE_APPID,
     measurementId: process.env.FIREBASE_MEASUREMENT_ID,
-  }
+  },
+  appInsights: {
+    instrumentationKey:
+      process.env.INSTRUMENTATIONKEY ||
+      'InstrumentationKey=931d8d19-1e07-43c3-a109-89e4d8f3ea5b;IngestionEndpoint=https://centralus-2.in.applicationinsights.azure.com/;LiveEndpoint=https://centralus.livediagnostics.monitor.azure.com/',
+  },
 });

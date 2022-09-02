@@ -52,6 +52,7 @@ import { MailService } from 'src/mail/mail.service';
 import { BeerService } from '@beerstore/core/component/beer/beer.service';
 import { CurbSideService } from '@beerstore/core/component/curbside-slot/curb-side.service';
 import { User } from '../user/entity/user.entity';
+// import { appInsightslog } from '@beerstore/core/utils';
 
 const OrderstatusText = {
   5: 'has been cancelled',
@@ -100,134 +101,148 @@ export class ServerOrderService {
     orderType?: string,
     vector?: string,
   ): Promise<object> {
-    const table = this.serverOrderRepository
-      .createQueryBuilder('ServerOrder')
-      .leftJoinAndSelect(
-        'ServerOrder.serverOrderCustomerDetails',
-        'ServerOrderCustomerDetails',
-      );
-    if (status[2]) {
-      table.where({
-        orderStatus: Between('8', '9'),
-      });
-    } else {
-      table.where('ServerOrder.orderStatus = :orderStatus', {
-        orderStatus: status,
-      });
-    }
-
-    if (orderType) {
-      table.andWhere('ServerOrder.orderType = :orderType', { orderType });
-    }
-
-    if (vector) {
-      table.andWhere('ServerOrder.orderVector = :orderVector', {
-        orderType: vector,
-      });
-    }
-
-    // this.orderStatusDate(+orderStatus),
-
-    // if (searchFromDate === searchToDate) {
-    //   const fromDate = searchFromDate;
-    //   console.log('searchFromDate', searchFromDate);
-    //   const toDate = `${searchFromDate} 23:59:59`;
-    //   table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
-    //     fromDate,
-    //     toDate,
-    //   });
-    // } else {
-    //   const toDate = `${searchToDate} 23:59:59`;
-    //   table.andWhere(
-    //     'ServerOrder.orderDate BETWEEN :searchFromDate AND :toDate',
-    //     {
-    //       searchFromDate,
-    //       toDate,
-    //     },
-    //   );
-    // }
-
-    const orderStatus = status[2] ? '8' : status;
-    table.andWhere(this.orderStatusDate(+orderStatus), {
-      fromDate: searchFromDate,
-      toDate:
-        searchFromDate === searchToDate
-          ? `${searchFromDate} 23:59:59`
-          : `${searchToDate} 23:59:59`,
-    });
-
-    if (storeId) {
-      table.andWhere('ServerOrder.storeId = :storeId', {
-        storeId,
-      });
-    }
-
-    if (search) {
-      table.andWhere(
-        new Brackets((qb) => {
-          qb.where('serverOrderCustomerDetails.name like :customerName', {
-            customerName: `%${search}%`,
-          }).orWhere('ServerOrder.orderId like :orderId', {
-            orderId: `%${search}%`,
-          });
-        }),
-      );
-    }
-
-    if (sort) {
-      const validSortKey = [
-        'id',
-        'orderId',
-        'orderDate',
-        'fulfillmentDate',
-        'cancellationDate',
-        'cancellationBy',
-        'name',
-        'orderType',
-      ];
-      let sortObjKey;
-      const sortKey = Object.keys(sort)[0];
-      if (sortKey.includes('name')) {
-        sortObjKey = `ServerOrderCustomerDetails.name`;
+    try {
+      const table = this.serverOrderRepository
+        .createQueryBuilder('ServerOrder')
+        .leftJoinAndSelect(
+          'ServerOrder.serverOrderCustomerDetails',
+          'ServerOrderCustomerDetails',
+        );
+      if (status[2]) {
+        table.where({
+          orderStatus: Between('8', '9'),
+        });
       } else {
-        sortObjKey = `ServerOrder.${sortKey}`;
+        table.where('ServerOrder.orderStatus = :orderStatus', {
+          orderStatus: status,
+        });
       }
-      if (validSortKey.includes(sortKey)) {
-        const sortObj = {
-          [sortObjKey]: sort[sortKey],
+
+      if (orderType) {
+        table.andWhere('ServerOrder.orderType = :orderType', { orderType });
+      }
+
+      if (vector) {
+        table.andWhere('ServerOrder.orderVector = :orderVector', {
+          orderType: vector,
+        });
+      }
+
+      // this.orderStatusDate(+orderStatus),
+
+      // if (searchFromDate === searchToDate) {
+      //   const fromDate = searchFromDate;
+      //   console.log('searchFromDate', searchFromDate);
+      //   const toDate = `${searchFromDate} 23:59:59`;
+      //   table.andWhere('ServerOrder.orderDate BETWEEN :fromDate AND :toDate', {
+      //     fromDate,
+      //     toDate,
+      //   });
+      // } else {
+      //   const toDate = `${searchToDate} 23:59:59`;
+      //   table.andWhere(
+      //     'ServerOrder.orderDate BETWEEN :searchFromDate AND :toDate',
+      //     {
+      //       searchFromDate,
+      //       toDate,
+      //     },
+      //   );
+      // }
+
+      const orderStatus = status[2] ? '8' : status;
+      table.andWhere(this.orderStatusDate(+orderStatus), {
+        fromDate: searchFromDate,
+        toDate:
+          searchFromDate === searchToDate
+            ? `${searchFromDate} 23:59:59`
+            : `${searchToDate} 23:59:59`,
+      });
+
+      if (storeId) {
+        table.andWhere('ServerOrder.storeId = :storeId', {
+          storeId,
+        });
+      }
+
+      if (search) {
+        table.andWhere(
+          new Brackets((qb) => {
+            qb.where('serverOrderCustomerDetails.name like :customerName', {
+              customerName: `%${search}%`,
+            }).orWhere('ServerOrder.orderId like :orderId', {
+              orderId: `%${search}%`,
+            });
+          }),
+        );
+      }
+
+      if (sort) {
+        const validSortKey = [
+          'id',
+          'orderId',
+          'orderDate',
+          'fulfillmentDate',
+          'cancellationDate',
+          'cancellationBy',
+          'name',
+          'orderType',
+        ];
+        let sortObjKey;
+        const sortKey = Object.keys(sort)[0];
+        if (sortKey.includes('name')) {
+          sortObjKey = `ServerOrderCustomerDetails.name`;
+        } else {
+          sortObjKey = `ServerOrder.${sortKey}`;
+        }
+        if (validSortKey.includes(sortKey)) {
+          const sortObj = {
+            [sortObjKey]: sort[sortKey],
+          };
+          table.orderBy(sortObj as { [key: string]: 'ASC' | 'DESC' });
+        } else {
+          throw new BadRequestException(`Invalid sort param :- ${sortKey}`);
+        }
+      }
+
+      if (skip) {
+        table.skip(skip);
+      }
+      if (take) {
+        table.take(take);
+      }
+      const [items, total] = await table.getManyAndCount();
+      const parsedItems = items.map((item) => {
+        return {
+          ...item,
+          orderDate: momentTz(item.orderDate)
+            .tz(this.configService.get('timezone').zone)
+            .format('MM/DD/YYYY - hh:mm A'),
+          cancellationDate: item.cancellationDate
+            ? momentTz(item.cancellationDate)
+                .tz(this.configService.get('timezone').zone)
+                .format('MM/DD/YYYY')
+            : '',
+          fulfillmentDate: item.fulfillmentDate
+            ? moment.utc(item.fulfillmentDate).format('MM/DD/YYYY - hh:mm A')
+            : '',
         };
-        table.orderBy(sortObj as { [key: string]: 'ASC' | 'DESC' });
-      } else {
-        throw new BadRequestException(`Invalid sort param :- ${sortKey}`);
-      }
-    }
-
-    if (skip) {
-      table.skip(skip);
-    }
-    if (take) {
-      table.take(take);
-    }
-    const [items, total] = await table.getManyAndCount();
-    const parsedItems = items.map((item) => {
+      });
       return {
-        ...item,
-        orderDate: momentTz(item.orderDate)
-          .tz(this.configService.get('timezone').zone)
-          .format('MM/DD/YYYY - hh:mm A'),
-        cancellationDate: item.cancellationDate
-          ? momentTz(item.cancellationDate)
-              .tz(this.configService.get('timezone').zone)
-              .format('YYYY/MM/DD')
-          : '',
+        total,
+        take,
+        skip,
+        items: parsedItems,
       };
-    });
-    return {
-      total,
-      take,
-      skip,
-      items: parsedItems,
-    };
+    } catch (err) {
+      // appInsightslog(
+      //   'Fetch Server Orders',
+      //   {
+      //     err: err.message,
+      //   },
+      //   this.appInsightslogKey(),
+      // );
+      throw new BadRequestException(err.message);
+    }
   }
 
   async getAllServerOrderWithRelationData(
@@ -755,7 +770,7 @@ export class ServerOrderService {
         'user.id= postFeed.userId',
       )
       .select(['postFeed'])
-      .addSelect(["user.firstName", "user.lastName"])
+      .addSelect(['user.firstName', 'user.lastName'])
       .where({ orderId })
       .getMany();
 
@@ -790,8 +805,12 @@ export class ServerOrderService {
         orderDetails?.billing_address?.form_fields[0]?.value,
       );
       let customerType;
-      if (orderDetails?.customer_id) {
-        customerType = await this.getCustomerType(orderDetails.customer_id);
+      try {
+        const resp = await this.getCustomerType(orderDetails.customer_id);
+        customerType = resp?.userType || '';
+      } catch (err) {
+        customerType = '';
+        console.log('getCustomerType-Err', err.message);
       }
       this.orderHistoryService.create({
         orderId: `${orderDetails.id}`,
@@ -833,7 +852,7 @@ export class ServerOrderService {
             )
           : null,
         salutation: billingAddressFormFields.salutation,
-        customerType: customerType?.userType || '',
+        customerType: customerType || '',
         ccType: transactionDetails?.card?.card_type || null,
         cardNumber: +transactionDetails?.card?.last_four || null,
         cardAmount: +transactionDetails?.amount || 0,
@@ -1521,7 +1540,12 @@ export class ServerOrderService {
           // if (productDetail.is_refunded) {
           //   totalRefundedAmount += productDetail.refund_amount;
           // }
-          const refundedPrice = +productDetail.quantity * +variantData.price;
+
+          const refundedPrice =
+            variantData?.sale_price === variantData.price
+              ? +productDetail.quantity * +variantData.price
+              : +productDetail.quantity * +variantData?.sale_price;
+
           const productSubTotal =
             variantData?.sale_price === variantData?.price
               ? (variantData?.price * actualQuantity).toFixed(2)
@@ -1955,5 +1979,9 @@ export class ServerOrderService {
       default:
         'ServerOrder.orderDate BETWEEN :fromDate AND :toDate';
     }
+  };
+
+  appInsightslogKey = (): string => {
+    return this.configService.get('appInsights').instrumentationKey;
   };
 }
