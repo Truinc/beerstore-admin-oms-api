@@ -806,7 +806,8 @@ export class ServerOrderService {
       );
       let customerType;
       try {
-        customerType = await this.getCustomerType(orderDetails.customer_id);
+        const resp = await this.getCustomerType(orderDetails.customer_id);
+        customerType = resp?.userType || '';
       } catch (err) {
         customerType = '';
         console.log('getCustomerType-Err', err.message);
