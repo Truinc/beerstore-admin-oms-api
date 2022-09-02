@@ -1173,13 +1173,13 @@ export class StoreService {
               info.closeHours,
               info.message,
             );
-              holidayInfoList.push(obj);
+            holidayInfoList.push(obj);
           });
         }
       }
-    
+
       const hldHrs = await this.storeHolidayHrsRepository.save(holidayHour);
-      let hldInfoData = holidayInfoList.map((item) => {
+      const hldInfoData = holidayInfoList.map((item) => {
         item.holidayHour = hldHrs.id;
         return item;
       });

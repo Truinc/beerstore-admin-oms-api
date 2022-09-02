@@ -291,44 +291,51 @@ export class ServerOrderController {
     return response;
   }
 
-    @ApiOkResponse({ description: '204. Success', type: Order })
-    @ApiNotFoundResponse({ description: 'order not found' })
-    @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
-    @UseGuards(JwtAccessGuard)
-    @Roles(
-      RolesEnum.superadmin,
-      RolesEnum.customerservicerep,
-      RolesEnum.storemanager,
-      RolesEnum.reportingadmin,
-      RolesEnum.ithelpdesk
-    )
-    @HttpCode(HttpStatus.OK)
-    @Patch('/:id')
-    async updateServerOrder(
-      @Param('id', ParseIntPipe) serverOrderId: number,
-      @Body()
-      data: {
-        checkoutId?: string;
-        createOrderDto: UpdateOrderDto;
-        orderDetails: CreateOrderDto;
-        orderHistory: CreateOrderHistoryDto;
-        orderStatus: number;
-        partial?: string;
-        refundOrder: RefundOrderDto;     
-      },
-    ): Promise<any> {
-      const { orderHistory, orderStatus, orderDetails,refundOrder , partial, checkoutId, createOrderDto } =
-        data;
-      const response = await this.serverOrderService.updateOrderDetails(
-        serverOrderId,
-        orderHistory,
-        +orderStatus,
-        orderDetails,
-        refundOrder,
-        createOrderDto,
-        partial,
-        checkoutId,
-      );
-      return response;
-    }
+  @ApiOkResponse({ description: '204. Success', type: Order })
+  @ApiNotFoundResponse({ description: 'order not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
+  @UseGuards(JwtAccessGuard)
+  @Roles(
+    RolesEnum.superadmin,
+    RolesEnum.customerservicerep,
+    RolesEnum.storemanager,
+    RolesEnum.reportingadmin,
+    RolesEnum.ithelpdesk,
+  )
+  @HttpCode(HttpStatus.OK)
+  @Patch('/:id')
+  async updateServerOrder(
+    @Param('id', ParseIntPipe) serverOrderId: number,
+    @Body()
+    data: {
+      checkoutId?: string;
+      createOrderDto: UpdateOrderDto;
+      orderDetails: CreateOrderDto;
+      orderHistory: CreateOrderHistoryDto;
+      orderStatus: number;
+      partial?: string;
+      refundOrder: RefundOrderDto;
+    },
+  ): Promise<any> {
+    const {
+      orderHistory,
+      orderStatus,
+      orderDetails,
+      refundOrder,
+      partial,
+      checkoutId,
+      createOrderDto,
+    } = data;
+    const response = await this.serverOrderService.updateOrderDetails(
+      serverOrderId,
+      orderHistory,
+      +orderStatus,
+      orderDetails,
+      refundOrder,
+      createOrderDto,
+      partial,
+      checkoutId,
+    );
+    return response;
   }
+}
