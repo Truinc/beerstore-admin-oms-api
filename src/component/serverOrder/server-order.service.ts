@@ -212,7 +212,6 @@ export class ServerOrderService {
       }
       const [items, total] = await table.getManyAndCount();
       const parsedItems = items.map((item) => {
-        console.log('items', item);
         return {
           ...item,
           orderDate: momentTz(item.orderDate)
@@ -852,7 +851,7 @@ export class ServerOrderService {
             )
           : null,
         salutation: billingAddressFormFields.salutation,
-        customerType: customerType?.userType || '',
+        customerType: customerType || '',
         ccType: transactionDetails?.card?.card_type || null,
         cardNumber: +transactionDetails?.card?.last_four || null,
         cardAmount: +transactionDetails?.amount || 0,
