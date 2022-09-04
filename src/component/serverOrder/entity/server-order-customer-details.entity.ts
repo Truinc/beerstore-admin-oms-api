@@ -9,10 +9,10 @@ import {
 import { ServerOrder } from './server-order.entity';
 
 export enum CustomerTypeEnum {
-  Email = "email",
-  Guest = "guest",
-  Google = "google",
-  Facebook = "facebook",
+  Email = 'email',
+  Guest = 'guest',
+  Google = 'google',
+  Facebook = 'facebook',
 }
 
 @Entity()
@@ -39,13 +39,13 @@ export class ServerOrderCustomerDetails {
   name: string;
 
   @ApiProperty({
-    type: String
+    type: String,
   })
   @Column({
     type: 'nvarchar',
     length: 200,
     default: null,
-    nullable: true
+    nullable: true,
   })
   customerId: string;
 
@@ -60,7 +60,7 @@ export class ServerOrderCustomerDetails {
   @ApiProperty({ type: String })
   @Column({
     type: 'nvarchar',
-    length: 20
+    length: 20,
   })
   postalCode: string;
 
@@ -74,7 +74,7 @@ export class ServerOrderCustomerDetails {
   @ApiProperty({ type: String })
   @Column({
     type: 'nvarchar',
-    length: 20
+    length: 20,
   })
   salutation: string;
 
@@ -82,47 +82,51 @@ export class ServerOrderCustomerDetails {
   @Column({
     type: 'nvarchar',
     length: 30,
-    nullable: true
+    nullable: true,
   })
   customerType: CustomerTypeEnum;
 
   @ApiProperty({
-    type: String
+    type: String,
   })
   @Column({
     type: 'nvarchar',
     length: 20,
     default: null,
-    nullable: true
+    nullable: true,
   })
   ccType: string;
 
   @ApiProperty({
-    type: Number
+    type: Number,
   })
   @Column({
-    type: "int",
+    type: 'int',
     default: null,
-    nullable: true
+    nullable: true,
   })
   cardNumber: number;
 
   @Column({
-    type: "money",
-    default: 0
+    type: 'money',
+    default: 0,
   })
   cardAmount: number;
 
   @Column({
-    type: "int",
+    type: 'int',
     nullable: true,
-    default: null
+    default: null,
   })
   authCode: number;
 
-  @OneToOne(() => ServerOrder, (serverOrder) => serverOrder.serverOrderCustomerDetails, {
-    onDelete: 'CASCADE',
-  })
+  @OneToOne(
+    () => ServerOrder,
+    (serverOrder) => serverOrder.serverOrderCustomerDetails,
+    {
+      onDelete: 'CASCADE',
+    },
+  )
   @JoinColumn()
   serverOrder: ServerOrder;
 }

@@ -817,6 +817,7 @@ export class ServerOrderService {
         orderStatus: 11,
         name: 'Order Queue',
         identifier: '',
+        updatedDate: moment.utc(orderDetails.date_created).format(),
       });
 
       const deliveryDetails = {
