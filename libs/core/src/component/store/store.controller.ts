@@ -428,12 +428,9 @@ export class StoreController {
   @UseGuards(JwtAccessGuard)
   @HttpCode(HttpStatus.OK)
   @Delete(':storeId')
-  async deleteStore(
-    @Param('storeId', ParseIntPipe) storeId: number
-  ) {
+  async deleteStore(@Param('storeId', ParseIntPipe) storeId: number) {
     return this.storeService.deleteStore(storeId);
   }
-
 
   @ApiUnauthorizedResponse({ description: 'UnauthorizedResponse' })
   @ApiNoContentResponse()

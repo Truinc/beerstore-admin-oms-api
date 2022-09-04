@@ -762,7 +762,11 @@ export class StoreService {
 
   async deleteStore(storeId: number) {
     try {
+      const deleteReq = [];
       const store = await this.storeRepository.findOne(storeId);
+      if (!store) {
+        return new NotFoundException('Store not found.');
+      }
       const extraFeatures = await this.storeExtraFeaturesRepository.find({
         where: { store },
       });
@@ -772,16 +776,37 @@ export class StoreService {
       const storeStatus = await this.storeStatusRepository.findOne({
         where: { store },
       });
-      if (!store) {
-        return new NotFoundException('store not found');
+      const storeFavorite = await this.storeFavoriteRepository.find({
+        where: { store },
+      });
+
+      if (storeFavorite && storeFavorite.length) {
+        const storeFavoriteIds = [];
+        storeFavorite.forEach((favorite) => {
+          storeFavoriteIds.push(favorite.id);
+        });
+        deleteReq.push(this.storeFavoriteRepository.delete(storeFavoriteIds));
+      }
+      if (deliveryCharges) {
+        deleteReq.push(this.storeDeliveryRepository.delete(deliveryCharges.id));
+        // await this.storeDeliveryRepository.delete(deliveryCharges.id);
+      }
+      if (storeStatus) {
+        deleteReq.push(this.storeStatusRepository.delete(storeStatus.id));
+        // await this.storeStatusRepository.delete(storeStatus.id);
       }
       if (extraFeatures && extraFeatures.length > 0) {
         const extraFeaturesIds = [];
         extraFeatures.forEach((extraFeatures) => {
           extraFeaturesIds.push(extraFeatures.id);
         });
-        await this.storeExtraFeaturesRepository.delete(extraFeaturesIds);
+        deleteReq.push(
+          this.storeExtraFeaturesRepository.delete(extraFeaturesIds),
+        );
+        // await this.storeExtraFeaturesRepository.delete(extraFeaturesIds);
       }
+
+      await Promise.all(deleteReq);
       // if(store?.storeFeatures && store?.storeFeatures.length > 0){
       //   const featureIds = [];
       //   store.storeFeatures.forEach(feature => {
@@ -789,12 +814,7 @@ export class StoreService {
       //   })
       //   await this.deleteStoreFeatures(featureIds);
       // }
-      if (deliveryCharges) {
-        await this.storeDeliveryRepository.delete(deliveryCharges.id);
-      }
-      if (storeStatus) {
-        await this.storeStatusRepository.delete(storeStatus.id);
-      }
+
       // if(store?.storeFeatures && store?.storeFeatures.length > 0){
       //   const featureIds = [];
       //   store.storeFeatures.forEach(feature => {
@@ -804,7 +824,7 @@ export class StoreService {
       // }
 
       await this.storeRepository.delete(store.id);
-      return 'store deleted';
+      return 'Store deleted';
     } catch (err) {
       throw new BadRequestException(err.message);
     }
