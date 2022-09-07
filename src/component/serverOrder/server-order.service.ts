@@ -421,9 +421,6 @@ export class ServerOrderService {
     }
     const orders = await table.getMany();
     const parsedOrders = orders.map((order) => {
-      if(order.orderId === "10223"){
-        console.log(order.requestedPickUpTime, "LLLLL")
-      }
       return {
         ...order,
         orderDate: order?.orderDate
