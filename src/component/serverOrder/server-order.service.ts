@@ -363,7 +363,7 @@ export class ServerOrderService {
         .utc(`${maxDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss')
         .add(offsetHours, 'hours')
         .format('');
-      console.log('eeee', fromDate, toDate);
+      // console.log('eeee', fromDate, toDate);
       if (min_date_created && max_date_created) {
         // if (status_id) {
         table.andWhere(`ServerOrder.orderDate BETWEEN :fromDate AND :toDate`, {
@@ -421,6 +421,9 @@ export class ServerOrderService {
     }
     const orders = await table.getMany();
     const parsedOrders = orders.map((order) => {
+      if(order.orderId === "10223"){
+        console.log(order.requestedPickUpTime, "LLLLL")
+      }
       return {
         ...order,
         orderDate: order?.orderDate
@@ -458,11 +461,12 @@ export class ServerOrderService {
               .tz(this.configService.get('timezone').zone)
               .format('YYYY-MM-DD hh:mm A')
           : '',
-        requestedPickUpTime: order?.requestedPickUpTime
-          ? momentTz(order.requestedPickUpTime)
-              .tz(this.configService.get('timezone').zone)
-              .format('YYYY-MM-DD hh:mm A')
-          : '',
+        requestedPickUpTime: moment(order?.requestedPickUpTime).utc().format('YYYY-MM-DD hh:mm A'),
+        // requestedPickUpTime: order?.requestedPickUpTime
+        //   ? momentTz(order.requestedPickUpTime)
+        //       .tz(this.configService.get('timezone').zone)
+        //       .format('YYYY-MM-DD hh:mm A')
+        //   : '',
         intransitDate: order?.intransitDate
           ? momentTz(order.intransitDate)
               .tz(this.configService.get('timezone').zone)
