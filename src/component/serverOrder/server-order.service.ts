@@ -458,7 +458,9 @@ export class ServerOrderService {
               .tz(this.configService.get('timezone').zone)
               .format('YYYY-MM-DD hh:mm A')
           : '',
-        requestedPickUpTime: moment(order?.requestedPickUpTime).utc().format('YYYY-MM-DD hh:mm A'),
+        requestedPickUpTime: moment(order?.requestedPickUpTime)
+          .utc()
+          .format('YYYY-MM-DD hh:mm A'),
         // requestedPickUpTime: order?.requestedPickUpTime
         //   ? momentTz(order.requestedPickUpTime)
         //       .tz(this.configService.get('timezone').zone)
@@ -664,11 +666,14 @@ export class ServerOrderService {
                   .tz(this.configService.get('timezone').zone)
                   .format('YYYY-MM-DD hh:mm A')
               : '',
-            requestedPickUpTime: serverOrderData?.requestedPickUpTime
-              ? momentTz(serverOrderData.requestedPickUpTime)
-                  .tz(this.configService.get('timezone').zone)
-                  .format('YYYY-MM-DD hh:mm A')
-              : '',
+            requestedPickUpTime: moment(serverOrderData?.requestedPickUpTime)
+              .utc()
+              .format('YYYY-MM-DD hh:mm A'),
+            // requestedPickUpTime: serverOrderData?.requestedPickUpTime
+            //   ? momentTz(serverOrderData.requestedPickUpTime)
+            //       .tz(this.configService.get('timezone').zone)
+            //       .format('YYYY-MM-DD hh:mm A')
+            //   : '',
             intransitDate: serverOrderData?.intransitDate
               ? momentTz(serverOrderData.intransitDate)
                   .tz(this.configService.get('timezone').zone)
