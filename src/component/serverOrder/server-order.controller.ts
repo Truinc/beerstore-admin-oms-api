@@ -73,6 +73,15 @@ export class ServerOrderController {
     return order;
   }
 
+  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
+  @UseGuards(JwtAccessGuard)
+  @Roles(RolesEnum.superadmin, RolesEnum.storemanager, RolesEnum.reportingadmin)
+  @HttpCode(HttpStatus.OK)
+  @Get('/reportStatus/:reportId')
+  async getreportStatus(@Param('reportId') reportId: string) {
+    return this.serverOrderService.getReportStatus(reportId);
+  }
+
   @ApiQuery({
     required: false,
     name: 'searchText',

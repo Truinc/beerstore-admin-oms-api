@@ -2,15 +2,18 @@
 /* eslint-disable prefer-const */
 import {
   BadRequestException,
+  ConsoleLogger,
   forwardRef,
   Inject,
   Injectable,
   // InternalServerErrorException,
   NotFoundException,
+  StreamableFile,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import * as momentTz from 'moment-timezone';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository, Brackets, Between } from 'typeorm';
 import { CreateOrderHistoryDto } from '../order-history/dto/create-order-history.dto';
 import { OrderHistoryService } from '../order-history/order-history.service';
@@ -52,6 +55,30 @@ import { MailService } from 'src/mail/mail.service';
 import { BeerService } from '@beerstore/core/component/beer/beer.service';
 import { CurbSideService } from '@beerstore/core/component/curbside-slot/curb-side.service';
 import { User } from '../user/entity/user.entity';
+import { createReadStream } from 'fs';
+import { join } from 'path';
+import { ReportStatusEntity } from './entity/report.entity';
+import {
+  AnonymousCredential,
+  BlobSASPermissions,
+  BlobServiceClient,
+  generateBlobSASQueryParameters,
+  newPipeline,
+  SASProtocol,
+  StorageSharedKeyCredential,
+} from '@azure/storage-blob';
+import { DefaultAzureCredential } from '@azure/identity';
+import {
+  addHeadersToSheet,
+  generateCharacterFromNumber,
+  mapOrderById,
+  option,
+  reportName,
+  titleCase,
+} from '@beerstore/core/utils/urls';
+// import * as xlsxPopulate from 'xlsx-populate/browser/xlsx-populate.js';
+import * as XlsxPopulate from 'xlsx-populate';
+import * as Crypto from 'crypto';
 // import { appInsightslog } from '@beerstore/core/utils';
 
 const OrderstatusText = {
@@ -76,6 +103,8 @@ export class ServerOrderService {
     private curbSideService: CurbSideService,
     @InjectRepository(ServerOrder)
     private serverOrderRepository: Repository<ServerOrder>,
+    @InjectRepository(ReportStatusEntity)
+    private reportStatusRepository: Repository<ReportStatusEntity>,
     @InjectRepository(ServerOrderProductDetails)
     private serverOrderProductDetailsRepository: Repository<ServerOrderProductDetails>,
     @InjectRepository(PostFeed)
@@ -289,188 +318,213 @@ export class ServerOrderService {
     brewer: string,
     cancelledby: string,
   ): Promise<object> {
-    const table = this.serverOrderRepository
-      .createQueryBuilder('ServerOrder')
-      .leftJoinAndSelect(
-        'ServerOrder.serverOrderCustomerDetails',
-        'serverOrderCustomerDetails',
-      )
-      .leftJoinAndSelect(
-        'ServerOrder.serverOrderDeliveryDetails',
-        'serverOrderDeliveryDetails',
-      )
-      .leftJoinAndSelect(
-        'ServerOrder.serverOrderProductDetails',
-        'serverOrderProductDetails',
-      );
+    const reportId = Crypto.randomUUID();
+    let ordersList;
+    let reportDBId = -1;
+    try {
+      const response = await this.createReportStatus(reportId, 0, '');
+      reportDBId = response.id;
+      const table = this.serverOrderRepository
+        .createQueryBuilder('ServerOrder')
+        .leftJoinAndSelect(
+          'ServerOrder.serverOrderCustomerDetails',
+          'serverOrderCustomerDetails',
+        )
+        .leftJoinAndSelect(
+          'ServerOrder.serverOrderDeliveryDetails',
+          'serverOrderDeliveryDetails',
+        )
+        .leftJoinAndSelect(
+          'ServerOrder.serverOrderProductDetails',
+          'serverOrderProductDetails',
+        );
 
-    if (brewer) {
-      let orderIds = await this.serverOrderProductDetailsRepository
-        .createQueryBuilder('ServerOrderProductDetails')
-        .where('ServerOrderProductDetails.brewer = :brewer', { brewer })
-        .select('DISTINCT(ServerOrderProductDetails.orderId)', 'id')
-        .getRawMany();
-      if (orderIds.length > 0) {
-        table.where('ServerOrder.orderId IN (:...ids) ', {
-          ids: orderIds.map((x) => x.id),
-        });
-      } else {
-        return [];
+      if (brewer) {
+        let orderIds = await this.serverOrderProductDetailsRepository
+          .createQueryBuilder('ServerOrderProductDetails')
+          .where('ServerOrderProductDetails.brewer = :brewer', { brewer })
+          .select('DISTINCT(ServerOrderProductDetails.orderId)', 'id')
+          .getRawMany();
+        if (orderIds.length > 0) {
+          table.where('ServerOrder.orderId IN (:...ids) ', {
+            ids: orderIds.map((x) => x.id),
+          });
+        } else {
+          ordersList = [];
+        }
       }
-    }
 
-    if (status_id) {
-      table.andWhere('ServerOrder.orderStatus = :orderStatus', {
-        orderStatus: status_id,
-      });
-      if (cancelledby === 'customer') {
-        table.andWhere('ServerOrder.cancelledByCustomer = :cancelStatus', {
-          cancelStatus: 1,
+      if (status_id) {
+        table.andWhere('ServerOrder.orderStatus = :orderStatus', {
+          orderStatus: status_id,
         });
-      } else if (cancelledby === 'store') {
-        table.andWhere('ServerOrder.cancelledByDriver = :driverStatus', {
-          driverStatus: 0,
-        });
-        table.andWhere('ServerOrder.cancelledByCustomer = :customerStatus', {
-          customerStatus: 0,
+        if (cancelledby === 'customer') {
+          table.andWhere('ServerOrder.cancelledByCustomer = :cancelStatus', {
+            cancelStatus: 1,
+          });
+        } else if (cancelledby === 'store') {
+          table.andWhere('ServerOrder.cancelledByDriver = :driverStatus', {
+            driverStatus: 0,
+          });
+          table.andWhere('ServerOrder.cancelledByCustomer = :customerStatus', {
+            customerStatus: 0,
+          });
+        }
+      }
+
+      if (store_id) {
+        table.andWhere('ServerOrder.storeId = :storeId', {
+          storeId: store_id,
         });
       }
-    }
 
-    if (store_id) {
-      table.andWhere('ServerOrder.storeId = :storeId', {
-        storeId: store_id,
-      });
-    }
-
-    if (min_date_created && max_date_created) {
-      let offsetHours = 0;
-      try {
-        const offset = moment()
-          .tz(this.configService.get('timezone').zone)
-          .utcOffset();
-        console.log(`Offset in hours: ${offset / 60}`);
-        offsetHours = (offset / 60) * -1;
-      } catch (err) {}
-
-      const minDate = moment.utc(min_date_created).format('YYYY-MM-DD');
-      const maxDate = moment.utc(max_date_created).format('YYYY-MM-DD');
-      const fromDate = moment
-        .utc(`${minDate} 00:00:00`, 'YYYY-MM-DD HH:mm:ss')
-        .add(offsetHours, 'hours')
-        .format('');
-      const toDate = moment
-        .utc(`${maxDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss')
-        .add(offsetHours, 'hours')
-        .format('');
-      console.log('eeee', fromDate, toDate);
       if (min_date_created && max_date_created) {
-        // if (status_id) {
-        table.andWhere(`ServerOrder.orderDate BETWEEN :fromDate AND :toDate`, {
-          fromDate,
-          toDate,
-        });
-        // } else {
-        //   table.andWhere(
-        //     new Brackets((qb) => {
-        //       qb.where(
-        //         'ServerOrder.completedDateTime BETWEEN :compFromDate AND :compToDate',
-        //         {
-        //           compFromDate: fromDate,
-        //           compToDate: toDate,
-        //         },
-        //       )
-        //         .orWhere(
-        //           'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-        //           {
-        //             fromDate,
-        //             toDate,
-        //           },
-        //         )
-        //         .orWhere(
-        //           'ServerOrder.pickUpReadyDateTime BETWEEN :pickfromDate AND :picktoDate',
-        //           {
-        //             pickfromDate: fromDate,
-        //             picktoDate: toDate,
-        //           },
-        //         )
-        //         .orWhere(
-        //           'ServerOrder.cancellationDate BETWEEN :cancelfromDate AND :canceltoDate',
-        //           {
-        //             cancelfromDate: fromDate,
-        //             canceltoDate: toDate,
-        //           },
-        //         )
-        //         .orWhere(
-        //           'ServerOrder.intransitDate BETWEEN :transitfromDate AND :transittoDate',
-        //           {
-        //             transitfromDate: fromDate,
-        //             transittoDate: toDate,
-        //           },
-        //         );
-        //     }),
-        //   );
-        // }
-      }
-    }
+        let offsetHours = 0;
+        try {
+          const offset = moment()
+            .tz(this.configService.get('timezone').zone)
+            .utcOffset();
+          console.log(`Offset in hours: ${offset / 60}`);
+          offsetHours = (offset / 60) * -1;
+        } catch (err) {}
 
-    if (vector) {
-      table.andWhere('ServerOrder.orderVector = :orderVector', {
-        orderVector: vector,
+        const minDate = moment.utc(min_date_created).format('YYYY-MM-DD');
+        const maxDate = moment.utc(max_date_created).format('YYYY-MM-DD');
+        const fromDate = moment
+          .utc(`${minDate} 00:00:00`, 'YYYY-MM-DD HH:mm:ss')
+          .add(offsetHours, 'hours')
+          .format('');
+        const toDate = moment
+          .utc(`${maxDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss')
+          .add(offsetHours, 'hours')
+          .format('');
+        // console.log('eeee', fromDate, toDate);
+        if (min_date_created && max_date_created) {
+          // if (status_id) {
+          table.andWhere(
+            `ServerOrder.orderDate BETWEEN :fromDate AND :toDate`,
+            {
+              fromDate,
+              toDate,
+            },
+          );
+          // } else {
+          //   table.andWhere(
+          //     new Brackets((qb) => {
+          //       qb.where(
+          //         'ServerOrder.completedDateTime BETWEEN :compFromDate AND :compToDate',
+          //         {
+          //           compFromDate: fromDate,
+          //           compToDate: toDate,
+          //         },
+          //       )
+          //         .orWhere(
+          //           'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
+          //           {
+          //             fromDate,
+          //             toDate,
+          //           },
+          //         )
+          //         .orWhere(
+          //           'ServerOrder.pickUpReadyDateTime BETWEEN :pickfromDate AND :picktoDate',
+          //           {
+          //             pickfromDate: fromDate,
+          //             picktoDate: toDate,
+          //           },
+          //         )
+          //         .orWhere(
+          //           'ServerOrder.cancellationDate BETWEEN :cancelfromDate AND :canceltoDate',
+          //           {
+          //             cancelfromDate: fromDate,
+          //             canceltoDate: toDate,
+          //           },
+          //         )
+          //         .orWhere(
+          //           'ServerOrder.intransitDate BETWEEN :transitfromDate AND :transittoDate',
+          //           {
+          //             transitfromDate: fromDate,
+          //             transittoDate: toDate,
+          //           },
+          //         );
+          //     }),
+          //   );
+          // }
+        }
+      }
+
+      if (vector) {
+        table.andWhere('ServerOrder.orderVector = :orderVector', {
+          orderVector: vector,
+        });
+      }
+      const orders = await table.getMany();
+      ordersList = orders.map((order) => {
+        return {
+          ...order,
+          orderDate: order?.orderDate
+            ? momentTz(order.orderDate)
+                .tz(this.configService.get('timezone').zone)
+                .format('YYYY-MM-DD hh:mm A')
+            : '',
+          cancellationDate: order?.cancellationDate
+            ? momentTz(order.cancellationDate)
+                .tz(this.configService.get('timezone').zone)
+                .format('YYYY-MM-DD hh:mm A')
+            : '',
+          createdDate: order?.createdDate
+            ? momentTz(order.createdDate)
+                .tz(this.configService.get('timezone').zone)
+                .format('YYYY-MM-DD hh:mm A')
+            : '',
+          openDateTime: order?.openDateTime
+            ? momentTz(order.openDateTime)
+                .tz(this.configService.get('timezone').zone)
+                .format('YYYY-MM-DD hh:mm A')
+            : '',
+          submittedDateTime: order?.submittedDateTime
+            ? momentTz(order.submittedDateTime)
+                .tz(this.configService.get('timezone').zone)
+                .format('YYYY-MM-DD hh:mm A')
+            : '',
+          pickUpReadyDateTime: order?.pickUpReadyDateTime
+            ? momentTz(order.pickUpReadyDateTime)
+                .tz(this.configService.get('timezone').zone)
+                .format('YYYY-MM-DD hh:mm A')
+            : '',
+          completedDateTime: order?.completedDateTime
+            ? momentTz(order.completedDateTime)
+                .tz(this.configService.get('timezone').zone)
+                .format('YYYY-MM-DD hh:mm A')
+            : '',
+          requestedPickUpTime: order?.requestedPickUpTime
+            ? momentTz(order.requestedPickUpTime)
+                .tz(this.configService.get('timezone').zone)
+                .format('YYYY-MM-DD hh:mm A')
+            : '',
+          intransitDate: order?.intransitDate
+            ? momentTz(order.intransitDate)
+                .tz(this.configService.get('timezone').zone)
+                .format('YYYY-MM-DD hh:mm A')
+            : '',
+        };
       });
-    }
-    const orders = await table.getMany();
-    const parsedOrders = orders.map((order) => {
+      // generate report
+      this.createReportHandler(
+        ordersList,
+        'transaction',
+        reportId,
+        reportDBId,
+        '',
+      );
       return {
-        ...order,
-        orderDate: order?.orderDate
-          ? momentTz(order.orderDate)
-              .tz(this.configService.get('timezone').zone)
-              .format('YYYY-MM-DD hh:mm A')
-          : '',
-        cancellationDate: order?.cancellationDate
-          ? momentTz(order.cancellationDate)
-              .tz(this.configService.get('timezone').zone)
-              .format('YYYY-MM-DD hh:mm A')
-          : '',
-        createdDate: order?.createdDate
-          ? momentTz(order.createdDate)
-              .tz(this.configService.get('timezone').zone)
-              .format('YYYY-MM-DD hh:mm A')
-          : '',
-        openDateTime: order?.openDateTime
-          ? momentTz(order.openDateTime)
-              .tz(this.configService.get('timezone').zone)
-              .format('YYYY-MM-DD hh:mm A')
-          : '',
-        submittedDateTime: order?.submittedDateTime
-          ? momentTz(order.submittedDateTime)
-              .tz(this.configService.get('timezone').zone)
-              .format('YYYY-MM-DD hh:mm A')
-          : '',
-        pickUpReadyDateTime: order?.pickUpReadyDateTime
-          ? momentTz(order.pickUpReadyDateTime)
-              .tz(this.configService.get('timezone').zone)
-              .format('YYYY-MM-DD hh:mm A')
-          : '',
-        completedDateTime: order?.completedDateTime
-          ? momentTz(order.completedDateTime)
-              .tz(this.configService.get('timezone').zone)
-              .format('YYYY-MM-DD hh:mm A')
-          : '',
-        requestedPickUpTime: order?.requestedPickUpTime
-          ? momentTz(order.requestedPickUpTime)
-              .tz(this.configService.get('timezone').zone)
-              .format('YYYY-MM-DD hh:mm A')
-          : '',
-        intransitDate: order?.intransitDate
-          ? momentTz(order.intransitDate)
-              .tz(this.configService.get('timezone').zone)
-              .format('YYYY-MM-DD hh:mm A')
-          : '',
+        reportId,
+        status: 0,
       };
-    });
-    return parsedOrders;
+    } catch (err) {
+      console.log('[generateTransactionReportData-err]', err.message);
+      this.updateReportStatus(reportDBId, 2, '');
+      throw new BadRequestException(err.message);
+    }
   }
 
   private async generateOrderReportData(
@@ -482,201 +536,219 @@ export class ServerOrderService {
     brewer: string,
     cancelledby: string,
   ): Promise<Object> {
-    const serverOrderQuery = this.serverOrderRepository
-      .createQueryBuilder('ServerOrder')
-      .select('DISTINCT(ServerOrder.orderId)', 'id');
+    const reportId = Crypto.randomUUID();
+    let ordersList;
+    let reportDBId = -1;
+    try {
+      const statusResp = await this.createReportStatus(reportId, 0, '');
+      reportDBId = statusResp.id;
+      const serverOrderQuery = this.serverOrderRepository
+        .createQueryBuilder('ServerOrder')
+        .select('DISTINCT(ServerOrder.orderId)', 'id');
 
-    if (status_id) {
-      serverOrderQuery.andWhere('ServerOrder.orderStatus = :orderStatus', {
-        orderStatus: status_id,
-      });
-      if (cancelledby === 'customer') {
-        serverOrderQuery.andWhere(
-          'ServerOrder.cancelledByCustomer = :cancelStatus',
-          {
-            cancelStatus: 1,
-          },
-        );
-      } else if (cancelledby === 'store') {
-        serverOrderQuery.andWhere(
-          'ServerOrder.cancelledByDriver = :driverStatus',
-          {
-            driverStatus: 0,
-          },
-        );
-        serverOrderQuery.andWhere(
-          'ServerOrder.cancelledByCustomer = :customerStatus',
-          {
-            customerStatus: 0,
-          },
-        );
+      if (status_id) {
+        serverOrderQuery.andWhere('ServerOrder.orderStatus = :orderStatus', {
+          orderStatus: status_id,
+        });
+        if (cancelledby === 'customer') {
+          serverOrderQuery.andWhere(
+            'ServerOrder.cancelledByCustomer = :cancelStatus',
+            {
+              cancelStatus: 1,
+            },
+          );
+        } else if (cancelledby === 'store') {
+          serverOrderQuery.andWhere(
+            'ServerOrder.cancelledByDriver = :driverStatus',
+            {
+              driverStatus: 0,
+            },
+          );
+          serverOrderQuery.andWhere(
+            'ServerOrder.cancelledByCustomer = :customerStatus',
+            {
+              customerStatus: 0,
+            },
+          );
+        }
       }
-    }
-    if (store_id) {
-      serverOrderQuery.andWhere('ServerOrder.storeId = :storeId', {
-        storeId: store_id,
-      });
-    }
-
-    if (min_date_created && max_date_created) {
-      let offsetHours = 0;
-      try {
-        const offset = moment()
-          .tz(this.configService.get('timezone').zone)
-          .utcOffset();
-        console.log(`Offset in hours: ${offset / 60}`);
-        offsetHours = (offset / 60) * -1;
-      } catch (err) {}
-      const minDate = moment.utc(min_date_created).format('YYYY-MM-DD');
-      const maxDate = moment.utc(max_date_created).format('YYYY-MM-DD');
-      const fromDate = moment
-        .utc(`${minDate} 00:00:00`, 'YYYY-MM-DD HH:mm:ss')
-        .add(offsetHours, 'hours')
-        .format('');
-      const toDate = moment
-        .utc(`${maxDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss')
-        .add(offsetHours, 'hours')
-        .format('');
-      // console.log('eeee', fromDate, toDate);
-      if (min_date_created && max_date_created) {
-        // if (status_id) {
-        serverOrderQuery.andWhere(
-          `ServerOrder.orderDate BETWEEN :fromDate AND :toDate`,
-          {
-            fromDate,
-            toDate,
-          },
-        );
-        // } else {
-        //   serverOrderQuery.andWhere(
-        //     new Brackets((qb) => {
-        //       qb.where(
-        //         'ServerOrder.completedDateTime BETWEEN :compFromDate AND :compToDate',
-        //         {
-        //           compFromDate: fromDate,
-        //           compToDate: toDate,
-        //         },
-        //       )
-        //         .orWhere(
-        //           'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
-        //           {
-        //             fromDate,
-        //             toDate,
-        //           },
-        //         )
-        //         .orWhere(
-        //           'ServerOrder.pickUpReadyDateTime BETWEEN :pickfromDate AND :picktoDate',
-        //           {
-        //             pickfromDate: fromDate,
-        //             picktoDate: toDate,
-        //           },
-        //         )
-        //         .orWhere(
-        //           'ServerOrder.cancellationDate BETWEEN :cancelfromDate AND :canceltoDate',
-        //           {
-        //             cancelfromDate: fromDate,
-        //             canceltoDate: toDate,
-        //           },
-        //         )
-        //         .orWhere(
-        //           'ServerOrder.intransitDate BETWEEN :transitfromDate AND :transittoDate',
-        //           {
-        //             transitfromDate: fromDate,
-        //             transittoDate: toDate,
-        //           },
-        //         );
-        //     }),
-        //   );
-        // }
-      }
-    }
-
-    if (vector) {
-      serverOrderQuery.andWhere('ServerOrder.orderVector = :orderVector', {
-        orderVector: vector,
-      });
-    }
-
-    const ids = (await serverOrderQuery.getRawMany()).map((x) => x.id);
-
-    if (ids.length <= 0) {
-      return [];
-    } else {
-      const query = this.serverOrderProductDetailsRepository.createQueryBuilder(
-        'ServerOrderProductDetails',
-      );
-      query
-        .where('ServerOrderProductDetails.orderId IN (:...ids)', { ids })
-        .leftJoinAndSelect(
-          'ServerOrderProductDetails.serverOrder',
-          'serverOrderDetails',
-        )
-        .leftJoinAndSelect(
-          'serverOrderDetails.serverOrderCustomerDetails',
-          'serverOrderCustomer',
-        );
-      if (brewer) {
-        query.andWhere('ServerOrderProductDetails.brewer = :brewer', {
-          brewer,
+      if (store_id) {
+        serverOrderQuery.andWhere('ServerOrder.storeId = :storeId', {
+          storeId: store_id,
         });
       }
-      // return query.getMany();
-      const orders = await query.getMany();
-      const parsedOrders = orders.map((order) => {
-        const serverOrderData = order?.serverOrder;
-        return {
-          ...order,
-          serverOrder: {
-            ...order.serverOrder,
-            orderDate: serverOrderData?.orderDate
-              ? momentTz(serverOrderData?.orderDate)
-                  .tz(this.configService.get('timezone').zone)
-                  .format('MM/DD/YYYY - hh:mm A')
-              : '',
-            cancellationDate: serverOrderData?.cancellationDate
-              ? momentTz(serverOrderData?.cancellationDate)
-                  .tz(this.configService.get('timezone').zone)
-                  .format('YYYY-MM-DD hh:mm A')
-              : '',
-            createdDate: serverOrderData?.createdDate
-              ? momentTz(serverOrderData.createdDate)
-                  .tz(this.configService.get('timezone').zone)
-                  .format('YYYY-MM-DD hh:mm A')
-              : '',
-            openDateTime: serverOrderData?.openDateTime
-              ? momentTz(serverOrderData.openDateTime)
-                  .tz(this.configService.get('timezone').zone)
-                  .format('YYYY-MM-DD hh:mm A')
-              : '',
-            submittedDateTime: serverOrderData?.submittedDateTime
-              ? momentTz(serverOrderData.submittedDateTime)
-                  .tz(this.configService.get('timezone').zone)
-                  .format('YYYY-MM-DD hh:mm A')
-              : '',
-            pickUpReadyDateTime: serverOrderData?.pickUpReadyDateTime
-              ? momentTz(serverOrderData.pickUpReadyDateTime)
-                  .tz(this.configService.get('timezone').zone)
-                  .format('YYYY-MM-DD hh:mm A')
-              : '',
-            completedDateTime: serverOrderData?.completedDateTime
-              ? momentTz(serverOrderData.completedDateTime)
-                  .tz(this.configService.get('timezone').zone)
-                  .format('YYYY-MM-DD hh:mm A')
-              : '',
-            requestedPickUpTime: serverOrderData?.requestedPickUpTime
-              ? momentTz(serverOrderData.requestedPickUpTime)
-                  .tz(this.configService.get('timezone').zone)
-                  .format('YYYY-MM-DD hh:mm A')
-              : '',
-            intransitDate: serverOrderData?.intransitDate
-              ? momentTz(serverOrderData.intransitDate)
-                  .tz(this.configService.get('timezone').zone)
-                  .format('YYYY-MM-DD hh:mm A')
-              : '',
-          },
-        };
-      });
-      return parsedOrders;
+
+      if (min_date_created && max_date_created) {
+        let offsetHours = 0;
+        try {
+          const offset = moment()
+            .tz(this.configService.get('timezone').zone)
+            .utcOffset();
+          console.log(`Offset in hours: ${offset / 60}`);
+          offsetHours = (offset / 60) * -1;
+        } catch (err) {}
+        const minDate = moment.utc(min_date_created).format('YYYY-MM-DD');
+        const maxDate = moment.utc(max_date_created).format('YYYY-MM-DD');
+        const fromDate = moment
+          .utc(`${minDate} 00:00:00`, 'YYYY-MM-DD HH:mm:ss')
+          .add(offsetHours, 'hours')
+          .format('');
+        const toDate = moment
+          .utc(`${maxDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss')
+          .add(offsetHours, 'hours')
+          .format('');
+        // console.log('eeee', fromDate, toDate);
+        if (min_date_created && max_date_created) {
+          // if (status_id) {
+          serverOrderQuery.andWhere(
+            `ServerOrder.orderDate BETWEEN :fromDate AND :toDate`,
+            {
+              fromDate,
+              toDate,
+            },
+          );
+          // } else {
+          //   serverOrderQuery.andWhere(
+          //     new Brackets((qb) => {
+          //       qb.where(
+          //         'ServerOrder.completedDateTime BETWEEN :compFromDate AND :compToDate',
+          //         {
+          //           compFromDate: fromDate,
+          //           compToDate: toDate,
+          //         },
+          //       )
+          //         .orWhere(
+          //           'ServerOrder.orderDate BETWEEN :fromDate AND :toDate',
+          //           {
+          //             fromDate,
+          //             toDate,
+          //           },
+          //         )
+          //         .orWhere(
+          //           'ServerOrder.pickUpReadyDateTime BETWEEN :pickfromDate AND :picktoDate',
+          //           {
+          //             pickfromDate: fromDate,
+          //             picktoDate: toDate,
+          //           },
+          //         )
+          //         .orWhere(
+          //           'ServerOrder.cancellationDate BETWEEN :cancelfromDate AND :canceltoDate',
+          //           {
+          //             cancelfromDate: fromDate,
+          //             canceltoDate: toDate,
+          //           },
+          //         )
+          //         .orWhere(
+          //           'ServerOrder.intransitDate BETWEEN :transitfromDate AND :transittoDate',
+          //           {
+          //             transitfromDate: fromDate,
+          //             transittoDate: toDate,
+          //           },
+          //         );
+          //     }),
+          //   );
+          // }
+        }
+      }
+
+      if (vector) {
+        serverOrderQuery.andWhere('ServerOrder.orderVector = :orderVector', {
+          orderVector: vector,
+        });
+      }
+
+      const ids = (await serverOrderQuery.getRawMany()).map((x) => x.id);
+
+      if (ids.length <= 0) {
+        ordersList = [];
+      } else {
+        const query =
+          this.serverOrderProductDetailsRepository.createQueryBuilder(
+            'ServerOrderProductDetails',
+          );
+        query
+          .where('ServerOrderProductDetails.orderId IN (:...ids)', { ids })
+          .leftJoinAndSelect(
+            'ServerOrderProductDetails.serverOrder',
+            'serverOrderDetails',
+          )
+          .leftJoinAndSelect(
+            'serverOrderDetails.serverOrderCustomerDetails',
+            'serverOrderCustomer',
+          );
+        if (brewer) {
+          query.andWhere('ServerOrderProductDetails.brewer = :brewer', {
+            brewer,
+          });
+        }
+        // return query.getMany();
+        const orders = await query.getMany();
+        const parsedOrders = orders.map((order) => {
+          const serverOrderData = order?.serverOrder;
+          return {
+            ...order,
+            serverOrder: {
+              ...order.serverOrder,
+              orderDate: serverOrderData?.orderDate
+                ? momentTz(serverOrderData?.orderDate)
+                    .tz(this.configService.get('timezone').zone)
+                    .format('MM/DD/YYYY - hh:mm A')
+                : '',
+              cancellationDate: serverOrderData?.cancellationDate
+                ? momentTz(serverOrderData?.cancellationDate)
+                    .tz(this.configService.get('timezone').zone)
+                    .format('YYYY-MM-DD hh:mm A')
+                : '',
+              createdDate: serverOrderData?.createdDate
+                ? momentTz(serverOrderData.createdDate)
+                    .tz(this.configService.get('timezone').zone)
+                    .format('YYYY-MM-DD hh:mm A')
+                : '',
+              openDateTime: serverOrderData?.openDateTime
+                ? momentTz(serverOrderData.openDateTime)
+                    .tz(this.configService.get('timezone').zone)
+                    .format('YYYY-MM-DD hh:mm A')
+                : '',
+              submittedDateTime: serverOrderData?.submittedDateTime
+                ? momentTz(serverOrderData.submittedDateTime)
+                    .tz(this.configService.get('timezone').zone)
+                    .format('YYYY-MM-DD hh:mm A')
+                : '',
+              pickUpReadyDateTime: serverOrderData?.pickUpReadyDateTime
+                ? momentTz(serverOrderData.pickUpReadyDateTime)
+                    .tz(this.configService.get('timezone').zone)
+                    .format('YYYY-MM-DD hh:mm A')
+                : '',
+              completedDateTime: serverOrderData?.completedDateTime
+                ? momentTz(serverOrderData.completedDateTime)
+                    .tz(this.configService.get('timezone').zone)
+                    .format('YYYY-MM-DD hh:mm A')
+                : '',
+              requestedPickUpTime: serverOrderData?.requestedPickUpTime
+                ? momentTz(serverOrderData.requestedPickUpTime)
+                    .tz(this.configService.get('timezone').zone)
+                    .format('YYYY-MM-DD hh:mm A')
+                : '',
+              intransitDate: serverOrderData?.intransitDate
+                ? momentTz(serverOrderData.intransitDate)
+                    .tz(this.configService.get('timezone').zone)
+                    .format('YYYY-MM-DD hh:mm A')
+                : '',
+            },
+          };
+        });
+        ordersList = parsedOrders;
+      }
+      // generate report
+      this.createReportHandler(ordersList, 'order', reportId, reportDBId, '');
+      return {
+        reportId,
+        status: 0,
+      };
+    } catch (err) {
+      console.log('[generateTransactionReportData-err]', err.message);
+      this.updateReportStatus(reportDBId, 2, '');
+      throw new BadRequestException(err.message);
     }
   }
 
@@ -1984,5 +2056,259 @@ export class ServerOrderService {
 
   appInsightslogKey = (): string => {
     return this.configService.get('appInsights').instrumentationKey;
+  };
+
+  returnFile = (): StreamableFile => {
+    {
+      const file = createReadStream(join(process.cwd(), 'package.json'));
+      return new StreamableFile(file);
+    }
+  };
+
+  getReportStatus = async (reportId: string) => {
+    const report = await this.reportStatusRepository.findOne({
+      where: { reportId },
+    });
+    return report;
+  };
+
+  createReportStatus = async (
+    reportId: string,
+    reportStatus: number,
+    reportUrl?: string,
+  ) => {
+    try {
+      const reportObj = this.reportStatusRepository.create({
+        reportId,
+        reportStatus,
+        reportUrl: reportUrl || '',
+      });
+      const response = await this.reportStatusRepository.save(reportObj);
+      return this.reportStatusRepository.findOne(response.id);
+    } catch (err) {
+      throw new BadRequestException(err.message);
+    }
+  };
+
+  updateReportStatus = async (
+    id: number,
+    reportStatus: number,
+    reportUrl?: string,
+  ) => {
+    try {
+      const report = await this.reportStatusRepository.preload({
+        id,
+      });
+      const updatedReport = await this.reportStatusRepository.save({
+        ...report,
+        reportStatus,
+        reportUrl,
+      });
+      return updatedReport;
+    } catch (err) {
+      console.log('err', err.message);
+      throw new BadRequestException(err.message);
+    }
+  };
+
+  uploadFileToAzure = async (
+    reportDBId: number,
+    fileName?: string,
+    filedata?: string,
+  ) => {
+    const containerName = this.configService.get('azure').containerName;
+    const blobServiceClient = BlobServiceClient.fromConnectionString(
+      this.configService.get('azure').connectionString,
+    );
+
+    const containerClient = blobServiceClient.getContainerClient(containerName);
+    const blockBlobClient = containerClient.getBlockBlobClient(fileName);
+    await blockBlobClient.upload(filedata, filedata.length);
+    // console.log('uploadedFileRes', uploadBlobResponse);
+    const reportUrl = this.generateBlobUrl(fileName);
+    this.updateReportStatus(reportDBId, 1, reportUrl);
+  };
+
+  generateBlobUrl = (fileName: string) => {
+    const containerName = this.configService.get('azure').containerName;
+    const account = this.configService.get('azure').accountName;
+    const storageKey = this.configService.get('azure').storageKey;
+    const blobUrl = this.configService.get('azure').blobUrl;
+
+    const blobSAS = generateBlobSASQueryParameters(
+      {
+        containerName,
+        blobName: fileName,
+        permissions: BlobSASPermissions.parse('cwr'),
+        startsOn: new Date(),
+        expiresOn: new Date(new Date().valueOf() + 1286400),
+      },
+      new StorageSharedKeyCredential(account, storageKey),
+    ).toString();
+    // console.log(
+    //   'url',
+    //   `https://${account}.${blobUrl}/${containerName}/${fileName}?${blobSAS}`,
+    // );
+    return `https://${account}.${blobUrl}/${containerName}/${fileName}?${blobSAS}`;
+  };
+
+  createReportHandler = async (
+    data,
+    type,
+    reportId,
+    reportDBId,
+    cancelledBy,
+  ) => {
+    XlsxPopulate.fromBlankAsync().then(async (workbook) => {
+      let sheet1 = workbook.sheet(0);
+      let addedSheet = addHeadersToSheet(sheet1, type);
+      let dataAddedSheet = this.addDataToSheet(addedSheet, type, data);
+      sheet1 = dataAddedSheet;
+      return workbook.outputAsync().then((resp) => {
+        const foundType = option.find((op) => op.value === type);
+        const fileName =
+          foundType.value === 'transaction'
+            ? reportName('Transaction.xlsx')
+            : reportName('Order.xlsx');
+        this.uploadFileToAzure(reportDBId, fileName, resp);
+      });
+    });
+  };
+
+  addDataToSheet = (sheetArg, type, data) => {
+    let orderData = [];
+    if (type === 'order') {
+      data.forEach((sheetData) => {
+        console.log('sheetData', sheetData);
+        orderData.push({
+          id: sheetData.orderId,
+          storeNumber: sheetData?.serverOrder?.storeId,
+          // orderStatusDescription:
+          //   cancelledBy || getOrderStatus(sheetData?.serverOrder?.orderStatus),
+          orderStatusDescription: mapOrderById(
+            sheetData?.serverOrder?.orderStatus,
+            sheetData?.serverOrder?.cancelledByCustomer,
+            sheetData?.serverOrder?.cancelledByStore,
+          ),
+          submittedDateTime: sheetData?.serverOrder?.orderDate,
+          // submittedDate: sheetData?.serverOrder?.submittedDateTime,
+          orderVector: titleCase(sheetData?.serverOrder?.orderVector),
+          orderType: titleCase(sheetData?.serverOrder?.orderType),
+          lineItem: sheetData?.lineItem,
+          sku: sheetData?.itemSKU,
+          itemDescription: sheetData?.itemDescription,
+          brewer: sheetData?.brewer,
+          category: sheetData?.category,
+          quantity: sheetData?.quantity,
+          packSize: sheetData?.packSize,
+          volume: sheetData?.volume,
+          container: sheetData?.containerType,
+          itemsTotal: sheetData?.itemTotal?.toFixed(2),
+          itemHLTotal: sheetData?.itemHLTotal?.toFixed(2),
+          available: sheetData?.available ? 'Yes' : 'No',
+          customerID: sheetData?.serverOrder?.serverOrderCustomerDetails?.id,
+          customerEmail:
+            sheetData?.serverOrder?.serverOrderCustomerDetails.email,
+          postalCode:
+            sheetData?.serverOrder?.serverOrderCustomerDetails?.postalCode,
+          deliveryFee: sheetData?.serverOrder?.deliveryFee?.toFixed(2),
+          deliveryFeeHst: sheetData?.serverOrder?.deliveryFeeHST?.toFixed(2),
+          isRefunded: sheetData?.serverOrder?.refunded ? 'Yes' : 'No',
+          refundAmount: sheetData?.serverOrder?.refundedAmount?.toFixed(2),
+          refundReason: sheetData?.serverOrder?.refundReason,
+          utmSource: sheetData?.utmSource,
+          utmMedium: sheetData?.utmMedium,
+          utmCampaign: sheetData?.utmCampaign,
+          utmTerm: sheetData?.utmTerm,
+          utmContent: sheetData?.utmContent,
+          pickUpType:
+            sheetData?.serverOrder?.orderType !== 'delivery'
+              ? titleCase(sheetData?.serverOrder?.orderType)
+              : '',
+        });
+      });
+    } else {
+      data.forEach((sheetData) => {
+        orderData.push({
+          id: sheetData?.orderId,
+          storeNumber: sheetData?.storeId,
+          orderStatusDescription: mapOrderById(
+            sheetData?.orderStatus,
+            sheetData?.cancelledByCustomer,
+            sheetData?.cancelledByStore,
+          ),
+          // submittedDateTime: sheetData?.submittedDateTime
+          //   ? convertDateHandler(sheetData?.submittedDateTime) +
+          //     " " +
+          //     new Date(sheetData?.submittedDateTime).toLocaleString("en-US", {
+          //       hour: "2-digit",
+          //       minute: "2-digit",
+          //       second: "2-digit",
+          //       hour12: true,
+          //     })
+          //   : "",
+          // submittedDate: sheetData?.submittedDateTime,
+          submittedDateTime: sheetData?.orderDate,
+          orderVector: titleCase(sheetData?.orderVector),
+          orderType: titleCase(sheetData?.orderType),
+          transactionAmount: sheetData?.productTotal?.toFixed(2),
+          productTotal: sheetData?.productTotal?.toFixed(2),
+          deliveryFee: sheetData?.deliveryFee?.toFixed(2),
+          deliveryFeeHST: sheetData?.deliveryFeeHST?.toFixed(2),
+          grandTotal: sheetData?.grandTotal?.toFixed(2),
+          volumeTotalHL: sheetData?.volumeTotalHL,
+          singleUnit: sheetData?.singleUnits,
+          twoSixUnits: sheetData?.packUnits2_6,
+          eightEighteenUnits: sheetData?.packUnits8_18,
+          twentyFourPlusUnits: sheetData?.packUnits_24Plus,
+          openDateTime: sheetData?.openDateTime,
+          pickupReadyDateTime: sheetData?.pickUpReadyDateTime,
+          partialOrder: sheetData?.partialOrder ? 'Yes' : 'No',
+          completedByEmpId: sheetData?.completedByEmpId,
+          completedDateTime: sheetData?.completedDateTime,
+          idChecked: sheetData?.idChecked,
+          cancelledByEmpId: sheetData?.completedByEmpId,
+          cancelledDateTime: sheetData?.cancellationDate,
+          cancelReason: sheetData?.cancellationReason,
+          cancelledByCustomer: sheetData?.cancelledByCustomer ? 'Yes' : 'No',
+          cancelledByDriver: sheetData?.cancelledByDriver ? 'Yes' : 'No',
+          requestedPickuptime: sheetData?.requestedPickUpTime,
+          ccType: sheetData?.serverOrderCustomerDetails?.ccType,
+          ccLastFourNumber: sheetData?.serverOrderCustomerDetails?.cardNumber,
+          customerName: sheetData?.serverOrderCustomerDetails?.name,
+          customerType: sheetData?.serverOrderCustomerDetails?.customerType,
+          customerEmail: sheetData?.serverOrderCustomerDetails?.email,
+          postalCode: sheetData?.serverOrderCustomerDetails?.postalCode,
+          browserVersion: sheetData?.browserVersion,
+          deliveryType: sheetData?.serverOrderDeliveryDetails?.deliveryType,
+          deliveryEta: sheetData?.serverOrderDeliveryDetails?.deliveryETA,
+          deliveryScheduledDateTime:
+            sheetData?.serverOrderDeliveryDetails?.deliveryScheduledDateTime,
+          refunded: sheetData?.refunded ? 'Yes' : 'No',
+          refundedAmount: sheetData?.refundedAmount?.toFixed(2),
+          refundReason: sheetData?.refundReason,
+          deliverId: sheetData?.serverOrderDeliveryDetails?.deliveryId,
+          deliverName: sheetData?.serverOrderDeliveryDetails?.deliveryGuyName,
+          deliveredDate: sheetData?.serverOrderDeliveryDetails?.deliveryDate,
+          deliveryAddress:
+            sheetData?.serverOrderDeliveryDetails?.deliveryAddress,
+          deliveryCity: sheetData?.serverOrderDeliveryDetails?.deliveryCity,
+          deliveryPostalCode:
+            sheetData?.serverOrderDeliveryDetails?.deliveryPostalCode,
+          pickUpType:
+            sheetData?.orderType !== 'delivery' ? sheetData?.orderType : '',
+          customerDateOfBirth: sheetData?.serverOrderCustomerDetails?.dob,
+          customerSalutation: sheetData?.serverOrderCustomerDetails?.salutation,
+        });
+      });
+    }
+    orderData.forEach((order, index) => {
+      Object.entries(order).forEach((val, orderIndex) => {
+        let string =
+          generateCharacterFromNumber(orderIndex + 1) + `${index + 2}`;
+        sheetArg.cell(string).value(val[1]);
+      });
+    });
+    return sheetArg;
   };
 }
