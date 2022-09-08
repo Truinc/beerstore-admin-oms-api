@@ -125,4 +125,10 @@ export default () => ({
     connectionString: process.env.AZURE_BLOB_CONNECTION_STRING,
     blobUrl: process.env.AZURE_BLOB_URL,
   },
+  POS: {
+    url: process.env.POS_URL,
+    username: process.env.POS_USERNAME,
+    password: process.env.POS_PASSWORD,
+    token: process.env.POS_PASSWORD,
+  },
 });

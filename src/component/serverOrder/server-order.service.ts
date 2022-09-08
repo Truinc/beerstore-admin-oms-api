@@ -2,7 +2,6 @@
 /* eslint-disable prefer-const */
 import {
   BadRequestException,
-  ConsoleLogger,
   forwardRef,
   Inject,
   Injectable,
@@ -1283,7 +1282,7 @@ export class ServerOrderService {
       const response = await Promise.all([
         this.serverOrderRepository.save(orderToSave),
         this.orderHistoryService.create(createOrderHistoryDto),
-        // { ...(updateBeerGuy && this.updateBeerGuyOrder(bigCommOrder)) },
+        { ...(updateBeerGuy && this.updateBeerGuyOrder(bigCommOrder)) },
       ]);
 
       try {
@@ -1305,43 +1304,72 @@ export class ServerOrderService {
     }
   }
 
-  // to do refactor code for tables change
-  async handleBeerGuy(updateOrder: BeerGuyUpdateDto): Promise<ServerOrder> {
+  async handleBeerGuy(updateOrder: BeerGuyUpdateDto): Promise<any> {
     try {
-      const serverOrder = {
-        orderStatus: +updateOrder.orderStatus,
-        cancellationReason: updateOrder?.cancellationReason || '',
-        cancellationBy: updateOrder?.cancellationBy || '',
-        cancellationDate: moment.utc().format(),
-      };
-      const orderHistory = {
-        orderId: updateOrder.orderId,
-        orderStatus: updateOrder.orderStatus,
-        name: updateOrder.driverName || 'The Beer Guy',
-        identifier: '',
-      };
-      const orderDetails = {
-        status_id: updateOrder.orderStatus,
-      };
-      const customerProof = {
-        orderId: updateOrder.orderId,
-        underInfluence: updateOrder.underInfluence,
-        dobBefore: updateOrder.dobBefore,
-        photoId: updateOrder.photoId,
-        ...(updateOrder?.driverName && { driverName: updateOrder.driverName }),
-      };
       if (updateOrder.orderType === 'delivery') {
-        //TODO: fetch checkout id from bigcomm
+        const requests = [];
+        let prevOrder = await this.ordersService.getOrder(updateOrder.orderId);
+        let serverOrder;
+        if (+updateOrder.orderStatus === 10) {
+          //completed
+          prevOrder = {
+            ...prevOrder,
+            orderStatus: +updateOrder.orderStatus,
+            completedDateTime: moment.utc().format(),
+          };
+        } else if (+updateOrder.orderStatus === 5) {
+          // cancelled order
+          prevOrder = {
+            ...prevOrder,
+            orderStatus: +updateOrder.orderStatus,
+            cancellationDate: moment.utc().format(),
+            cancellationBy: updateOrder.cancellationBy,
+            cancellationReason: updateOrder.cancellationReason,
+            cancellationNote: updateOrder.cancellationNote,
+          };
+        }
+        const orderToSave = await this.serverOrderRepository.preload(prevOrder);
+        requests.push(this.serverOrderRepository.save(orderToSave));
 
-        const response = this.updateOrder(
+        const orderHistory = {
+          orderId: updateOrder.orderId,
+          orderStatus: updateOrder.orderStatus,
+          name: updateOrder.driverName || 'The Beer Guy',
+          identifier: '',
+        };
+        requests.push(this.orderHistoryService.create(orderHistory));
+
+        await this.sendRequestToPOS(+updateOrder.orderId);
+        this.sendMailOnStatusChange(
           updateOrder.orderId,
-          orderDetails,
-          serverOrder,
-          orderHistory,
-          customerProof,
-          '',
+          prevOrder,
+          updateOrder.orderStatus,
         );
-        return response;
+        try {
+          const billingAddress = prevOrder.billing_address;
+          const formFieldsObj = billingAddress.form_fields[0];
+          const { checkout_id: checkoutId } = JSON.parse(formFieldsObj.value);
+          if (formFieldsObj.checkoutId) {
+            this.sendPushNotification(
+              this.configService.get('beerstoreApp').title,
+              `Your Order #${updateOrder.orderId} ${
+                OrderstatusText[serverOrder.orderStatus]
+              }.`,
+              checkoutId,
+              updateOrder.orderId,
+              +serverOrder.orderStatus,
+              'delivery',
+            );
+          }
+        } catch (err) {}
+        const response = await Promise.all(requests);
+        return {
+          status: 1,
+          message:
+            +updateOrder.orderStatus === 10
+              ? 'Order Completed'
+              : 'Order Cancelled',
+        };
       } else {
         throw new BadRequestException('Order type is not delivery');
       }
@@ -1402,6 +1430,7 @@ export class ServerOrderService {
             cancellationBy.toLowerCase() === 'customer' ? '' : identifier,
         }),
       ]);
+      await this.sendRequestToPOS(id);
       this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus);
       try {
         if (checkoutId && orderType !== 'kiosk') {
@@ -1452,7 +1481,7 @@ export class ServerOrderService {
           );
         }
       } else if (prevOrder.orderType === 'delivery') {
-        // update beer guy
+        //
       }
 
       // if(prevOrder?.serverOrderProductDetails){
@@ -1482,7 +1511,7 @@ export class ServerOrderService {
         //cancelled
         prevOrder = {
           ...prevOrder,
-          cancellationDate: serverOrder.cancellationDate,
+          cancellationDate: moment.utc().format(),
           cancellationBy: serverOrder.cancellationBy,
           cancellationReason: serverOrder.cancellationReason,
           cancellationNote: serverOrder.cancellationNote,
@@ -1515,6 +1544,12 @@ export class ServerOrderService {
       requests.push(this.serverOrderRepository.save(orderToSave));
       requests.push(this.orderHistoryService.create(createOrderHistoryDto));
       const response = await Promise.all(requests);
+      if (+serverOrder.orderStatus === 10 || +serverOrder.orderStatus === 5) {
+        await this.sendRequestToPOS(+orderId);
+        if (prevOrder.orderType === 'delivery') {
+          this.cancelBeerGuyOrder(orderId, serverOrder.cancellationReason);
+        }
+      }
       this.sendMailOnStatusChange(orderId, prevOrder, serverOrder.orderStatus);
       try {
         if (checkoutId && prevOrder?.orderType !== 'kiosk') {
@@ -2311,4 +2346,227 @@ export class ServerOrderService {
     });
     return sheetArg;
   };
+
+  async sendRequestToPOS(orderId: number) {
+    try {
+      const getOrderDetail = await this.serverOrderDetail(orderId);
+      if (!getOrderDetail) {
+        throw new NotFoundException('order not found');
+      }
+      const getComplateOrderDetail = await this.completeDetail(
+        orderId,
+        parseInt(getOrderDetail.storeId),
+      );
+      const getXmldata = await this.createXmlData(getComplateOrderDetail);
+      console.log(getXmldata, 'getXmldata-------->>');
+      // const response = await lastValueFrom(
+      //   this.httpService
+      //     .post(this.configService.get('POS').url, getXmldata, {
+      //       headers: {
+      //         'content-type': 'application/xml',
+      //         Authorization: 'Basic ' + this.configService.get('POS').token,
+      //       },
+      //     })
+      //     .pipe(
+      //       map(async (response) => {
+      //         console.log(response, '------------->response');
+      //         return response.data || 'done';
+      //       }),
+      //       catchError(async (err) => {
+      //         console.log('err', err.message);
+      //         throw new BadRequestException(err.response.data);
+      //       }),
+      //     ),
+      // );
+      // return response;
+      return 'done!';
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+  async createXmlData(getOrderDetail: any) {
+    try {
+      let source = '';
+      let form_fields =
+        getOrderDetail.orderDetails.order.billing_address.form_fields.find(
+          (field) => 'Other Info' == field.name,
+        );
+      if (form_fields) {
+        form_fields = form_fields.value as string;
+      }
+      form_fields = JSON.parse(form_fields);
+      let Sequence =
+        getOrderDetail.orderDetails.order.billing_address.form_fields.find(
+          (field) => 'Sequence' == field.name,
+        );
+      if (Sequence) {
+        Sequence = Sequence.value as string;
+      }
+      Sequence = JSON.parse(Sequence);
+      const orderProducts = getOrderDetail.orderDetails.orderProducts;
+      Sequence.filter(({ variant_id: id1 }) =>
+        orderProducts.some(({ variant_id: id2 }) => id2 === id1),
+      );
+      /*  console.log(
+        getOrderDetail.orderDetails.orderProducts,
+        '-------orderProducts---------->>>>',
+      ); */
+      source = form_fields.source;
+      if (source == 'app') {
+        source = 'MOB';
+      } else if (source == 'website') {
+        source = 'BCO';
+      } else if (source == 'kiosk') {
+        source = 'ESS';
+      }
+      let customerType = '';
+      if (getOrderDetail.orderDetails.order.customer_id == 0) {
+        customerType = 'GUEST';
+      } else {
+        customerType = 'USER';
+      }
+      let xml = `<?xml version="1.0" encoding="utf-8"?>
+      <soap:Envelope
+      xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" soap:encodingStyle="http://www.w3.org/2003/05/soap-encoding">
+      <soap:Body>
+      <ECommerce xmlns="http://Ecommerce" xmlns:xsi="http://ww.w3.org/2003/05/soap-envelope" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+        <ETransaction xmlns="http://ECommerce">
+          <SiteNumber>${getOrderDetail.serverOrder.storeId}</SiteNumber>
+          <OrderID>${getOrderDetail.serverOrder.orderId}</OrderID>`;
+      if (getOrderDetail.serverOrder.orderType == 'pickup') {
+        xml += `<TransactionNumber>${getOrderDetail.serverOrder.transactionId}</TransactionNumber>`;
+      }
+      xml += `<Source>${source}</Source>
+          <Type>${getOrderDetail.serverOrder.orderType.toUpperCase()}</Type>
+          <CreationDatetime>${
+            getOrderDetail.serverOrder.orderDate
+              ? moment(getOrderDetail.serverOrder.orderDate).format(
+                  'YYYY-MM-DDTHH:mm:ss',
+                )
+              : null
+          }</CreationDatetime>
+          <CompletionDatetime>${
+            getOrderDetail.serverOrder.completedDateTime
+              ? moment(getOrderDetail.serverOrder.completedDateTime).format(
+                  'YYYY-MM-DDTHH:mm:ss',
+                )
+              : null
+          }</CompletionDatetime>
+          <Customer>
+            <CustomerID>${
+              getOrderDetail.orderDetails.order.customer_id
+            }</CustomerID>
+            <CustomerName>${
+              getOrderDetail.orderDetails.order.billing_address.first_name
+            } ${
+        getOrderDetail.orderDetails.order.billing_address.last_name
+      }</CustomerName>
+            <CustomerType>${customerType}</CustomerType>
+            <CustomerEmail>${
+              getOrderDetail.orderDetails.order.billing_address.email
+            }</CustomerEmail>
+            <CustomerPhone>${
+              getOrderDetail.orderDetails.order.billing_address.phone
+            }</CustomerPhone>
+            <CustomerAddress>${
+              getOrderDetail.orderDetails.order.billing_address.street_1
+            }</CustomerAddress>
+            <CustomerCity>${
+              getOrderDetail.orderDetails.order.billing_address.city
+            }</CustomerCity>
+            <CustomerPostalCode>${
+              getOrderDetail.orderDetails.order.billing_address.zip
+            }</CustomerPostalCode>
+            <CustomerProvince>ON</CustomerProvince>
+          </Customer>`;
+      if (Sequence.length > 0) {
+        Sequence.forEach((product, key) => {
+          xml += `<LineItem>
+              <SequenceNumber>${key + 1}</SequenceNumber>
+              <Sale>
+                <ArticleNumber>${
+                  product.sequence[0].sale.variant.sku.split('_')[0]
+                }</ArticleNumber>
+                <ArticleQuantity>${
+                  product.sequence[0].sale.quantity
+                }</ArticleQuantity>
+                <ArticleTotalPrice>${
+                  product.sequence[0].sale.variant.price_info.value
+                    .current_price.total_price
+                }</ArticleTotalPrice>
+                <ArticleTotalGST>${
+                  product.sequence[0].sale.variant.price_info.value
+                    .current_price.tax[0].tax_amount
+                }</ArticleTotalGST>
+                <ArticleTotalDeposit>${
+                  product.sequence[0].sale.variant.price_info.value
+                    .current_price.deposit
+                }</ArticleTotalDeposit>
+              </Sale>`;
+          if (product.cart_info.is_packup) {
+            xml += ` <Sub>
+                    <SubArticleNumber>${
+                      product.sequence[0].sub.variant.sku.split('_')[0]
+                    }</SubArticleNumber>
+                    <SubArticleQuantity>${
+                      product.sequence[0].sub.quantity
+                    }</SubArticleQuantity>
+                    <SubArticleTotalPrice>${
+                      product.sequence[0].sub.variant.price_info.value
+                        .current_price.total_price
+                    }</SubArticleTotalPrice>
+                    <SubArticleTotalGST>${
+                      product.sequence[0].sub.variant.price_info.value
+                        .current_price.tax[0].tax_amount
+                    }</SubArticleTotalGST>
+                    <SubArticleTotalDeposit>${
+                      product.sequence[0].sub.variant.price_info.value
+                        .current_price.deposit
+                    }</SubArticleTotalDeposit>
+                </Sub>`;
+          }
+          xml += `</LineItem>`;
+        });
+      }
+      if (getOrderDetail.serverOrder.orderType == 'pickup') {
+        xml += ` <LineItem>
+            <SequenceNumber>${
+              getOrderDetail.orderDetails.orderProducts.length + 1
+            }</SequenceNumber>
+            <Tender>
+              <TenderID>${
+                getOrderDetail.serverOrder.serverOrderCustomerDetails
+                  ? getOrderDetail.serverOrder.serverOrderCustomerDetails.ccType
+                  : null
+              }</TenderID>
+              <PaymentCardNumber>${
+                getOrderDetail.serverOrder.serverOrderCustomerDetails
+                  ? getOrderDetail.serverOrder.serverOrderCustomerDetails
+                      .cardNumber
+                  : null
+              }</PaymentCardNumber>
+              <PaymentAuthNumber>${
+                getOrderDetail.serverOrder.serverOrderCustomerDetails
+                  ? getOrderDetail.serverOrder.serverOrderCustomerDetails
+                      .authCode
+                  : null
+              }</PaymentAuthNumber>
+              <Amount>${
+                getOrderDetail.serverOrder.serverOrderCustomerDetails
+                  ? getOrderDetail.serverOrder.serverOrderCustomerDetails
+                      .cardAmount
+                  : null
+              }</Amount>
+            </Tender>
+          </LineItem>`;
+      }
+      xml += `</ETransaction>
+      </ECommerce>
+      </soap:Body>
+      </soap:Envelope>`;
+      return xml;
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
 }
