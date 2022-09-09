@@ -114,9 +114,7 @@ export default () => ({
     measurementId: process.env.FIREBASE_MEASUREMENT_ID,
   },
   appInsights: {
-    instrumentationKey:
-      process.env.INSTRUMENTATIONKEY ||
-      'InstrumentationKey=931d8d19-1e07-43c3-a109-89e4d8f3ea5b;IngestionEndpoint=https://centralus-2.in.applicationinsights.azure.com/;LiveEndpoint=https://centralus.livediagnostics.monitor.azure.com/',
+    instrumentationKey: process.env.INSTRUMENTATIONKEY,
   },
   azure: {
     containerName: process.env.AZURE_BLOB_CONTAINER_NAME,

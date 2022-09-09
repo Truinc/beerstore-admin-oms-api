@@ -383,7 +383,7 @@ export class ServerOrderService {
           const offset = moment()
             .tz(this.configService.get('timezone').zone)
             .utcOffset();
-          console.log(`Offset in hours: ${offset / 60}`);
+          //console.log(`Offset in hours: ${offset / 60}`);
           offsetHours = (offset / 60) * -1;
         } catch (err) {}
 
@@ -496,8 +496,8 @@ export class ServerOrderService {
                 .format('YYYY-MM-DD hh:mm A')
             : '',
           requestedPickUpTime: order?.requestedPickUpTime
-            ? momentTz(order.requestedPickUpTime)
-                .tz(this.configService.get('timezone').zone)
+            ? moment(order?.requestedPickUpTime)
+                .utc()
                 .format('YYYY-MM-DD hh:mm A')
             : '',
           intransitDate: order?.intransitDate
@@ -724,8 +724,8 @@ export class ServerOrderService {
                     .format('YYYY-MM-DD hh:mm A')
                 : '',
               requestedPickUpTime: serverOrderData?.requestedPickUpTime
-                ? momentTz(serverOrderData.requestedPickUpTime)
-                    .tz(this.configService.get('timezone').zone)
+                ? moment(serverOrderData?.requestedPickUpTime)
+                    .utc()
                     .format('YYYY-MM-DD hh:mm A')
                 : '',
               intransitDate: serverOrderData?.intransitDate
@@ -1309,18 +1309,19 @@ export class ServerOrderService {
       if (updateOrder.orderType === 'delivery') {
         const requests = [];
         let prevOrder = await this.ordersService.getOrder(updateOrder.orderId);
-        let serverOrder;
+        let serverOrder = await this.serverOrderDetail(+updateOrder.orderId);
+
         if (+updateOrder.orderStatus === 10) {
           //completed
-          prevOrder = {
-            ...prevOrder,
+          serverOrder = {
+            ...serverOrder,
             orderStatus: +updateOrder.orderStatus,
             completedDateTime: moment.utc().format(),
           };
         } else if (+updateOrder.orderStatus === 5) {
           // cancelled order
-          prevOrder = {
-            ...prevOrder,
+          serverOrder = {
+            ...serverOrder,
             orderStatus: +updateOrder.orderStatus,
             cancellationDate: moment.utc().format(),
             cancellationBy: updateOrder.cancellationBy,
@@ -1328,13 +1329,24 @@ export class ServerOrderService {
             cancellationNote: updateOrder.cancellationNote,
           };
         }
-        const orderToSave = await this.serverOrderRepository.preload(prevOrder);
+        if (serverOrder.serverOrderDeliveryDetails) {
+          serverOrder.serverOrderDeliveryDetails.deliveryId =
+            updateOrder?.deliveryId;
+          serverOrder.serverOrderDeliveryDetails.deliveryGuyName =
+            updateOrder?.deliveryGuyName;
+        }
+        await this.ordersService.updateOrder(updateOrder.orderId, {
+          status_id: +updateOrder.orderStatus,
+        });
+        const orderToSave = await this.serverOrderRepository.preload(
+          serverOrder,
+        );
         requests.push(this.serverOrderRepository.save(orderToSave));
 
         const orderHistory = {
           orderId: updateOrder.orderId,
           orderStatus: updateOrder.orderStatus,
-          name: updateOrder.driverName || 'The Beer Guy',
+          name: updateOrder.deliveryGuyName || 'The Beer Guy',
           identifier: '',
         };
         requests.push(this.orderHistoryService.create(orderHistory));
@@ -1342,7 +1354,7 @@ export class ServerOrderService {
         await this.sendRequestToPOS(+updateOrder.orderId);
         this.sendMailOnStatusChange(
           updateOrder.orderId,
-          prevOrder,
+          serverOrder,
           updateOrder.orderStatus,
         );
         try {
@@ -1361,8 +1373,10 @@ export class ServerOrderService {
               'delivery',
             );
           }
-        } catch (err) {}
-        const response = await Promise.all(requests);
+        } catch (err) {
+          console.log('err1 beer-guy', err);
+        }
+        await Promise.all(requests);
         return {
           status: 1,
           message:
@@ -1374,6 +1388,7 @@ export class ServerOrderService {
         throw new BadRequestException('Order type is not delivery');
       }
     } catch (err) {
+      console.log('err2 beer-guy', err);
       throw new BadRequestException(err.message);
     }
   }
@@ -2174,17 +2189,17 @@ export class ServerOrderService {
       {
         containerName,
         blobName: fileName,
-        permissions: BlobSASPermissions.parse('cwr'),
+        permissions: BlobSASPermissions.parse('r'),
         startsOn: new Date(),
-        expiresOn: new Date(new Date().valueOf() + 1286400),
+        expiresOn: new Date(new Date().valueOf() + 86400000),
       },
       new StorageSharedKeyCredential(account, storageKey),
     ).toString();
     // console.log(
     //   'url',
-    //   `https://${account}.${blobUrl}/${containerName}/${fileName}?${blobSAS}`,
+    //   `${account}.${blobUrl}/${containerName}/${fileName}?${blobSAS}`,
     // );
-    return `https://${account}.${blobUrl}/${containerName}/${fileName}?${blobSAS}`;
+    return `${blobUrl}/${containerName}/${fileName}?${blobSAS}`;
   };
 
   createReportHandler = async (
@@ -2357,8 +2372,9 @@ export class ServerOrderService {
         orderId,
         parseInt(getOrderDetail.storeId),
       );
+      console.log('getOrderDetail', getOrderDetail, getComplateOrderDetail);
       const getXmldata = await this.createXmlData(getComplateOrderDetail);
-      console.log(getXmldata, 'getXmldata-------->>');
+      // console.log(getXmldata, 'getXmldata-------->>');
       // const response = await lastValueFrom(
       //   this.httpService
       //     .post(this.configService.get('POS').url, getXmldata, {
