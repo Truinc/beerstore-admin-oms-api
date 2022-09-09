@@ -1,8 +1,6 @@
 import {
-  BadRequestException,
   Body,
   Controller,
-  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -71,6 +69,15 @@ export class ServerOrderController {
   async create(@Body() serverOrder: CreateServerOrderDto) {
     const order = await this.serverOrderService.addServerOrder(serverOrder);
     return order;
+  }
+
+  @ApiUnauthorizedResponse({ description: 'Unauthorized Response' })
+  @UseGuards(JwtAccessGuard)
+  @Roles(RolesEnum.superadmin, RolesEnum.storemanager, RolesEnum.reportingadmin)
+  @HttpCode(HttpStatus.OK)
+  @Get('/reportStatus/:reportId')
+  async getreportStatus(@Param('reportId') reportId: string) {
+    return this.serverOrderService.getReportStatus(reportId);
   }
 
   @ApiQuery({
