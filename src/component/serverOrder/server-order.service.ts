@@ -383,7 +383,7 @@ export class ServerOrderService {
           const offset = moment()
             .tz(this.configService.get('timezone').zone)
             .utcOffset();
-          console.log(`Offset in hours: ${offset / 60}`);
+          //console.log(`Offset in hours: ${offset / 60}`);
           offsetHours = (offset / 60) * -1;
         } catch (err) {}
 
@@ -496,8 +496,8 @@ export class ServerOrderService {
                 .format('YYYY-MM-DD hh:mm A')
             : '',
           requestedPickUpTime: order?.requestedPickUpTime
-            ? momentTz(order.requestedPickUpTime)
-                .tz(this.configService.get('timezone').zone)
+            ? moment(order?.requestedPickUpTime)
+                .utc()
                 .format('YYYY-MM-DD hh:mm A')
             : '',
           intransitDate: order?.intransitDate
@@ -724,8 +724,8 @@ export class ServerOrderService {
                     .format('YYYY-MM-DD hh:mm A')
                 : '',
               requestedPickUpTime: serverOrderData?.requestedPickUpTime
-                ? momentTz(serverOrderData.requestedPickUpTime)
-                    .tz(this.configService.get('timezone').zone)
+                ? moment(serverOrderData?.requestedPickUpTime)
+                    .utc()
                     .format('YYYY-MM-DD hh:mm A')
                 : '',
               intransitDate: serverOrderData?.intransitDate
@@ -2174,17 +2174,17 @@ export class ServerOrderService {
       {
         containerName,
         blobName: fileName,
-        permissions: BlobSASPermissions.parse('cwr'),
+        permissions: BlobSASPermissions.parse('r'),
         startsOn: new Date(),
-        expiresOn: new Date(new Date().valueOf() + 1286400),
+        expiresOn: new Date(new Date().valueOf() + 86400000),
       },
       new StorageSharedKeyCredential(account, storageKey),
     ).toString();
     // console.log(
     //   'url',
-    //   `https://${account}.${blobUrl}/${containerName}/${fileName}?${blobSAS}`,
+    //   `${account}.${blobUrl}/${containerName}/${fileName}?${blobSAS}`,
     // );
-    return `https://${account}.${blobUrl}/${containerName}/${fileName}?${blobSAS}`;
+    return `${blobUrl}/${containerName}/${fileName}?${blobSAS}`;
   };
 
   createReportHandler = async (
@@ -2357,6 +2357,7 @@ export class ServerOrderService {
         orderId,
         parseInt(getOrderDetail.storeId),
       );
+      console.log('getOrderDetail', getOrderDetail, getComplateOrderDetail);
       const getXmldata = await this.createXmlData(getComplateOrderDetail);
       console.log(getXmldata, 'getXmldata-------->>');
       // const response = await lastValueFrom(
