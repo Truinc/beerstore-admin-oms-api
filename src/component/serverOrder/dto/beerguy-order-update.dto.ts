@@ -44,11 +44,11 @@ export class BeerGuyUpdateDto {
   @IsString()
   readonly cancellationDate: string;
 
-  @ApiProperty({ type: String })
-  @IsOptional()
-  @MaxLength(200)
-  @IsString()
-  readonly cancellationBy: string;
+  // @ApiProperty({ type: String })
+  // @IsOptional()
+  // @MaxLength(200)
+  // @IsString()
+  // readonly cancellationBy: string;
 
   @ApiProperty({ type: String })
   @IsOptional()

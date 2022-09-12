@@ -1324,7 +1324,8 @@ export class ServerOrderService {
             ...serverOrder,
             orderStatus: +updateOrder.orderStatus,
             cancellationDate: moment.utc().format(),
-            cancellationBy: updateOrder.cancellationBy,
+            // cancellationBy: updateOrder.cancellationBy || "The Beer Guy",
+            cancellationBy: "The Beer Guy",
             cancellationReason: updateOrder.cancellationReason,
             cancellationNote: updateOrder.cancellationNote,
           };
