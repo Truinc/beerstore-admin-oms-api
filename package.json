@@ -21,6 +21,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@azure/storage-blob": "^12.11.0",
     "@firebase/app": "^0.7.29",
     "@firebase/database": "^0.13.3",
     "@nestjs-modules/mailer": "^1.6.1",
@@ -55,7 +56,8 @@
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
     "swagger-ui-express": "^4.3.0",
-    "typeorm": "^0.2.44"
+    "typeorm": "^0.2.44",
+    "xlsx-populate": "^1.21.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^8.0.0",
