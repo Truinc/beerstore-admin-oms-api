@@ -2373,27 +2373,27 @@ export class ServerOrderService {
       console.log('getOrderDetail', getOrderDetail, getComplateOrderDetail);
       const getXmldata = await this.createXmlData(getComplateOrderDetail);
       console.log(getXmldata, 'getXmldata-------->>');
-      const response = await lastValueFrom(
-        this.httpService
-          .post(this.configService.get('POS').url, getXmldata, {
-            headers: {
-              'content-type': 'application/xml',
-              Authorization: 'Basic ' + this.configService.get('POS').token,
-            },
-          })
-          .pipe(
-            map(async (response) => {
-              console.log(response, '------------->response');
-              return response.data || 'done';
-            }),
-            catchError(async (err) => {
-              console.log('err', err.message);
-              throw new BadRequestException(err.response.data);
-            }),
-          ),
-      );
-      return response;
-      return 'done!';
+      // const response = await lastValueFrom(
+      //   this.httpService
+      //     .post(this.configService.get('POS').url, getXmldata, {
+      //       headers: {
+      //         'content-type': 'application/xml',
+      //         Authorization: 'Basic ' + this.configService.get('POS').token,
+      //       },
+      //     })
+      //     .pipe(
+      //       map(async (response) => {
+      //         console.log(response, '------------->response');
+      //         return response.data || 'done';
+      //       }),
+      //       catchError(async (err) => {
+      //         console.log('err', err.message);
+      //         throw new BadRequestException(err.response.data);
+      //       }),
+      //     ),
+      // );
+      // return response;
+      return 'done';
     } catch (error) {
       throw new BadRequestException(error.message);
     }
