@@ -1222,6 +1222,7 @@ export class ServerOrderService {
           });
         }
 
+        console.log('check1', JSON.stringify(refundQuote));
         if (refundQuote.items.length > 0) {
           const paymentRefund = {
             ...refundQuote,
@@ -1238,10 +1239,22 @@ export class ServerOrderService {
             refundQuote,
           );
           paymentRefund.payments[0].amount = quotesRes.data.total_refund_amount;
-          const refundHandler = await this.ordersService.refundHandler(
-            id,
-            paymentRefund,
+          console.log(
+            'quotesRes',
+            JSON.stringify({
+              paymentRefund,
+            }),
           );
+          try {
+            const refundHandler = await this.ordersService.refundHandler(
+              id,
+              paymentRefund,
+            );
+            console.log('refundHandler', refundHandler);
+          } catch (err) {
+            console.log('err', err.message);
+            throw new BadRequestException(err.message);
+          }
           if (serverOrder.orderType === 'delivery') {
             updateBeerGuy = true;
           }
@@ -1325,7 +1338,7 @@ export class ServerOrderService {
             orderStatus: +updateOrder.orderStatus,
             cancellationDate: moment.utc().format(),
             // cancellationBy: updateOrder.cancellationBy || "The Beer Guy",
-            cancellationBy: "The Beer Guy",
+            cancellationBy: 'The Beer Guy',
             cancellationReason: updateOrder.cancellationReason,
             cancellationNote: updateOrder.cancellationNote,
           };
@@ -1450,7 +1463,7 @@ export class ServerOrderService {
       this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus);
       try {
         if (checkoutId && orderType !== 'kiosk') {
-          if (orderType === 'curbside') {
+          if (orderType === 'curbside' || orderType === 'pickup') {
             await this.curbSideService.releaseSlotOnCancel(checkoutId);
           }
           this.sendPushNotification(
