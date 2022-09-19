@@ -437,7 +437,7 @@
                 </tr>
                 <% if(orderDetails?.refunded) { %>
                   <tr>
-                    <td style="padding:0 25px;background:#f4f4f4" bgcolor="#f4f4f4">
+                    <td style="padding:0 25px 25px;background:#f4f4f4" bgcolor="#f4f4f4">
                       <table
                         style="background:#fff;border:1px solid #dddddd;border-collapse:separate;border-radius:10px"
                         width="100%" cellspacing="0" cellpadding="0" border="0">
@@ -464,10 +464,10 @@
                               inventory. Your Cart items and prices have been updated accordingly.
                             </td>
                           </tr>
-                          <!-- <tr>
+                          <tr>
                             <td colspan="3" style="height:30px" height="30">
                             </td>
-                          </tr> -->
+                          </tr>
                           <tr>
                             <td colspan="3" style="padding:0 15px">
                               <table width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%!important">
@@ -1048,10 +1048,10 @@
                                   $<%= orderDetails?.grandTotal || 0.0 %>
                                 </td>
                               </tr>
-                              <tr>
+                              <!-- <tr>
                                 <td colspan="2" style="height:15px" height="15">
                                 </td>
-                              </tr>
+                              </tr> -->
                               <% if(orderDetails?.refundedAmt > 0 ) { %>
                               <tr>
                                 <td
@@ -1120,6 +1120,11 @@
                   </tr>
                 </tbody>
               </table>
+            </td>
+          </tr>
+          <tr>
+            <td class="space_left_right" style="width:100%;padding: 0 25px">
+              <hr style="margin: 0;border: none;border-top: 1px solid #ddd;">
             </td>
           </tr>
           <tr>
