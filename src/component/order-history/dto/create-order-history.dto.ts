@@ -31,6 +31,13 @@ export class CreateOrderHistoryDto {
   @MaxLength(200)
   readonly identifier: string;
 
+  @ApiProperty({ type: String })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  readonly updatedDate?: string;
+
+
   // @ApiProperty({ type: Number })
   // @IsOptional()
   // @IsNumber()

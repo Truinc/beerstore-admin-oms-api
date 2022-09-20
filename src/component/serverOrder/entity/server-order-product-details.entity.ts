@@ -1,10 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  ManyToOne,
-} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
 import { ServerOrder } from './server-order.entity';
 
 export enum OrderEnum {
@@ -35,7 +30,7 @@ export class ServerOrderProductDetails {
   @Column({
     type: 'int',
     nullable: false,
-    default: 0
+    default: 0,
   })
   productId: number;
 
@@ -43,7 +38,7 @@ export class ServerOrderProductDetails {
   @Column({
     type: 'int',
     nullable: false,
-    default: 0
+    default: 0,
   })
   variantId: number;
 
@@ -103,67 +98,71 @@ export class ServerOrderProductDetails {
 
   @ApiProperty({ type: 'string' })
   @Column({
-    type: "nvarchar"
+    type: 'nvarchar',
   })
   containerType: string;
 
   @ApiProperty({ type: Number })
   @Column({
-    type: "money",
+    type: 'money',
   })
   itemTotal: number;
 
   @ApiProperty({ type: Number })
   @Column({
-    type: "decimal",
+    type: 'decimal',
     precision: 10,
-    scale: 8
+    scale: 8,
   })
   itemHLTotal: number;
 
   @ApiProperty({ type: Boolean })
   @Column({
-    default: false
+    default: false,
   })
   available: boolean;
 
   @ApiProperty({ type: String })
   @Column({
     type: 'nvarchar',
-    nullable: true
+    nullable: true,
   })
   utmSource: string;
 
   @ApiProperty({ type: String })
   @Column({
     type: 'nvarchar',
-    nullable: true
+    nullable: true,
   })
   utmMedium: string;
 
   @ApiProperty({ type: String })
   @Column({
     type: 'nvarchar',
-    nullable: true
+    nullable: true,
   })
   utmCampaign: string;
 
   @ApiProperty({ type: String })
   @Column({
     type: 'nvarchar',
-    nullable: true
+    nullable: true,
   })
   utmTerm: string;
 
   @ApiProperty({ type: String })
   @Column({
     type: 'nvarchar',
-    nullable: true
+    nullable: true,
   })
   utmContent: string;
 
-  @ManyToOne(() => ServerOrder, (serverOrder) => serverOrder.serverOrderProductDetails, {
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(
+    () => ServerOrder,
+    (serverOrder) => serverOrder.serverOrderProductDetails,
+    {
+      onDelete: 'CASCADE',
+    },
+  )
   serverOrder: ServerOrder;
 }

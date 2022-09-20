@@ -17,12 +17,16 @@ import { ServerOrderDeliveryDetails } from './entity/server-order-delivery-detai
 import { ServerOrderProductDetails } from './entity/server-order-product-details.entity';
 import { MailModule } from 'src/mail/mail.module';
 import { BeerModule } from '@beerstore/core/component/beer/beer.module';
+import { CurbSideModule } from '@beerstore/core/component/curbside-slot/curb-side.module';
+import { User } from '../user/entity/user.entity';
+import { ReportStatusEntity } from './entity/report.entity';
 
 @Module({
   imports: [
     AuthModule,
     HttpModule,
     MailModule,
+    CurbSideModule,
     forwardRef(() => OrdersModule),
     OrderHistoryModule,
     BamboraModule,
@@ -35,11 +39,13 @@ import { BeerModule } from '@beerstore/core/component/beer/beer.module';
       CustomerProof,
       ServerOrderCustomerDetails,
       ServerOrderDeliveryDetails,
-      ServerOrderProductDetails
+      ServerOrderProductDetails,
+      User,
+      ReportStatusEntity,
     ]),
   ],
   providers: [ServerOrderService],
   controllers: [ServerOrderController],
-  exports: [ServerOrderService]
+  exports: [ServerOrderService],
 })
 export class ServerOrderModule {}

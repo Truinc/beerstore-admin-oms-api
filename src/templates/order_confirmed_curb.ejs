@@ -434,14 +434,14 @@
                 <tr>
                   <td class="space_left_right space-bottom" style="width:100%;padding: 0 25px; padding-bottom: 40px;">
                     <p class="para" style="color:#404040; font-size:18px; margin:0;">To view the status of your order
-                      please visit <a href="[thankyou_link]"
+                      please visit <a href="<%= prevOrdersLink %>"
                         style="color: #f4b233; text-decoration: none; font-weight: bold;">Your Orders</a> page on the
                       Beer Store.</p>
                   </td>
                 </tr>
                 <% if(orderDetails?.refunded) { %>
                   <tr>
-                    <td style="padding:0 25px;background:#f4f4f4" bgcolor="#f4f4f4">
+                    <td style="padding:0 25px 25px;background:#f4f4f4" bgcolor="#f4f4f4">
                       <table
                         style="background:#fff;border:1px solid #dddddd;border-collapse:separate;border-radius:10px"
                         width="100%" cellspacing="0" cellpadding="0" border="0">
@@ -528,7 +528,7 @@
                                         </td>
                                         <td
                                           style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#ef2753;text-align:left;vertical-align:middle;padding-left:15px;padding-right:15px;font-weight:bold; width: 14%!important;">
-                                          -$<%= product.price %>
+                                          -$<%= product.onSale ? product.salePrice : product.price %>
                                         </td>
                                         <td
                                           style="font-family:Arial,Helvetica,sans-serif,Montserrat;font-size:14px;color:#ef2753;text-align:right;vertical-align:middle;padding-right:15px;font-weight:bold;  width: 20%!important;">
@@ -1070,10 +1070,10 @@
                                   $<%= orderDetails?.grandTotal || 0 %>
                                 </td>
                               </tr>
-                              <tr>
+                              <!-- <tr>
                                 <td colspan="2" style="height:15px" height="15">
                                 </td>
-                              </tr>
+                              </tr> -->
                               <% if(orderDetails?.refundedAmt > 0 ) { %>
                                 <tr>
                                   <td
@@ -1142,6 +1142,11 @@
                   </tr>
                 </tbody>
               </table>
+            </td>
+          </tr>
+          <tr>
+            <td class="space_left_right" style="width:100%;padding: 0 25px">
+              <hr style="margin: 0;border: none;border-top: 1px solid #ddd;">
             </td>
           </tr>
           <tr>

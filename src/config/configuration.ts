@@ -97,10 +97,11 @@ export default () => ({
     port: process.env.MAIL_PORT,
     username: process.env.MAIL_USERNAME,
     password: process.env.MAIL_PASSWORD,
-    site_base_url: process.env.SITE_BASE_URL
+    site_base_url: process.env.SITE_BASE_URL,
+    orders_page_url: process.env.MAIL_REDIRECT_LINK,
   },
   timezone: {
-    zone: process.env.TIME_ZONE
+    zone: process.env.TIME_ZONE,
   },
   firebase: {
     apiKey: process.env.FIREBASE_APIKEY,
@@ -111,5 +112,21 @@ export default () => ({
     messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
     appId: process.env.FIREBASE_APPID,
     measurementId: process.env.FIREBASE_MEASUREMENT_ID,
-  }
+  },
+  appInsights: {
+    instrumentationKey: process.env.INSTRUMENTATIONKEY,
+  },
+  azure: {
+    containerName: process.env.AZURE_BLOB_CONTAINER_NAME,
+    accountName: process.env.AZURE_BLOB_ACCOUNT_NAME,
+    storageKey: process.env.AZURE_BLOB_STORAGE_KEY,
+    connectionString: process.env.AZURE_BLOB_CONNECTION_STRING,
+    blobUrl: process.env.AZURE_BLOB_URL,
+  },
+  POS: {
+    url: process.env.POS_URL,
+    username: process.env.POS_USERNAME,
+    password: process.env.POS_PASSWORD,
+    token: process.env.POS_PASSWORD,
+  },
 });
