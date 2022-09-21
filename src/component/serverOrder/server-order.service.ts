@@ -391,7 +391,6 @@ export class ServerOrderService {
           .utc(`${maxDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss')
           .add(offsetHours, 'hours')
           .format('');
-        // console.log('eeee', fromDate, toDate);
         if (min_date_created && max_date_created) {
           // if (status_id) {
           table.andWhere(
@@ -577,7 +576,7 @@ export class ServerOrderService {
           const offset = moment()
             .tz(this.configService.get('timezone').zone)
             .utcOffset();
-          console.log(`Offset in hours: ${offset / 60}`);
+          // console.log(`Offset in hours: ${offset / 60}`);
           offsetHours = (offset / 60) * -1;
         } catch (err) {}
         const minDate = moment.utc(min_date_created).format('YYYY-MM-DD');
@@ -1218,20 +1217,29 @@ export class ServerOrderService {
 
         console.log('check1', JSON.stringify(refundQuote));
         if (refundQuote.items.length > 0) {
-          const paymentRefund = {
-            ...refundQuote,
-            payments: [
-              {
-                provider_id: 'storecredit',
-                amount: -1,
-                offline: false,
-              },
-            ],
-          };
+          // const paymentRefund = {
+          //   ...refundQuote,
+          //   payments: [
+          //     {
+          //       provider_id: 'storecredit',
+          //       amount: -1,
+          //       offline: false,
+          //     },
+          //   ],
+          // };
           const quotesRes = await this.ordersService.setRefundQuotes(
             id,
             refundQuote,
           );
+
+          const paymentRefund = {
+            ...refundQuote,
+            payments:
+              serverOrder?.serverOrderCustomerDetails?.customerId === `0`
+                ? quotesRes.data.refund_methods[1]
+                : quotesRes.data.refund_methods[0],
+          };
+          console.log(quotesRes.data.refund_methods, "<== quotesRes");
           paymentRefund.payments[0].amount = quotesRes.data.total_refund_amount;
           console.log(
             'quotesRes',
@@ -1516,7 +1524,7 @@ export class ServerOrderService {
     try {
       const { amount, ...orderDetails } = serverOrder;
       let prevOrder = await this.serverOrderDetail(+orderId);
-      console.log('prevOrder', prevOrder);
+      // console.log('prevOrder', prevOrder);
       if (
         prevOrder.orderType === 'pickup' ||
         prevOrder.orderType === 'curbside'
@@ -1680,7 +1688,6 @@ export class ServerOrderService {
           const ele = data.find(
             (product) => +product.id === +details.productId,
           );
-          // console.log('ele', ele);
           let imageUrl = ele?.custom_fields.find(
             (x) => x.name === 'product_image_1',
           )?.value;
@@ -2129,7 +2136,7 @@ export class ServerOrderService {
           }),
         ),
     );
-    console.log('beerguy update order', updateOrderRes);
+    // console.log('beerguy update order', updateOrderRes);
     return updateOrderRes;
   };
 
@@ -2273,7 +2280,7 @@ export class ServerOrderService {
     let orderData = [];
     if (type === 'order') {
       data.forEach((sheetData) => {
-        console.log('sheetData', sheetData);
+        // console.log('sheetData', sheetData);
         orderData.push({
           id: sheetData.orderId,
           storeNumber: sheetData?.serverOrder?.storeId,
@@ -2416,9 +2423,9 @@ export class ServerOrderService {
         orderId,
         parseInt(getOrderDetail.storeId),
       );
-      console.log('getOrderDetail', getOrderDetail, getComplateOrderDetail);
+      // console.log('getOrderDetail', getOrderDetail, getComplateOrderDetail);
       const getXmldata = await this.createXmlData(getComplateOrderDetail);
-      console.log(getXmldata, 'getXmldata-------->>');
+      // console.log(getXmldata, 'getXmldata-------->>');
       // const response = await lastValueFrom(
       //   this.httpService
       //     .post(this.configService.get('POS').url, getXmldata, {
