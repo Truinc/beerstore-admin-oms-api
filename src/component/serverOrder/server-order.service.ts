@@ -69,6 +69,7 @@ import {
 import { DefaultAzureCredential } from '@azure/identity';
 import {
   addHeadersToSheet,
+  appInsightslog,
   generateCharacterFromNumber,
   mapOrderById,
   option,
@@ -262,13 +263,6 @@ export class ServerOrderService {
         items: parsedItems,
       };
     } catch (err) {
-      // appInsightslog(
-      //   'Fetch Server Orders',
-      //   {
-      //     err: err.message,
-      //   },
-      //   this.appInsightslogKey(),
-      // );
       throw new BadRequestException(err.message);
     }
   }
@@ -397,7 +391,6 @@ export class ServerOrderService {
           .utc(`${maxDate} 23:59:59`, 'YYYY-MM-DD HH:mm:ss')
           .add(offsetHours, 'hours')
           .format('');
-        // console.log('eeee', fromDate, toDate);
         if (min_date_created && max_date_created) {
           // if (status_id) {
           table.andWhere(
@@ -583,7 +576,7 @@ export class ServerOrderService {
           const offset = moment()
             .tz(this.configService.get('timezone').zone)
             .utcOffset();
-          console.log(`Offset in hours: ${offset / 60}`);
+          // console.log(`Offset in hours: ${offset / 60}`);
           offsetHours = (offset / 60) * -1;
         } catch (err) {}
         const minDate = moment.utc(min_date_created).format('YYYY-MM-DD');
@@ -1222,26 +1215,53 @@ export class ServerOrderService {
           });
         }
 
+        console.log('check1', JSON.stringify(refundQuote));
         if (refundQuote.items.length > 0) {
-          const paymentRefund = {
-            ...refundQuote,
-            payments: [
-              {
-                provider_id: 'storecredit',
-                amount: -1,
-                offline: false,
-              },
-            ],
-          };
+          // const paymentRefund = {
+          //   ...refundQuote,
+          //   payments: [
+          //     {
+          //       provider_id: 'storecredit',
+          //       amount: -1,
+          //       offline: false,
+          //     },
+          //   ],
+          // };
           const quotesRes = await this.ordersService.setRefundQuotes(
             id,
             refundQuote,
           );
+
+          const paymentRefund = {
+            ...refundQuote,
+            payments:
+              serverOrder?.serverOrderCustomerDetails?.customerId === `0`
+                ? quotesRes.data.refund_methods[1]
+                : quotesRes.data.refund_methods[0],
+          };
+          console.log(quotesRes.data.refund_methods, "<== quotesRes");
           paymentRefund.payments[0].amount = quotesRes.data.total_refund_amount;
-          const refundHandler = await this.ordersService.refundHandler(
-            id,
-            paymentRefund,
+          console.log(
+            'quotesRes',
+            JSON.stringify({
+              paymentRefund,
+            }),
           );
+          try {
+            const refundHandler = await this.ordersService.refundHandler(
+              id,
+              paymentRefund,
+            );
+            this.appInsightsEntry('updateOrderDetails', {
+              refundHandler,
+              orderId: id,
+              orderStatus: serverOrder?.orderStatus,
+            });
+            console.log('refundHandler', refundHandler);
+          } catch (err) {
+            console.log('err', err.message);
+            throw new BadRequestException(err.message);
+          }
           if (serverOrder.orderType === 'delivery') {
             updateBeerGuy = true;
           }
@@ -1325,7 +1345,7 @@ export class ServerOrderService {
             orderStatus: +updateOrder.orderStatus,
             cancellationDate: moment.utc().format(),
             // cancellationBy: updateOrder.cancellationBy || "The Beer Guy",
-            cancellationBy: "The Beer Guy",
+            cancellationBy: 'The Beer Guy',
             cancellationReason: updateOrder.cancellationReason,
             cancellationNote: updateOrder.cancellationNote,
           };
@@ -1409,12 +1429,27 @@ export class ServerOrderService {
       } = data;
       if (orderType === 'pickup' || orderType === 'curbside') {
         if (transactionId) {
-          await this.bamboraService.UpdatePaymentStatus(transactionId, {
-            amount: 0,
+          const response = await this.bamboraService.UpdatePaymentStatus(
+            transactionId,
+            {
+              amount: 0,
+            },
+          );
+          this.appInsightsEntry('cancelOrder', {
+            BamboraStatus: response,
+            orderId: id,
+            orderStatus: 5,
           });
         }
       } else if (orderType === 'delivery') {
-        await this.cancelBeerGuyOrder(`${id}`, cancellationReason);
+        const beerguyResponse = await this.cancelBeerGuyOrder(
+          `${id}`,
+          cancellationReason,
+        );
+        this.appInsightsEntry('cancelOrder', {
+          BeerGuyStatus: beerguyResponse,
+          orderId: id,
+        });
       }
       const resp = await Promise.all([
         this.ordersService.updateOrder(`${id}`, {
@@ -1450,8 +1485,14 @@ export class ServerOrderService {
       this.sendMailOnStatusChange(`${id}`, serverOrder, +orderStatus);
       try {
         if (checkoutId && orderType !== 'kiosk') {
-          if (orderType === 'curbside') {
-            await this.curbSideService.releaseSlotOnCancel(checkoutId);
+          if (orderType === 'curbside' || orderType === 'pickup') {
+            const curbsideRelease =
+              await this.curbSideService.releaseSlotOnCancel(checkoutId);
+            this.appInsightsEntry('cancelOrder', {
+              BeerGuyStatus: curbsideRelease,
+              orderId: id,
+              orderStatus,
+            });
           }
           this.sendPushNotification(
             this.configService.get('beerstoreApp').title,
@@ -1483,18 +1524,23 @@ export class ServerOrderService {
     try {
       const { amount, ...orderDetails } = serverOrder;
       let prevOrder = await this.serverOrderDetail(+orderId);
-      console.log('prevOrder', prevOrder);
+      // console.log('prevOrder', prevOrder);
       if (
         prevOrder.orderType === 'pickup' ||
         prevOrder.orderType === 'curbside'
       ) {
         if (serverOrder?.transactionId) {
-          await this.bamboraService.UpdatePaymentStatus(
+          const bamboreResponse = await this.bamboraService.UpdatePaymentStatus(
             serverOrder.transactionId,
             {
               amount: Number(parseFloat(amount).toFixed(2)),
             },
           );
+          this.appInsightsEntry('updateOrder', {
+            BamboraStatus: bamboreResponse,
+            orderId,
+            orderStatus: serverOrder.orderStatus,
+          });
         }
       } else if (prevOrder.orderType === 'delivery') {
         //
@@ -1563,7 +1609,15 @@ export class ServerOrderService {
       if (+serverOrder.orderStatus === 10 || +serverOrder.orderStatus === 5) {
         await this.sendRequestToPOS(+orderId);
         if (prevOrder.orderType === 'delivery') {
-          this.cancelBeerGuyOrder(orderId, serverOrder.cancellationReason);
+          const beerGuyResponse = this.cancelBeerGuyOrder(
+            orderId,
+            serverOrder.cancellationReason,
+          );
+          this.appInsightsEntry('updateOrder', {
+            BeerguyStatus: beerGuyResponse,
+            status: 'cancelled',
+            orderId,
+          });
         }
       }
       this.sendMailOnStatusChange(orderId, prevOrder, serverOrder.orderStatus);
@@ -1634,7 +1688,6 @@ export class ServerOrderService {
           const ele = data.find(
             (product) => +product.id === +details.productId,
           );
-          // console.log('ele', ele);
           let imageUrl = ele?.custom_fields.find(
             (x) => x.name === 'product_image_1',
           )?.value;
@@ -2083,7 +2136,7 @@ export class ServerOrderService {
           }),
         ),
     );
-    console.log('beerguy update order', updateOrderRes);
+    // console.log('beerguy update order', updateOrderRes);
     return updateOrderRes;
   };
 
@@ -2227,7 +2280,7 @@ export class ServerOrderService {
     let orderData = [];
     if (type === 'order') {
       data.forEach((sheetData) => {
-        console.log('sheetData', sheetData);
+        // console.log('sheetData', sheetData);
         orderData.push({
           id: sheetData.orderId,
           storeNumber: sheetData?.serverOrder?.storeId,
@@ -2370,9 +2423,9 @@ export class ServerOrderService {
         orderId,
         parseInt(getOrderDetail.storeId),
       );
-      console.log('getOrderDetail', getOrderDetail, getComplateOrderDetail);
+      // console.log('getOrderDetail', getOrderDetail, getComplateOrderDetail);
       const getXmldata = await this.createXmlData(getComplateOrderDetail);
-      console.log(getXmldata, 'getXmldata-------->>');
+      // console.log(getXmldata, 'getXmldata-------->>');
       // const response = await lastValueFrom(
       //   this.httpService
       //     .post(this.configService.get('POS').url, getXmldata, {
@@ -2583,4 +2636,17 @@ export class ServerOrderService {
       throw new BadRequestException(error.message);
     }
   }
+
+  appInsightsEntry = (
+    url: string,
+    message: {
+      [key: string]: any;
+    },
+  ) => {
+    appInsightslog(
+      url,
+      message,
+      this.configService.get('appInsights').instrumentationKey,
+    );
+  };
 }

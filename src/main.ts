@@ -7,6 +7,7 @@ import ValidationExceptions from '@beerstore/core/exceptions/validation.exceptio
 import { json } from 'body-parser';
 
 import { OmsModule } from './oms.module';
+import { HttpExceptionFilter } from 'libs/core/exceptions/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(OmsModule, {
@@ -24,6 +25,8 @@ async function bootstrap() {
     }),
   );
   const configService = app.get<ConfigService>(ConfigService);
+  app.useGlobalFilters(new HttpExceptionFilter(configService));
+
   const port = configService.get('port');
 
   const config = new DocumentBuilder()

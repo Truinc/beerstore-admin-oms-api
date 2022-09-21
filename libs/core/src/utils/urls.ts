@@ -1,7 +1,9 @@
 import { ApiVersion, ApiType } from '../interfaces/urls';
 import { AxiosError } from 'axios';
 import { Observable, of } from 'rxjs';
-import * as appInsights from 'applicationinsights';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const appInsights = require('applicationinsights');
 
 // export function getBigCommUrl(
 //   apiVersion: ApiVersion,
@@ -475,30 +477,32 @@ export const transactionReportHeader = [
   },
 ];
 
-// export const appInsightslog = (
-//   name: string,
-//   properties: any,
-//   appInsightsKey: string,
-// ) => {
-//   // this.configService.get('appInsights').instrumentationKey
-//   appInsights
-//     .setup(appInsightsKey)
-//     .setAutoDependencyCorrelation(true)
-//     .setAutoCollectRequests(true)
-//     .setAutoCollectPerformance(true, true)
-//     .setAutoCollectExceptions(true)
-//     .setAutoCollectDependencies(true)
-//     .setAutoCollectConsole(true)
-//     .setUseDiskRetryCaching(true)
-//     .setSendLiveMetrics(true)
-//     .setDistributedTracingMode(appInsights.DistributedTracingModes.AI)
-//     .start();
-//   const client = appInsights.defaultClient;
-//   client.trackEvent({
-//     name: name,
-//     properties: properties,
-//   });
-// };
+export const appInsightslog = (
+  name: string,
+  properties: {
+    [key: string]: any;
+  },
+  appInsightsKey: string,
+) => {
+  // this.configService.get('appInsights').instrumentationKey
+  appInsights
+    .setup(appInsightsKey)
+    .setAutoDependencyCorrelation(true)
+    .setAutoCollectRequests(true)
+    .setAutoCollectPerformance(true, true)
+    .setAutoCollectExceptions(true)
+    .setAutoCollectDependencies(true)
+    .setAutoCollectConsole(true)
+    .setUseDiskRetryCaching(true)
+    .setSendLiveMetrics(true)
+    .setDistributedTracingMode(appInsights.DistributedTracingModes.AI)
+    .start();
+  const client = appInsights.defaultClient;
+  client.trackEvent({
+    name: name,
+    properties: properties,
+  });
+};
 
 export const orderStatusWithId: {
   id: string;
