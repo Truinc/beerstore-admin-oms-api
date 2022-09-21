@@ -69,6 +69,7 @@ import {
 import { DefaultAzureCredential } from '@azure/identity';
 import {
   addHeadersToSheet,
+  appInsightslog,
   generateCharacterFromNumber,
   mapOrderById,
   option,
@@ -262,13 +263,6 @@ export class ServerOrderService {
         items: parsedItems,
       };
     } catch (err) {
-      // appInsightslog(
-      //   'Fetch Server Orders',
-      //   {
-      //     err: err.message,
-      //   },
-      //   this.appInsightslogKey(),
-      // );
       throw new BadRequestException(err.message);
     }
   }
@@ -1250,6 +1244,11 @@ export class ServerOrderService {
               id,
               paymentRefund,
             );
+            this.appInsightsEntry('updateOrderDetails', {
+              refundHandler,
+              orderId: id,
+              orderStatus: serverOrder?.orderStatus,
+            });
             console.log('refundHandler', refundHandler);
           } catch (err) {
             console.log('err', err.message);
@@ -1422,12 +1421,27 @@ export class ServerOrderService {
       } = data;
       if (orderType === 'pickup' || orderType === 'curbside') {
         if (transactionId) {
-          await this.bamboraService.UpdatePaymentStatus(transactionId, {
-            amount: 0,
+          const response = await this.bamboraService.UpdatePaymentStatus(
+            transactionId,
+            {
+              amount: 0,
+            },
+          );
+          this.appInsightsEntry('cancelOrder', {
+            BamboraStatus: response,
+            orderId: id,
+            orderStatus: 5,
           });
         }
       } else if (orderType === 'delivery') {
-        await this.cancelBeerGuyOrder(`${id}`, cancellationReason);
+        const beerguyResponse = await this.cancelBeerGuyOrder(
+          `${id}`,
+          cancellationReason,
+        );
+        this.appInsightsEntry('cancelOrder', {
+          BeerGuyStatus: beerguyResponse,
+          orderId: id,
+        });
       }
       const resp = await Promise.all([
         this.ordersService.updateOrder(`${id}`, {
@@ -1464,7 +1478,13 @@ export class ServerOrderService {
       try {
         if (checkoutId && orderType !== 'kiosk') {
           if (orderType === 'curbside' || orderType === 'pickup') {
-            await this.curbSideService.releaseSlotOnCancel(checkoutId);
+            const curbsideRelease =
+              await this.curbSideService.releaseSlotOnCancel(checkoutId);
+            this.appInsightsEntry('cancelOrder', {
+              BeerGuyStatus: curbsideRelease,
+              orderId: id,
+              orderStatus,
+            });
           }
           this.sendPushNotification(
             this.configService.get('beerstoreApp').title,
@@ -1502,12 +1522,17 @@ export class ServerOrderService {
         prevOrder.orderType === 'curbside'
       ) {
         if (serverOrder?.transactionId) {
-          await this.bamboraService.UpdatePaymentStatus(
+          const bamboreResponse = await this.bamboraService.UpdatePaymentStatus(
             serverOrder.transactionId,
             {
               amount: Number(parseFloat(amount).toFixed(2)),
             },
           );
+          this.appInsightsEntry('updateOrder', {
+            BamboraStatus: bamboreResponse,
+            orderId,
+            orderStatus: serverOrder.orderStatus,
+          });
         }
       } else if (prevOrder.orderType === 'delivery') {
         //
@@ -1576,7 +1601,15 @@ export class ServerOrderService {
       if (+serverOrder.orderStatus === 10 || +serverOrder.orderStatus === 5) {
         await this.sendRequestToPOS(+orderId);
         if (prevOrder.orderType === 'delivery') {
-          this.cancelBeerGuyOrder(orderId, serverOrder.cancellationReason);
+          const beerGuyResponse = this.cancelBeerGuyOrder(
+            orderId,
+            serverOrder.cancellationReason,
+          );
+          this.appInsightsEntry('updateOrder', {
+            BeerguyStatus: beerGuyResponse,
+            status: 'cancelled',
+            orderId,
+          });
         }
       }
       this.sendMailOnStatusChange(orderId, prevOrder, serverOrder.orderStatus);
@@ -2596,4 +2629,17 @@ export class ServerOrderService {
       throw new BadRequestException(error.message);
     }
   }
+
+  appInsightsEntry = (
+    url: string,
+    message: {
+      [key: string]: any;
+    },
+  ) => {
+    appInsightslog(
+      url,
+      message,
+      this.configService.get('appInsights').instrumentationKey,
+    );
+  };
 }
