@@ -1,6 +1,9 @@
-import { initializeApp } from "@firebase/app";
-import { getDatabase, ref, onValue, update } from '@firebase/database';
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import * as firebase from 'firebase-admin';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Settings } from './entity/settings.entity';
@@ -46,7 +49,7 @@ export class SettingsService {
 
     // return createSettingDto;
     try {
-      let firebaseObj = {};
+      const firebaseObj = {};
       if (createSettingDto && createSettingDto.length) {
         let keyObj;
         settingsKeys.forEach((keyName) => {
@@ -79,8 +82,8 @@ export class SettingsService {
     // });
 
     const settingsObj = await this.getFirebaseDB();
-    let settingsCount = 0;
-    let items = [];
+    const settingsCount = 0;
+    const items = [];
     const settingsKeys = Object?.keys(settingsObj) || [];
     if (settingsKeys.length > 0) {
       settingsKeys.forEach((settingKey, _idx) => {
@@ -125,22 +128,28 @@ export class SettingsService {
   }
 
   async delete(id: number) {
-    const user = await this.findOne(id);
-    if (user) {
+    const setting = await this.findOne(id);
+    if (setting) {
       return new NotFoundException('setting not found');
     }
     return this.settingsRepository.delete(id);
   }
 
   getFirebaseDB(): Promise<any> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
-        const app = initializeApp(this.config.get('firebase'));
-        const database = getDatabase(app);
-        const dbRef = ref(database, 'maintenance_schedule');
-        onValue(dbRef, (snapshot) => {
-          resolve(snapshot.val());
-        });
+        const db = firebase.database();
+        const ref = db.ref('maintenance_schedule');
+        ref.on(
+          'value',
+          (snapshot) => {
+            resolve(snapshot.val());
+          },
+          (errorObject) => {
+            console.log('fetch failed' + errorObject.name);
+            reject(errorObject.name);
+          },
+        );
       } catch (err) {
         reject(err.message);
       }
@@ -150,17 +159,15 @@ export class SettingsService {
   updateFirebaseDB(updatedSettings: any) {
     return new Promise(async (resolve, reject) => {
       try {
-        const app = initializeApp(this.config.get('firebase'));
-        const database = getDatabase(app);
+        const db = firebase.database();
+        const ref = db.ref('maintenance_schedule');
         const prevSettings = await this.getFirebaseDB();
         const postData = {
           ...prevSettings,
           ...updatedSettings,
           unique_key: new Date().getTime(),
         };
-        const updates = {};
-        updates['maintenance_schedule'] = postData;
-        update(ref(database), updates);
+        await ref.update(postData);
         resolve(updatedSettings);
       } catch (err) {
         reject(err.message);
