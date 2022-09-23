@@ -1239,7 +1239,7 @@ export class ServerOrderService {
                 ? quotesRes.data.refund_methods[1]
                 : quotesRes.data.refund_methods[0],
           };
-          console.log(quotesRes.data.refund_methods, "<== quotesRes");
+          console.log(quotesRes.data.refund_methods, '<== quotesRes');
           paymentRefund.payments[0].amount = quotesRes.data.total_refund_amount;
           console.log(
             'quotesRes',
@@ -1309,7 +1309,7 @@ export class ServerOrderService {
         if (checkoutId && serverOrder?.orderType !== 'kiosk') {
           await this.sendPushNotification(
             this.configService.get('beerstoreApp').title,
-            `Your Order #${id}${OrderstatusText[orderStatus]}.`,
+            `Your Order #${id} ${OrderstatusText[orderStatus]}.`,
             checkoutId,
             id.toString(),
             +orderStatus,
@@ -1893,6 +1893,14 @@ export class ServerOrderService {
       orderStatus,
       orderType,
     };
+    console.log('payload', {
+      title,
+      subtitle,
+      checkoutId,
+      order_id,
+      orderStatus,
+      orderType,
+    });
     const sendpush = await lastValueFrom(
       this.httpService
         .post(
