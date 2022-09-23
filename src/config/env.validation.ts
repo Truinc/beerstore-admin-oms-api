@@ -42,7 +42,7 @@ class EnvironmentVariables {
   AUTH_TOKEN: string;
   @IsString()
   BIGCOM_API_URL: string;
-  
+
   @IsString()
   STORE_URL: string;
   @IsString()
@@ -56,14 +56,14 @@ class EnvironmentVariables {
   CUSTOMER_DOB_ATTRID: string;
   @IsString()
   CUSTOMER_SALUTATION_ATTRID: string;
-  @IsString()
-  ADDRESS_ATTRID: string;
- 
+  // @IsString()
+  // ADDRESS_ATTRID: string;
+
   @IsString()
   CACHE_TTL: string;
   @IsString()
   CACHE_MAX: string;
- 
+
   @IsString()
   DEFAULT_DELIVERY_FEE: string;
   @IsString()
@@ -104,8 +104,6 @@ class EnvironmentVariables {
   @IsString()
   KEGS: string;
 
-
- 
   @IsString()
   THE_BEER_GUY_URL: string;
   @IsString()
@@ -138,7 +136,7 @@ class EnvironmentVariables {
   CANADAPOST_V: string;
   @IsString()
   CANADAPOST_API_KEY: string;
-  
+
   @IsString()
   BEERSTORE_APP_URL: string;
   @IsString()
@@ -185,7 +183,7 @@ class EnvironmentVariables {
   FIREBASE_AUTH_PROVIDER_X509_CERT_URL: string;
   @IsString()
   FIREBASE_DB_URL: string;
-  
+
   @IsString()
   INSTRUMENTATIONKEY: string;
 
@@ -206,8 +204,6 @@ class EnvironmentVariables {
   POS_USERNAME: string;
   @IsString()
   POS_PASSWORD: string;
-
-
 }
 
 export function validate(config: Record<string, unknown>) {
