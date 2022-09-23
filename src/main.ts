@@ -8,7 +8,6 @@ import { json } from 'body-parser';
 
 import { OmsModule } from './oms.module';
 import { HttpExceptionFilter } from 'libs/core/exceptions/http-exception.filter';
-// import { initializeApp, credential } from 'firebase-admin';
 import * as admin from 'firebase-admin';
 
 async function bootstrap() {
