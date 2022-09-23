@@ -190,59 +190,59 @@ export class ServerOrder {
   })
   orderVector: string;
 
-  @ApiProperty({ type: Boolean})
+  @ApiProperty({ type: Boolean })
   @Column({
     default: false,
   })
   partialOrder: boolean;
 
   @Column({
-    type: "money",
+    type: 'money',
     default: 0,
   })
   productTotal: number;
 
   @Column({
-    type: "money",
-    default: 0
+    type: 'money',
+    default: 0,
   })
   deliveryFee: number;
 
   @Column({
-    type: "money",
+    type: 'money',
     default: 0,
   })
   deliveryFeeHST: number;
 
   @Column({
-    type: "money",
-    default: 0
+    type: 'money',
+    default: 0,
   })
   grandTotal: number;
 
   @Column({
-    type: "money",
-    default: 0
+    type: 'money',
+    default: 0,
   })
   volumeTotalHL: number;
 
   @Column({
-    default : 0
+    default: 0,
   })
   singleUnits: number;
 
   @Column({
-    default: 0
+    default: 0,
   })
   packUnits2_6: number;
 
   @Column({
-    default: 0
+    default: 0,
   })
   packUnits8_18: number;
 
   @Column({
-    default: 0
+    default: 0,
   })
   packUnits_24Plus: number;
 
@@ -257,7 +257,7 @@ export class ServerOrder {
 
   @Column({
     default: null,
-    nullable: true
+    nullable: true,
   })
   completedByEmpId: number;
 
@@ -274,19 +274,19 @@ export class ServerOrder {
   browserVersion: string;
 
   @Column({
-    default: false
+    default: false,
   })
   refunded: boolean;
 
   @Column({
-    type: "money",
-    default: 0
+    type: 'money',
+    default: 0,
   })
-  refundedAmount: number
+  refundedAmount: number;
 
   @Column({
     type: 'nvarchar',
-    default: null
+    default: null,
   })
   refundReason: string;
 
@@ -299,44 +299,55 @@ export class ServerOrder {
 
   @ApiProperty({ type: Boolean })
   @Column({
-    default: false
+    default: false,
   })
   underInfluence: boolean;
 
   @ApiProperty({ type: Boolean })
   @Column({
-    default: false
+    default: false,
   })
   dobBefore: boolean;
 
   @ApiProperty({ type: Boolean })
   @Column({
-    default: false
+    default: false,
   })
   cancelledByCustomer: boolean;
 
   @ApiProperty({ type: Boolean })
   @Column({
-    default: false
+    default: false,
   })
   cancelledByDriver: boolean;
 
-
-  @OneToOne(() => ServerOrderCustomerDetails, (serverOrderCustomerDetails) => serverOrderCustomerDetails.serverOrder, {
-    cascade: ['insert', 'update'],
-    onDelete: 'CASCADE',
-  })
+  @OneToOne(
+    () => ServerOrderCustomerDetails,
+    (serverOrderCustomerDetails) => serverOrderCustomerDetails.serverOrder,
+    {
+      cascade: ['insert', 'update'],
+      onDelete: 'CASCADE',
+    },
+  )
   serverOrderCustomerDetails: ServerOrderCustomerDetails;
 
-  @OneToOne(() => ServerOrderDeliveryDetails, (serverOrderDeliveryDetails) => serverOrderDeliveryDetails.serverOrder, {
-    cascade: ['insert', 'update'],
-    onDelete: 'CASCADE',
-  })
+  @OneToOne(
+    () => ServerOrderDeliveryDetails,
+    (serverOrderDeliveryDetails) => serverOrderDeliveryDetails.serverOrder,
+    {
+      cascade: ['insert', 'update'],
+      onDelete: 'CASCADE',
+    },
+  )
   serverOrderDeliveryDetails: ServerOrderDeliveryDetails;
 
-  @OneToMany(() => ServerOrderProductDetails, (serverOrderProductDetails) => serverOrderProductDetails.serverOrder, {
-    cascade: ['insert', 'update'],
-    onDelete: 'CASCADE',
-  })
+  @OneToMany(
+    () => ServerOrderProductDetails,
+    (serverOrderProductDetails) => serverOrderProductDetails.serverOrder,
+    {
+      cascade: ['insert', 'update'],
+      onDelete: 'CASCADE',
+    },
+  )
   serverOrderProductDetails: ServerOrderProductDetails[];
 }
