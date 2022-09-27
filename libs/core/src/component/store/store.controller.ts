@@ -398,7 +398,7 @@ export class StoreController {
       },
       {
         code: 'drive_thru_available',
-        feature: 'Drive-Thru',
+        feature: 'Drive-thru',
       },
       {
         code: 'kegs',
